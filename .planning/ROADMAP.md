@@ -14,7 +14,7 @@ TravelSentro ships as four vertical slices, each delivering a complete, independ
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Public Catalog & Inquiry Entry Point** - Customers browse tour packages and reach out via WhatsApp, Facebook, or the inquiry form (completed 2026-07-18)
-- [ ] **Phase 2: Admin Access & Package Management** - Admin/Staff log in and manage the package catalog under a role/permission model
+- [x] **Phase 2: Admin Access & Package Management** - Admin/Staff log in and manage the package catalog under a role/permission model (completed 2026-07-18)
 - [ ] **Phase 3: Lead Capture, CRM & Automation** - Every inquiry becomes a tracked CRM lead with auto-reply and internal alert
 - [ ] **Phase 4: Customer Messaging (Email & SMS)** - Admin/Staff message customers individually or in bulk, with opt-out enforcement
 
@@ -76,7 +76,7 @@ Plans:
   3. A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer
   4. Admin/Staff with "manage packages" permission can create, edit, delete, publish/unpublish, feature, and reorder tour packages, and those changes are reflected on the public site from Phase 1
 
-**Plans**: 5/6 plans executed
+**Plans**: 6/6 plans complete
 
 Plans:
 **Wave 1**
@@ -98,7 +98,7 @@ Plans:
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
-- [ ] 02-06-PLAN.md — Package photo manager (upload/reorder/delete)
+- [x] 02-06-PLAN.md — Package photo manager (upload/reorder/delete)
 
 **UI hint**: yes
 
@@ -142,6 +142,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
-| 2. Admin Access & Package Management | 5/6 | In Progress|  |
+| 2. Admin Access & Package Management | 6/6 | Complete   | 2026-07-18 |
 | 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
