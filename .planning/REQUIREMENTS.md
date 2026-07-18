@@ -21,8 +21,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Package Management
 
-- [ ] **PKG-01**: Admin/Staff with "manage packages" permission can create a new tour package (itinerary, price, inclusions/exclusions, photos)
-- [ ] **PKG-02**: Admin/Staff with "manage packages" permission can edit an existing tour package
+- [x] **PKG-01**: Admin/Staff with "manage packages" permission can create a new tour package (itinerary, price, inclusions/exclusions, photos)
+- [x] **PKG-02**: Admin/Staff with "manage packages" permission can edit an existing tour package
 - [x] **PKG-03**: Admin/Staff with "manage packages" permission can delete a tour package
 - [x] **PKG-04**: Admin/Staff with "manage packages" permission can publish/unpublish a package (hide from public site without deleting)
 - [x] **PKG-05**: Admin/Staff with "manage packages" permission can mark a package as featured/highlighted

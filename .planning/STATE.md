@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: admin-access-package-management
 status: executing
-stopped_at: Completed 02-04-PLAN.md
-last_updated: "2026-07-18T15:54:53.775Z"
+stopped_at: Completed 02-05-PLAN.md
+last_updated: "2026-07-18T16:04:55.008Z"
 last_activity: 2026-07-18
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 13
-  completed_plans: 11
+  completed_plans: 12
   percent: 25
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 ## Current Position
 
 Phase: 02 (admin-access-package-management) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-07-18 — Phase 02 execution started
 
@@ -66,6 +66,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P02 | 30min | 3 tasks | 29 files |
 | Phase 02 P03 | 25min | 2 tasks | 5 files |
 | Phase 02 P04 | 25min | 2 tasks | 6 files |
+| Phase 02 P05 | 25min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -99,6 +100,8 @@ Recent decisions affecting current work:
 - [Phase 02-03]: Submit button copy: Add Staff Account (create mode) / Save Changes (edit mode), per this plan's Task 1 instruction
 - [Phase 02-04]: Used double-quoted string literals matching codebase convention (dal.ts/users.ts) rather than the plan's illustrative single-quoted grep pattern
 - [Phase 02-04]: Drag handle (not whole row) carries dnd-kit listeners, 44px per UI-SPEC touch-target requirement, wrapped in a tooltip
+- [Phase 02-05]: Used plain z.number() (not z.coerce.number()) for numeric package fields -- zod 4 coerce schemas have an unknown input type incompatible with useForm's zodResolver typing; numeric inputs convert via explicit onChange=valueAsNumber instead
+- [Phase 02-05]: PackageForm itself (not a separate page wrapper) calls createPackage/updatePackage and handles the create-mode redirect via useRouter().push
 
 ### Pending Todos
 
@@ -127,6 +130,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-18T15:54:53.769Z
-Stopped at: Completed 02-04-PLAN.md
+Last session: 2026-07-18T16:04:55.004Z
+Stopped at: Completed 02-05-PLAN.md
 Resume file: None
