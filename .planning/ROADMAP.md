@@ -76,12 +76,12 @@ Plans:
   3. A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer
   4. Admin/Staff with "manage packages" permission can create, edit, delete, publish/unpublish, feature, and reorder tour packages, and those changes are reflected on the public site from Phase 1
 
-**Plans**: 6 plans
+**Plans**: 1/6 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Schema migration (profiles, RLS, has_permission helper), [BLOCKING] push, admin bootstrap seed
+- [x] 02-01-PLAN.md — Schema migration (profiles, RLS, has_permission helper), [BLOCKING] push, admin bootstrap seed
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -142,6 +142,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
-| 2. Admin Access & Package Management | 0/6 | Not started | - |
+| 2. Admin Access & Package Management | 1/6 | In Progress|  |
 | 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
