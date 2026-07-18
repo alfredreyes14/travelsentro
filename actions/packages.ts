@@ -5,9 +5,189 @@ import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
+import type { PackageFormValues } from "@/components/admin/package-form-schema";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * Deletes and reinserts a package's itinerary_days/package_inclusions/
+ * faq_facts rows, exactly mirroring scripts/seed.ts's delete-then-reinsert
+ * pattern (used by both createPackage — against an empty set — and
+ * updatePackage). day_number/kind/sort_order are all derived from array
+ * position, never user-entered fields.
+ */
+async function writePackageChildren(
+  supabase: SupabaseServerClient,
+  packageId: string,
+  values: PackageFormValues
+): Promise<ActionResult> {
+  const [delItinerary, delInclusions, delFaq] = await Promise.all([
+    supabase.from("itinerary_days").delete().eq("package_id", packageId),
+    supabase.from("package_inclusions").delete().eq("package_id", packageId),
+    supabase.from("faq_facts").delete().eq("package_id", packageId),
+  ]);
+
+  if (delItinerary.error || delInclusions.error || delFaq.error) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  if (values.itinerary.length > 0) {
+    const { error: itineraryError } = await supabase
+      .from("itinerary_days")
+      .insert(
+        values.itinerary.map((day, index) => ({
+          package_id: packageId,
+          day_number: index + 1,
+          title: day.title,
+          description: day.description,
+        }))
+      );
+    if (itineraryError) {
+      return { ok: false, error: GENERIC_ERROR_MESSAGE };
+    }
+  }
+
+  const inclusionRows = [
+    ...values.inclusions.map((item, index) => ({
+      package_id: packageId,
+      kind: "included",
+      label: item.label,
+      sort_order: index,
+    })),
+    ...values.exclusions.map((item, index) => ({
+      package_id: packageId,
+      kind: "excluded",
+      label: item.label,
+      sort_order: index,
+    })),
+    ...values.bringItems.map((item, index) => ({
+      package_id: packageId,
+      kind: "bring",
+      label: item.label,
+      sort_order: index,
+    })),
+  ];
+
+  if (inclusionRows.length > 0) {
+    const { error: inclusionsError } = await supabase
+      .from("package_inclusions")
+      .insert(inclusionRows);
+    if (inclusionsError) {
+      return { ok: false, error: GENERIC_ERROR_MESSAGE };
+    }
+  }
+
+  const { error: faqError } = await supabase.from("faq_facts").insert({
+    package_id: packageId,
+    best_time_to_go: values.bestTimeToGo,
+    group_size: values.groupSize,
+  });
+  if (faqError) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Creates a new package as an unpublished draft (T-02-19) — is_published is
+ * always explicitly set to false here, never left to the table's own
+ * `default true`, so a half-finished package never appears on the public
+ * site before an Admin explicitly publishes it via 02-04's list-page switch.
+ */
+export async function createPackage(
+  values: PackageFormValues
+): Promise<ActionResult & { id?: string }> {
+  // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
+  // second independent layer (T-02-18).
+  await requirePermission("can_manage_packages");
+
+  const supabase = await createClient();
+
+  // New packages append to the end of the admin list's current order.
+  const { count } = await supabase
+    .from("packages")
+    .select("id", { count: "exact", head: true })
+    .is("deleted_at", null);
+
+  const { data: created, error: createError } = await supabase
+    .from("packages")
+    .insert({
+      name: values.name,
+      slug: values.slug,
+      from_price: values.fromPrice,
+      duration_days: values.durationDays,
+      duration_label: values.durationLabel || null,
+      is_published: false,
+      is_featured: false,
+      sort_order: count ?? 0,
+    })
+    .select("id")
+    .single();
+
+  if (createError || !created) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  const childResult = await writePackageChildren(
+    supabase,
+    created.id,
+    values
+  );
+  if (!childResult.ok) {
+    return childResult;
+  }
+
+  // A draft package doesn't appear publicly yet, but the admin list needs
+  // the new row.
+  revalidatePath("/packages");
+  revalidatePath("/admin/packages");
+  return { ok: true, id: created.id };
+}
+
+/**
+ * Updates a package's Details/Itinerary/Inclusions & FAQ content. Never
+ * touches is_published/is_featured/sort_order — those are 02-04's concern
+ * only (publish/feature switches, drag-reorder).
+ */
+export async function updatePackage(
+  id: string,
+  values: PackageFormValues
+): Promise<ActionResult> {
+  await requirePermission("can_manage_packages");
+
+  const supabase = await createClient();
+
+  const { data: updated, error: updateError } = await supabase
+    .from("packages")
+    .update({
+      name: values.name,
+      slug: values.slug,
+      from_price: values.fromPrice,
+      duration_days: values.durationDays,
+      duration_label: values.durationLabel || null,
+    })
+    .eq("id", id)
+    .select("slug")
+    .single();
+
+  if (updateError || !updated) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  const childResult = await writePackageChildren(supabase, id, values);
+  if (!childResult.ok) {
+    return childResult;
+  }
+
+  revalidatePath("/packages");
+  revalidatePath(`/packages/${updated.slug}`);
+  revalidatePath("/admin/packages");
+  return { ok: true };
+}
 
 /**
  * Soft-deletes a package: sets BOTH `deleted_at` and `is_published = false`
