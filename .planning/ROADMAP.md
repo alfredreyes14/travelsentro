@@ -30,7 +30,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can contact the business directly from any package via a WhatsApp deep link or Facebook page link, with no checkout step
   4. User can submit an inquiry via the existing Formspree form
   5. The package list, detail pages, and inquiry flow are usable on mobile
-**Plans**: TBD
+**Plans**: 7 plans across 6 waves
+Plans:
+- [ ] 01-01-PLAN.md — Project scaffold, Supabase clients, public site shell
+- [ ] 01-02-PLAN.md — Database schema, Storage bucket, [BLOCKING] push to Supabase
+- [ ] 01-03-PLAN.md — Seed script: 3 placeholder packages with photos/itinerary/inclusions/faq
+- [ ] 01-04-PLAN.md — Inquiry form components + Contact Us page (Formspree)
+- [ ] 01-05-PLAN.md — Package list page, WhatsApp/Facebook CTAs, Walking Skeleton verification
+- [ ] 01-06-PLAN.md — Package detail page: itinerary, inclusions, gallery, trip facts, inquiry wiring
+- [ ] 01-07-PLAN.md — Mobile-responsive polish + full Phase 1 acceptance verification
 **UI hint**: yes
 
 ### Phase 2: Admin Access & Package Management
@@ -79,7 +87,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Public Catalog & Inquiry Entry Point | 0/TBD | Not started | - |
+| 1. Public Catalog & Inquiry Entry Point | 0/7 | Planned | - |
 | 2. Admin Access & Package Management | 0/TBD | Not started | - |
 | 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
