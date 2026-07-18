@@ -76,7 +76,7 @@ Plans:
   3. A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer
   4. Admin/Staff with "manage packages" permission can create, edit, delete, publish/unpublish, feature, and reorder tour packages, and those changes are reflected on the public site from Phase 1
 
-**Plans**: 8/8 plans complete
+**Plans**: 8/9 plans complete (02-09 pending — closes 02-VERIFICATION.md's re-verification gap on AUTH-05)
 
 Plans:
 **Wave 1**
@@ -104,6 +104,10 @@ Plans:
 
 - [x] 02-07-PLAN.md — Graceful permission-denied UX (error boundary + optimistic-UI catch) + password-reset PKCE code exchange fix
 - [x] 02-08-PLAN.md — Atomic package-children write (migration + RPC), [BLOCKING] push
+
+**Gap Closure — Wave 2** *(third attempt at 02-VERIFICATION.md's AUTH-05 gap — 02-07's error.tsx approach was proven not to render live; this plan switches to a redirect()-based permission gate)*
+
+- [ ] 02-09-PLAN.md — Redirect-based permission gate (dal.ts + 4 gated pages) + /admin/forbidden page + live-HTTP verification script (dev + production build)
 
 **UI hint**: yes
 
