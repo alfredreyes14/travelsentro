@@ -11,6 +11,7 @@ import {
   packageFormSchema,
   type PackageFormValues,
 } from "./package-form-schema";
+import { PhotoManager, type PhotoManagerPhoto } from "./photo-manager";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,19 +56,20 @@ function slugify(value: string): string {
 }
 
 /**
- * Tabbed create/edit form for a package's Details, Itinerary, Photos
- * (interim note only — the real photo manager component lands in 02-06),
- * and Inclusions & FAQ content. `packageId` absent = create mode (submit
- * calls createPackage and redirects to the new edit page so 02-06's Photos
- * tab has a real package_id); `packageId` present = edit mode (submit calls
- * updatePackage).
+ * Tabbed create/edit form for a package's Details, Itinerary, Photos, and
+ * Inclusions & FAQ content. `packageId` absent = create mode (submit calls
+ * createPackage and redirects to the new edit page so the Photos tab has a
+ * real package_id); `packageId` present = edit mode (submit calls
+ * updatePackage, and the Photos tab renders the real PhotoManager).
  */
 export function PackageForm({
   packageId,
   defaultValues,
+  initialPhotos = [],
 }: {
   packageId?: string;
   defaultValues?: Partial<PackageFormValues>;
+  initialPhotos?: PhotoManagerPhoto[];
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -309,7 +311,12 @@ export function PackageForm({
           </TabsContent>
 
           <TabsContent value="photos" className="flex flex-col gap-4 pt-4">
-            {packageId ? null : (
+            {packageId ? (
+              <PhotoManager
+                packageId={packageId}
+                initialPhotos={initialPhotos}
+              />
+            ) : (
               <p className="text-sm text-muted-foreground">
                 Save the package details first, then add photos here.
               </p>

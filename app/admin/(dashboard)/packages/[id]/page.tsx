@@ -14,6 +14,7 @@ export const metadata: Metadata = {
 type FaqFactsRow = Database["public"]["Tables"]["faq_facts"]["Row"];
 
 type PackageDetail = Database["public"]["Tables"]["packages"]["Row"] & {
+  package_photos: Database["public"]["Tables"]["package_photos"]["Row"][];
   itinerary_days: Database["public"]["Tables"]["itinerary_days"]["Row"][];
   package_inclusions: Database["public"]["Tables"]["package_inclusions"]["Row"][];
   // faq_facts is a to-one relation (isOneToOne: true), but defensively
@@ -42,6 +43,7 @@ export default async function EditPackagePage({
     .from("packages")
     .select(
       `*,
+      package_photos(id, storage_path, display_order, alt_text),
       itinerary_days(id, day_number, title, description),
       package_inclusions(id, kind, label, sort_order),
       faq_facts(best_time_to_go, group_size)`
@@ -73,6 +75,13 @@ export default async function EditPackagePage({
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((item) => ({ label: item.label }));
 
+  const photos = pkg.package_photos.map((photo) => ({
+    id: photo.id,
+    storagePath: photo.storage_path,
+    displayOrder: photo.display_order,
+    altText: photo.alt_text,
+  }));
+
   const defaultValues: Partial<PackageFormValues> = {
     name: pkg.name,
     slug: pkg.slug,
@@ -98,7 +107,11 @@ export default async function EditPackagePage({
         </p>
       </div>
 
-      <PackageForm packageId={pkg.id} defaultValues={defaultValues} />
+      <PackageForm
+        packageId={pkg.id}
+        defaultValues={defaultValues}
+        initialPhotos={photos}
+      />
     </div>
   );
 }
