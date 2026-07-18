@@ -98,7 +98,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PUBL-01 through PUBL-09 | Phase 1 | Pending |
+| PUBL-01 through PUBL-09 | Phase 1 | Complete |
 | AUTH-01 through AUTH-05 | Phase 2 | Pending |
 | PKG-01 through PKG-06 | Phase 2 | Pending |
 | CRM-01 through CRM-07 | Phase 3 | Pending |

@@ -13,7 +13,7 @@ TravelSentro ships as four vertical slices, each delivering a complete, independ
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Public Catalog & Inquiry Entry Point** - Customers browse tour packages and reach out via WhatsApp, Facebook, or the inquiry form
+- [x] **Phase 1: Public Catalog & Inquiry Entry Point** - Customers browse tour packages and reach out via WhatsApp, Facebook, or the inquiry form (completed 2026-07-18)
 - [ ] **Phase 2: Admin Access & Package Management** - Admin/Staff log in and manage the package catalog under a role/permission model
 - [ ] **Phase 3: Lead Capture, CRM & Automation** - Every inquiry becomes a tracked CRM lead with auto-reply and internal alert
 - [ ] **Phase 4: Customer Messaging (Email & SMS)** - Admin/Staff message customers individually or in bulk, with opt-out enforcement
@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. User can submit an inquiry via the existing Formspree form
   5. The package list, detail pages, and inquiry flow are usable on mobile
 
-**Plans**: 6/7 plans executed
+**Plans**: 7/7 plans complete
 Plans:
 **Wave 1**
 
@@ -59,7 +59,7 @@ Plans:
 
 **Wave 6** *(blocked on Wave 5 completion)*
 
-- [ ] 01-07-PLAN.md — Mobile-responsive polish + full Phase 1 acceptance verification
+- [x] 01-07-PLAN.md — Mobile-responsive polish + full Phase 1 acceptance verification
 
 **UI hint**: yes
 
@@ -118,7 +118,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Public Catalog & Inquiry Entry Point | 6/7 | In Progress|  |
+| 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete   | 2026-07-18 |
 | 2. Admin Access & Package Management | 0/TBD | Not started | - |
 | 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
