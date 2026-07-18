@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: public-catalog-inquiry-entry-point
 status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-07-18T12:30:39.450Z"
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-07-18T12:38:35.503Z"
 last_activity: 2026-07-18
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 7
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 ## Current Position
 
 Phase: 01 (public-catalog-inquiry-entry-point) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Status: Ready to execute
 Last activity: 2026-07-18 — Phase 01 execution started
 
@@ -58,6 +58,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P01 | 55min | 2 tasks | 37 files |
 | Phase 01 P02 | 40min | 2 tasks | 4 files |
 | Phase 01 P04 | 15min | 2 tasks | 4 files |
+| Phase 01 P03 | 20min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ Recent decisions affecting current work:
 - [Phase 01-02]: Verified RLS/storage policies live via direct anon-key PostgREST/Storage HTTP calls, not just static SQL inspection — Confirms the migration behaves correctly on the actual remote project, not just that the SQL text is well-formed
 - [Phase 01-04]: Reused existing --primary CSS token (already the UI-SPEC accent #F5793A from 01-01) for the Send Inquiry button instead of adding a new accent variant
 - [Phase 01-04]: Honeypot field hidden via Tailwind sr-only (not display:none) per Formspree's own anti-bot guidance
+- [Phase 01-03]: Seed script falls back to NEXT_PUBLIC_SUPABASE_URL when server-only SUPABASE_URL is unset, since both point at the same Supabase project
+- [Phase 01-03]: Polyfilled globalThis.WebSocket from the already-installed undici package (not a new dependency) to work around @supabase/supabase-js's unconditional RealtimeClient construction on Node 20
 
 ### Pending Todos
 
@@ -104,6 +107,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-18T12:30:18.567Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-07-18T12:38:35.499Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
