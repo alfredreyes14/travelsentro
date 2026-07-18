@@ -1,0 +1,1 @@
+{"content":"Common Supabase mistakes: exposing service_role key in client code (bypasses RLS entirely, full DB compromise); forgetting to enable RLS on new tables; overly broad policies; relying on frontend checks instead of DB policies.","source":"web","provider":"websearch","confidence":"MEDIUM","fetched_at":"2026-07-18T08:23:03.654Z","ttl":86400000,"kind":"web"}
