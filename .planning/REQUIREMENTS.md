@@ -15,7 +15,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **PUBL-04**: User can view a photo gallery on each package detail page
 - [ ] **PUBL-05**: User can contact the business via a WhatsApp deep-link CTA on each package
 - [ ] **PUBL-06**: User can contact the business via a Facebook page link CTA on each package
-- [ ] **PUBL-07**: User can submit an inquiry via the existing Formspree form
+- [x] **PUBL-07**: User can submit an inquiry via the existing Formspree form
 - [x] **PUBL-08**: User can view an FAQ / trip-facts section per package (best time to go, what to bring, group size)
 - [x] **PUBL-09**: Site is mobile-responsive across package list, detail, and inquiry flows
 
