@@ -50,10 +50,12 @@ A prospective customer can browse tour packages and reach out to inquire (via Wh
 - Existing brand assets (logo, colors, current site look) exist and should be matched — specific assets/links to be gathered during UI phase.
 - Market: Philippines — currency displayed as PHP, SMS provider should be PH-friendly (e.g. Semaphore) or Twilio, pay-as-you-go is acceptable (no true SMS free tier exists).
 - Formspree stays as the inquiry form handler; new backend receives submissions via webhook and creates CRM leads — avoids migrating the form itself.
+- Formspree's native webhook plugin requires a paid plan (~$10+/mo). Try a free client-side dual-submit workaround first (submit to Formspree AND our endpoint, if the existing form submits via JS/fetch); fall back to a paid Formspree plan only if that's not viable.
+- Staying on free tiers as long as possible for hosting/DB (Vercel Hobby, Supabase free) even though Vercel Hobby is licensed non-commercial and Supabase free projects auto-pause after 7 days idle — accepted risk, revisit budget only if it becomes a real problem.
 
 ## Constraints
 
-- **Budget**: Prioritize free-tier services wherever possible (hosting, database, email) — SMS is the one exception where pay-as-you-go is accepted since no viable free SMS tier exists
+- **Budget**: Prioritize free-tier services wherever possible (hosting, database, email) — SMS is the one exception where pay-as-you-go is accepted since no viable free SMS tier exists. Stay on free hosting/DB tiers (Vercel Hobby, Supabase free) as long as possible even given their ToS/reliability caveats (Vercel Hobby is non-commercial-licensed, Supabase free projects auto-pause after 7 days idle); revisit only if it becomes a real problem.
 - **Database**: Supabase — explicit user choice
 - **Tech stack**: Otherwise open — chosen for best free-tier fit (e.g. Next.js on Vercel)
 
@@ -67,6 +69,8 @@ A prospective customer can browse tour packages and reach out to inquire (via Wh
 | SMS included in v1 despite no free tier | Business wants SMS now; pay-as-you-go accepted | — Pending |
 | Supabase for database | Explicit user choice, has a usable free tier | — Pending |
 | Instant auto-reply + internal alert only (no drip automation yet) | Simplest automation that still prevents lost leads; drip sequences deferred | — Pending |
+| Try free Formspree dual-submit workaround before paying for webhooks | Research found Formspree's webhook plugin requires a paid plan; workaround keeps free-tier goal if current form supports JS submission | — Pending |
+| Stay on free hosting tiers as long as possible (Vercel Hobby, Supabase free) | User prioritizes free tier over strict ToS/reliability guarantees; will revisit if it becomes a real problem | — Pending |
 
 ## Evolution
 
