@@ -9,7 +9,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Public Site
 
-- [ ] **PUBL-01**: User can browse a list of tour packages, each showing photo, name, and starting "from ₱X" price
+- [x] **PUBL-01**: User can browse a list of tour packages, each showing photo, name, and starting "from ₱X" price
 - [ ] **PUBL-02**: User can view a package detail page with a day-by-day itinerary and duration
 - [ ] **PUBL-03**: User can view price and inclusions/exclusions listed explicitly (line-item, not paragraph prose) on the package detail page
 - [ ] **PUBL-04**: User can view a photo gallery on each package detail page
@@ -17,7 +17,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **PUBL-06**: User can contact the business via a Facebook page link CTA on each package
 - [ ] **PUBL-07**: User can submit an inquiry via the existing Formspree form
 - [ ] **PUBL-08**: User can view an FAQ / trip-facts section per package (best time to go, what to bring, group size)
-- [ ] **PUBL-09**: Site is mobile-responsive across package list, detail, and inquiry flows
+- [x] **PUBL-09**: Site is mobile-responsive across package list, detail, and inquiry flows
 
 ### Package Management
 
@@ -106,6 +106,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MSG-01 through MSG-06 | Phase 4 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 36 total
 - Mapped to phases: 36/36 ✓
 - Unmapped: 0
