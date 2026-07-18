@@ -39,6 +39,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+const GENERIC_ERROR_MESSAGE =
+  "Something went wrong saving your changes. Please try again.";
+
 export function PackageListRow({
   item,
   onMutated,
@@ -69,12 +72,17 @@ export function PackageListRow({
   function handlePublishChange(checked: boolean) {
     setIsPublished(checked);
     startTransition(async () => {
-      const result = await publishPackage(item.id, checked);
-      if (!result.ok) {
-        toast.error(result.error);
+      try {
+        const result = await publishPackage(item.id, checked);
+        if (!result.ok) {
+          toast.error(result.error);
+          setIsPublished(!checked);
+        } else {
+          onMutated();
+        }
+      } catch {
+        toast.error(GENERIC_ERROR_MESSAGE);
         setIsPublished(!checked);
-      } else {
-        onMutated();
       }
     });
   }
@@ -82,25 +90,34 @@ export function PackageListRow({
   function handleFeatureChange(checked: boolean) {
     setIsFeatured(checked);
     startTransition(async () => {
-      const result = await featurePackage(item.id, checked);
-      if (!result.ok) {
-        toast.error(result.error);
+      try {
+        const result = await featurePackage(item.id, checked);
+        if (!result.ok) {
+          toast.error(result.error);
+          setIsFeatured(!checked);
+        } else {
+          onMutated();
+        }
+      } catch {
+        toast.error(GENERIC_ERROR_MESSAGE);
         setIsFeatured(!checked);
-      } else {
-        onMutated();
       }
     });
   }
 
   function handleDelete() {
     startTransition(async () => {
-      const result = await softDeletePackage(item.id);
-      if (result.ok) {
-        toast.success("Package deleted.");
-        setIsDeleteOpen(false);
-        onMutated();
-      } else {
-        toast.error(result.error);
+      try {
+        const result = await softDeletePackage(item.id);
+        if (result.ok) {
+          toast.success("Package deleted.");
+          setIsDeleteOpen(false);
+          onMutated();
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error(GENERIC_ERROR_MESSAGE);
       }
     });
   }

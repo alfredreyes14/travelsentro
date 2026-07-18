@@ -42,6 +42,9 @@ import {
 } from "@/components/ui/table";
 import type { Profile } from "@/lib/auth/dal";
 
+const GENERIC_ERROR_MESSAGE =
+  "Something went wrong saving your changes. Please try again.";
+
 export function UsersTable({ profiles }: { profiles: Profile[] }) {
   const router = useRouter();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -61,13 +64,17 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
     const target = deactivatingAccount;
 
     startDeactivating(async () => {
-      const result = await deactivateAccount(target.id);
-      if (result.ok) {
-        toast.success("Account deactivated.");
-        setDeactivatingAccount(null);
-        router.refresh();
-      } else {
-        toast.error(result.error);
+      try {
+        const result = await deactivateAccount(target.id);
+        if (result.ok) {
+          toast.success("Account deactivated.");
+          setDeactivatingAccount(null);
+          router.refresh();
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error(GENERIC_ERROR_MESSAGE);
       }
     });
   }

@@ -30,6 +30,9 @@ import {
 } from "@/components/ui/table";
 import type { AdminPackageListItem } from "@/app/admin/(dashboard)/packages/page";
 
+const GENERIC_ERROR_MESSAGE =
+  "Something went wrong saving your changes. Please try again.";
+
 /**
  * Client-side drag-reorder list (Pattern 6, D-10/D-11). The drag order is
  * computed optimistically in local useState (per CLAUDE.md's "local
@@ -64,11 +67,16 @@ export function SortablePackageList({
     setItems(reordered);
 
     startReordering(async () => {
-      const result = await reorderPackages(
-        reordered.map((item, index) => ({ id: item.id, sortOrder: index }))
-      );
-      if (!result.ok) {
-        toast.error(result.error);
+      try {
+        const result = await reorderPackages(
+          reordered.map((item, index) => ({ id: item.id, sortOrder: index }))
+        );
+        if (!result.ok) {
+          toast.error(result.error);
+          setItems(previousItems);
+        }
+      } catch {
+        toast.error(GENERIC_ERROR_MESSAGE);
         setItems(previousItems);
       }
     });

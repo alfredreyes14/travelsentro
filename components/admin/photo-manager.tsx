@@ -227,12 +227,17 @@ export function PhotoManager({
     void reorderPhotos(
       packageId,
       reordered.map((photo, index) => ({ id: photo.id, displayOrder: index }))
-    ).then((result) => {
-      if (!result.ok) {
-        toast.error(result.error);
+    )
+      .then((result) => {
+        if (!result.ok) {
+          toast.error(result.error);
+          setPhotos(previousPhotos);
+        }
+      })
+      .catch(() => {
+        toast.error(GENERIC_ERROR_MESSAGE);
         setPhotos(previousPhotos);
-      }
-    });
+      });
   }
 
   return (
