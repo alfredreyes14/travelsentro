@@ -98,18 +98,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PUBL-01 through PUBL-09 | TBD | Pending |
-| PKG-01 through PKG-06 | TBD | Pending |
-| AUTH-01 through AUTH-05 | TBD | Pending |
-| CRM-01 through CRM-07 | TBD | Pending |
-| MSG-01 through MSG-06 | TBD | Pending |
-| AUTO-01 through AUTO-03 | TBD | Pending |
+| PUBL-01 through PUBL-09 | Phase 1 | Pending |
+| AUTH-01 through AUTH-05 | Phase 2 | Pending |
+| PKG-01 through PKG-06 | Phase 2 | Pending |
+| CRM-01 through CRM-07 | Phase 3 | Pending |
+| AUTO-01 through AUTO-03 | Phase 3 | Pending |
+| MSG-01 through MSG-06 | Phase 4 | Pending |
 
 **Coverage:**
 - v1 requirements: 36 total
-- Mapped to phases: 0 (pending roadmap creation)
-- Unmapped: 36 ⚠️ (expected — roadmap not yet created)
+- Mapped to phases: 36/36 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-18*
-*Last updated: 2026-07-18 after initial definition*
+*Last updated: 2026-07-18 after roadmap creation (4 phases, 100% coverage)*
