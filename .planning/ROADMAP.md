@@ -14,7 +14,7 @@ TravelSentro ships as four vertical slices, each delivering a complete, independ
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Public Catalog & Inquiry Entry Point** - Customers browse tour packages and reach out via WhatsApp, Facebook, or the inquiry form (completed 2026-07-18)
-- [ ] **Phase 2: Admin Access & Package Management** - Admin/Staff log in and manage the package catalog under a role/permission model (gaps found 2026-07-18 — see 02-VERIFICATION.md)
+- [x] **Phase 2: Admin Access & Package Management** - Admin/Staff log in and manage the package catalog under a role/permission model (gaps found 2026-07-18 — see 02-VERIFICATION.md) (completed 2026-07-18)
 - [ ] **Phase 3: Lead Capture, CRM & Automation** - Every inquiry becomes a tracked CRM lead with auto-reply and internal alert
 - [ ] **Phase 4: Customer Messaging (Email & SMS)** - Admin/Staff message customers individually or in bulk, with opt-out enforcement
 
@@ -76,7 +76,7 @@ Plans:
   3. A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer
   4. Admin/Staff with "manage packages" permission can create, edit, delete, publish/unpublish, feature, and reorder tour packages, and those changes are reflected on the public site from Phase 1
 
-**Plans**: 7/8 plans executed
+**Plans**: 8/8 plans complete
 
 Plans:
 **Wave 1**
@@ -103,7 +103,7 @@ Plans:
 **Gap Closure — Wave 1** *(parallel; addresses 02-VERIFICATION.md's gap plus 02-REVIEW.md's CR-01/CR-02/WR-06)*
 
 - [x] 02-07-PLAN.md — Graceful permission-denied UX (error boundary + optimistic-UI catch) + password-reset PKCE code exchange fix
-- [ ] 02-08-PLAN.md — Atomic package-children write (migration + RPC), [BLOCKING] push
+- [x] 02-08-PLAN.md — Atomic package-children write (migration + RPC), [BLOCKING] push
 
 **UI hint**: yes
 
@@ -147,6 +147,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
-| 2. Admin Access & Package Management | 7/8 | In Progress|  |
+| 2. Admin Access & Package Management | 8/8 | Complete   | 2026-07-18 |
 | 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |

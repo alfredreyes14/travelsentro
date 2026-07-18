@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: admin-access-package-management
 status: executing
-stopped_at: Completed 02-07-PLAN.md
-last_updated: "2026-07-18T17:11:02.246Z"
+stopped_at: Completed 02-08-PLAN.md
+last_updated: "2026-07-18T17:19:21.288Z"
 last_activity: 2026-07-18
-last_activity_desc: Phase 02 execution started
+last_activity_desc: Phase 02 complete (8/8 plans)
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 15
-  completed_plans: 14
-  percent: 25
+  completed_plans: 15
+  percent: 50
 ---
 
 # Project State
@@ -28,12 +28,12 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 
 ## Current Position
 
-Phase: 02 (admin-access-package-management) — EXECUTING
-Plan: 2 of 8
-Status: Ready to execute
-Last activity: 2026-07-18 — Phase 02 execution started
+Phase: 02 (admin-access-package-management) — COMPLETE
+Plan: 8 of 8
+Status: All plans complete; ready for next phase
+Last activity: 2026-07-18 — Phase 02 complete (8/8 plans)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -69,6 +69,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 02 P05 | 25min | 2 tasks | 5 files |
 | Phase 02 P06 | 20min | 2 tasks | 4 files |
 | Phase 02 P07 | 15min | 3 tasks | 7 files |
+| Phase 02 P08 | 10min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,8 @@ Recent decisions affecting current work:
 - [Phase 02-07]: error.tsx renders the fixed UI-SPEC denial copy unconditionally (no branching on error content) since every render-time throw under app/admin/(dashboard)/** is a permission-gate throw
 - [Phase 02-07]: GENERIC_ERROR_MESSAGE kept as a per-file local constant (matching existing codebase convention), not hoisted to a shared module
 - [Phase 02-07]: app/admin/auth/confirm/route.ts redirect targets are both hardcoded from request.url, never a query-supplied value, closing an open-redirect surface
+- [Phase 02-08]: Chose a genuine atomic-transaction RPC over reordering to insert-first-then-delete-old, because faq_facts.package_id carries a UNIQUE constraint that a naive insert-before-delete would violate
+- [Phase 02-08]: write_package_children() is security invoker (not security definer) so it stays subject to existing can_manage_packages-scoped RLS policies -- no privilege escalation introduced
 
 ### Pending Todos
 
@@ -137,6 +140,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-18T17:11:02.242Z
-Stopped at: Completed 02-07-PLAN.md
+Last session: 2026-07-18T17:18:46.043Z
+Stopped at: Completed 02-08-PLAN.md
 Resume file: None
