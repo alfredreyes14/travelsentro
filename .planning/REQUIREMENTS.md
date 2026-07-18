@@ -31,9 +31,9 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Admin Auth & Users
 
 - [x] **AUTH-01**: Admin/Staff can log in to the admin panel with email/password
-- [ ] **AUTH-02**: Admin can create new Admin or Staff accounts
-- [ ] **AUTH-03**: Admin can edit or deactivate existing Admin/Staff accounts
-- [ ] **AUTH-04**: Admin can toggle per-staff permissions individually: can message customers, can manage packages, can edit CRM data
+- [x] **AUTH-02**: Admin can create new Admin or Staff accounts
+- [x] **AUTH-03**: Admin can edit or deactivate existing Admin/Staff accounts
+- [x] **AUTH-04**: Admin can toggle per-staff permissions individually: can message customers, can manage packages, can edit CRM data
 - [x] **AUTH-05**: A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer (server-side enforcement, not UI-only)
 
 ### CRM
