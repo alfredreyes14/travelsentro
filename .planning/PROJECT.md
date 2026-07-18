@@ -19,14 +19,13 @@ A prospective customer can browse tour packages and reach out to inquire (via Wh
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Public site: browse tour packages (list + detail pages) — Validated in Phase 01: public-catalog-inquiry-entry-point
+- [x] Package detail: itinerary/duration, price & inclusions/exclusions, photo gallery — Validated in Phase 01: public-catalog-inquiry-entry-point
+- [x] Package CTA: "Contact us" via WhatsApp deep link and Facebook page link (no checkout) — Validated in Phase 01: public-catalog-inquiry-entry-point
 
 ### Active
 
-- [ ] Public site: browse tour packages (list + detail pages)
-- [ ] Package detail: itinerary/duration, price & inclusions/exclusions, photo gallery
-- [ ] Package CTA: "Contact us" via WhatsApp deep link and Facebook page link (no checkout)
-- [ ] Inquiry capture: keep existing Formspree form, webhook Formspree submissions into the CRM as new leads
+- [ ] Inquiry capture: keep existing Formspree form, webhook Formspree submissions into the CRM as new leads (Formspree-backed inquiry form shipped in Phase 01; CRM webhook still outstanding — Phase 3)
 - [ ] Admin panel: authentication with Admin and Staff roles
 - [ ] Admin: user management — Admin creates/edits/deactivates Admin and Staff accounts
 - [ ] Admin: per-staff permission toggles — can message customers, can manage packages, can edit CRM data (staff default: read-only CRM)
@@ -63,8 +62,8 @@ A prospective customer can browse tour packages and reach out to inquire (via Wh
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| No checkout, WhatsApp/Facebook CTA only | Bookings are closed via conversation, not self-serve online | — Pending |
-| Keep Formspree, webhook into CRM | Avoids migrating/rebuilding the existing inquiry form | — Pending |
+| No checkout, WhatsApp/Facebook CTA only | Bookings are closed via conversation, not self-serve online | Confirmed in Phase 01 — WhatsApp/Facebook CTAs shipped on list and detail pages, no checkout anywhere |
+| Keep Formspree, webhook into CRM | Avoids migrating/rebuilding the existing inquiry form | Formspree-backed inquiry form shipped natively in Phase 01 (shared component, per-package + Contact Us); CRM webhook still pending Phase 3 |
 | Fixed 3-toggle staff permissions (message/manage packages/edit CRM) | Enough granularity for v1 without building a full permission system | — Pending |
 | SMS included in v1 despite no free tier | Business wants SMS now; pay-as-you-go accepted | — Pending |
 | Supabase for database | Explicit user choice, has a usable free tier | — Pending |
@@ -90,4 +89,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-18 after initialization*
+*Last updated: 2026-07-18 after Phase 01 (public-catalog-inquiry-entry-point) completion*
