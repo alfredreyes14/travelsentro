@@ -34,7 +34,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. User can submit an inquiry via the existing Formspree form
   5. The package list, detail pages, and inquiry flow are usable on mobile
 
-**Plans**: 4/7 plans executed
+**Plans**: 5/7 plans executed
 Plans:
 **Wave 1**
 
@@ -51,7 +51,7 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 01-05-PLAN.md — Package list page, WhatsApp/Facebook CTAs, Walking Skeleton verification
+- [x] 01-05-PLAN.md — Package list page, WhatsApp/Facebook CTAs, Walking Skeleton verification
 
 **Wave 5** *(blocked on Wave 4 completion)*
 
@@ -118,7 +118,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Public Catalog & Inquiry Entry Point | 4/7 | In Progress|  |
+| 1. Public Catalog & Inquiry Entry Point | 5/7 | In Progress|  |
 | 2. Admin Access & Package Management | 0/TBD | Not started | - |
 | 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |

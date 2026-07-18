@@ -6,14 +6,14 @@ current_phase: 01
 current_phase_name: public-catalog-inquiry-entry-point
 status: executing
 stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-07-18T12:38:35.503Z"
+last_updated: "2026-07-18T12:49:59.474Z"
 last_activity: 2026-07-18
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 ## Current Position
 
 Phase: 01 (public-catalog-inquiry-entry-point) — EXECUTING
-Plan: 5 of 7
+Plan: 6 of 7
 Status: Ready to execute
 Last activity: 2026-07-18 — Phase 01 execution started
 
@@ -59,6 +59,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 01 P02 | 40min | 2 tasks | 4 files |
 | Phase 01 P04 | 15min | 2 tasks | 4 files |
 | Phase 01 P03 | 20min | 2 tasks | 8 files |
+| Phase 01 P05 | 24min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,8 @@ Recent decisions affecting current work:
 - [Phase 01-04]: Honeypot field hidden via Tailwind sr-only (not display:none) per Formspree's own anti-bot guidance
 - [Phase 01-03]: Seed script falls back to NEXT_PUBLIC_SUPABASE_URL when server-only SUPABASE_URL is unset, since both point at the same Supabase project
 - [Phase 01-03]: Polyfilled globalThis.WebSocket from the already-installed undici package (not a new dependency) to work around @supabase/supabase-js's unconditional RealtimeClient construction on Node 20
+- [Phase 01-05]: Hand-authored inline SVG for Facebook brand icon since lucide-react 1.25.0 ships no brand/logo icons
+- [Phase 01-05]: Used stretched-link card pattern (Link + after:absolute after:inset-0 + relative z-10 CTAs) so the whole PackageCard is clickable without nesting anchors
 
 ### Pending Todos
 
@@ -107,6 +110,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-18T12:38:35.499Z
+Last session: 2026-07-18T12:49:22.091Z
 Stopped at: Completed 01-03-PLAN.md
 Resume file: None
