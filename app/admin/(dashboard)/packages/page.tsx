@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { SortablePackageList } from "@/components/admin/sortable-package-list";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ export type AdminPackageListItem = {
 export default async function AdminPackagesPage() {
   // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
   // second independent layer.
-  await requirePermission("can_manage_packages");
+  await requirePermissionOrRedirect("can_manage_packages");
 
   const supabase = await createClient();
 

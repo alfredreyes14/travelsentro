@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { PackageForm } from "@/components/admin/package-form";
 import type { PackageFormValues } from "@/components/admin/package-form-schema";
@@ -34,7 +34,7 @@ export default async function EditPackagePage({
 }) {
   // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
   // second independent layer (T-02-18).
-  await requirePermission("can_manage_packages");
+  await requirePermissionOrRedirect("can_manage_packages");
 
   const { id } = await params;
   const supabase = await createClient();

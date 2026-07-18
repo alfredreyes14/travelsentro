@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requireAdmin } from "@/lib/auth/dal";
+import { requireAdminOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { UsersTable } from "@/components/admin/users-table";
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function UsersPage() {
   // AUTH-05 — a Staff member navigating here directly (bypassing D-13's
   // hidden nav link) is rejected here, independent of the nav hiding.
-  await requireAdmin();
+  await requireAdminOrRedirect();
 
   const supabase = await createClient();
   const { data: profiles, error } = await supabase

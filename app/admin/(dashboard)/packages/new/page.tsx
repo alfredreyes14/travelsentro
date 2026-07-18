@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { PackageForm } from "@/components/admin/package-form";
 
 export const metadata: Metadata = {
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default async function NewPackagePage() {
   // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
   // second independent layer (T-02-18).
-  await requirePermission("can_manage_packages");
+  await requirePermissionOrRedirect("can_manage_packages");
 
   return (
     <div className="flex flex-col gap-6">

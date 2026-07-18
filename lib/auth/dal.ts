@@ -72,3 +72,39 @@ export async function requireAdmin(): Promise<Profile> {
 
   return profile;
 }
+
+/**
+ * redirect()-based counterpart to requirePermission(), for use in Server
+ * Component page renders (not Server Actions). Mirrors getProfile()'s
+ * existing redirect("/admin/login") pattern above -- redirect() is called
+ * as a bare statement, never inside a try/catch, so Next's internal
+ * NEXT_REDIRECT signal is never swallowed. requirePermission() itself is
+ * left untouched for actions/{packages,users,package-photos}.ts's Server
+ * Action call sites, which depend on the throw being a catchable rejection.
+ */
+export async function requirePermissionOrRedirect(
+  perm: Permission
+): Promise<Profile> {
+  const profile = await getProfile();
+
+  if (profile.role !== "admin" && !profile[perm]) {
+    redirect("/admin/forbidden");
+  }
+
+  return profile;
+}
+
+/**
+ * redirect()-based counterpart to requireAdmin(), for use in Server
+ * Component page renders (not Server Actions). See
+ * requirePermissionOrRedirect() above for rationale.
+ */
+export async function requireAdminOrRedirect(): Promise<Profile> {
+  const profile = await getProfile();
+
+  if (profile.role !== "admin") {
+    redirect("/admin/forbidden");
+  }
+
+  return profile;
+}
