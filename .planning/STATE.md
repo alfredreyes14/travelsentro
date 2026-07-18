@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: admin-access-package-management
 status: executing
-stopped_at: Gap-closure plan 02-09 created (AUTH-05 redirect-based re-fix); pending execution
-last_updated: "2026-07-19T00:00:00.000Z"
-last_activity: 2026-07-19
-last_activity_desc: Re-verification found 1 remaining gap (AUTH-05); gap-closure plan 02-09 created
+stopped_at: Completed 02-09-PLAN.md (AUTH-05 gap closure -- redirect-based permission gate)
+last_updated: "2026-07-18T18:29:41.160Z"
+last_activity: 2026-07-18
+last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 15
-  completed_plans: 15
+  total_plans: 16
+  completed_plans: 16
   percent: 50
 ---
 
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 
 ## Current Position
 
-Phase: 02 (admin-access-package-management) — GAP CLOSURE IN PROGRESS
-Plan: 9 of 9 (02-09 created, not yet executed)
-Status: Ready to execute — 02-09-PLAN.md closes the one remaining re-verification gap (AUTH-05)
-Last activity: 2026-07-19 — Re-verification found 1 remaining gap (AUTH-05); gap-closure plan 02-09 created
+Phase: 02 (admin-access-package-management) — COMPLETE (9/9 plans, including gap-closure plan 02-09 closing AUTH-05)
+Plan: 9 of 9
+Status: Phase 02 complete, ready for next phase
+Last activity: 2026-07-19 — Completed 02-09-PLAN.md (AUTH-05 gap closure)
 
 Progress: [█████░░░░░] 50%
 
@@ -70,6 +70,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P06 | 20min | 2 tasks | 4 files |
 | Phase 02 P07 | 15min | 3 tasks | 7 files |
 | Phase 02 P08 | 10min | 2 tasks | 3 files |
+| Phase 02 P09 | 12min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -112,6 +113,8 @@ Recent decisions affecting current work:
 - [Phase 02-07]: app/admin/auth/confirm/route.ts redirect targets are both hardcoded from request.url, never a query-supplied value, closing an open-redirect surface
 - [Phase 02-08]: Chose a genuine atomic-transaction RPC over reordering to insert-first-then-delete-old, because faq_facts.package_id carries a UNIQUE constraint that a naive insert-before-delete would violate
 - [Phase 02-08]: write_package_children() is security invoker (not security definer) so it stays subject to existing can_manage_packages-scoped RLS policies -- no privilege escalation introduced
+- [Phase 02-09]: Chose redirect()-based permission gate over retrying throw+error.tsx or Next 16's experimental forbidden() primitive, mirroring dal.ts's already-proven redirect("/admin/login") pattern
+- [Phase 02-09]: Left requirePermission()/requireAdmin() and error.tsx untouched -- Server Actions and 02-07's client-side try/catch still depend on the throw-based mechanism
 
 ### Pending Todos
 
@@ -140,6 +143,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-18T17:18:46.043Z
-Stopped at: Completed 02-08-PLAN.md
+Last session: 2026-07-18T18:29:41.156Z
+Stopped at: Completed 02-09-PLAN.md (AUTH-05 gap closure -- redirect-based permission gate)
 Resume file: None
