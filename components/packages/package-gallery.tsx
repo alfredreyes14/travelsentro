@@ -73,8 +73,8 @@ export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
                 </CarouselItem>
               ))}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            <CarouselPrevious className="left-2 sm:-left-12" />
+            <CarouselNext className="right-2 sm:-right-12" />
           </Carousel>
         </DialogContent>
       </Dialog>
