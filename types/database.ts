@@ -223,6 +223,16 @@ export type Database = {
     }
     Functions: {
       has_permission: { Args: { perm: string; uid: string }; Returns: boolean }
+      write_package_children: {
+        Args: {
+          p_best_time_to_go: string
+          p_group_size: string
+          p_inclusions: Json
+          p_itinerary: Json
+          p_package_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
