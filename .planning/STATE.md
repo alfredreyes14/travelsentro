@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 01
 current_phase_name: public-catalog-inquiry-entry-point
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-07-18T11:45:20.891Z"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-07-18T12:26:41.161Z"
 last_activity: 2026-07-18
 last_activity_desc: Phase 01 execution started
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 7
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 ## Current Position
 
 Phase: 01 (public-catalog-inquiry-entry-point) — EXECUTING
-Plan: 2 of 7
+Plan: 3 of 7
 Status: Ready to execute
 Last activity: 2026-07-18 — Phase 01 execution started
 
@@ -56,6 +56,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 55min | 2 tasks | 37 files |
+| Phase 01 P02 | 40min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,7 @@ Recent decisions affecting current work:
 - [Phase 01]: Used shadcn CLI's current default preset (base-nova, @base-ui/react primitives) instead of the classic Radix-based style=default/base-color=neutral flow — file inventory and API surface still match UI-SPEC.md's Registry Safety table exactly
 - [Phase 01]: Hand-authored components/ui/form.tsx: this shadcn CLI's add form registry item is an empty stub (superseded by the Field primitive), so the classic react-hook-form Form/FormField/FormControl/FormMessage wrapper required by D-06 was authored directly
 - [Phase 01]: Mapped UI-SPEC.md's Dominant/Secondary/Accent color roles onto shadcn's existing --background/--secondary/--primary tokens rather than adding parallel brand-specific variable names
+- [Phase 01-02]: Verified RLS/storage policies live via direct anon-key PostgREST/Storage HTTP calls, not just static SQL inspection — Confirms the migration behaves correctly on the actual remote project, not just that the SQL text is well-formed
 
 ### Pending Todos
 
@@ -99,6 +101,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-18T11:45:20.883Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-07-18T12:26:41.157Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
