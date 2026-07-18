@@ -67,7 +67,7 @@ export async function requestPasswordReset(values: {
   // leak account existence via a different response for unknown emails
   // (T-02-09).
   await supabase.auth.resetPasswordForEmail(values.email, {
-    redirectTo: `${origin}/admin/reset-password`,
+    redirectTo: `${origin}/admin/auth/confirm`,
   });
 
   return { ok: true };
