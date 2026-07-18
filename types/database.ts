@@ -142,6 +142,7 @@ export type Database = {
       packages: {
         Row: {
           created_at: string
+          deleted_at: string | null
           duration_days: number
           duration_label: string | null
           from_price: number
@@ -154,6 +155,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           duration_days: number
           duration_label?: string | null
           from_price: number
@@ -166,6 +168,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           duration_days?: number
           duration_label?: string | null
           from_price?: number
@@ -178,12 +181,48 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          can_edit_crm: boolean
+          can_manage_packages: boolean
+          can_message_customers: boolean
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          name: string | null
+          role: string
+        }
+        Insert: {
+          can_edit_crm?: boolean
+          can_manage_packages?: boolean
+          can_message_customers?: boolean
+          created_at?: string
+          email: string
+          id: string
+          is_active?: boolean
+          name?: string | null
+          role?: string
+        }
+        Update: {
+          can_edit_crm?: boolean
+          can_manage_packages?: boolean
+          can_message_customers?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          role?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_permission: { Args: { perm: string; uid: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
