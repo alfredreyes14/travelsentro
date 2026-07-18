@@ -20,19 +20,37 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Database } from '../types/database'
 
-const SUPABASE_URL = process.env.SUPABASE_URL
+/**
+ * Node 20 has no native global WebSocket (added in Node 22); @supabase/supabase-js
+ * always constructs a RealtimeClient, which requires one even though this script
+ * never uses realtime features. Polyfill from `undici` (already present via
+ * Next.js's dependency tree) rather than adding a new dependency.
+ */
+async function ensureWebSocketPolyfill() {
+  if (typeof globalThis.WebSocket === 'undefined') {
+    const { WebSocket } = await import('undici')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(globalThis as any).WebSocket = WebSocket
+  }
+}
+
+// Prefer the server-only SUPABASE_URL; fall back to NEXT_PUBLIC_SUPABASE_URL
+// since both point at the same project and only the key differs in privilege.
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error(
-    'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in the environment. ' +
+    'Missing SUPABASE_URL (or NEXT_PUBLIC_SUPABASE_URL) or SUPABASE_SERVICE_ROLE_KEY in the environment. ' +
       'Ensure .env.local is populated and run via `npm run seed`.'
   )
 }
 
-const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-})
+// Created in main(), after the WebSocket polyfill is installed (see
+// ensureWebSocketPolyfill below) — @supabase/supabase-js constructs a
+// RealtimeClient as soon as createClient() runs, which requires a global
+// WebSocket constructor to exist even though this script never uses realtime.
+let supabase: ReturnType<typeof createClient<Database>>
 
 const SEED_ASSETS_DIR = join(process.cwd(), 'supabase', 'seed-assets')
 
@@ -310,6 +328,12 @@ async function seedPackage(pkg: SeedPackage) {
 }
 
 async function seed() {
+  await ensureWebSocketPolyfill()
+
+  supabase = createClient<Database>(SUPABASE_URL as string, SUPABASE_SERVICE_ROLE_KEY as string, {
+    auth: { persistSession: false },
+  })
+
   console.log(`Seeding ${SEED_PACKAGES.length} placeholder packages...`)
   for (const pkg of SEED_PACKAGES) {
     await seedPackage(pkg)
