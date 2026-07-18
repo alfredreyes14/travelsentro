@@ -76,7 +76,7 @@ Plans:
   3. A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer
   4. Admin/Staff with "manage packages" permission can create, edit, delete, publish/unpublish, feature, and reorder tour packages, and those changes are reflected on the public site from Phase 1
 
-**Plans**: 6/6 plans complete
+**Plans**: 6/8 plans complete (2 gap-closure plans pending — see 02-VERIFICATION.md, 02-REVIEW.md)
 
 Plans:
 **Wave 1**
@@ -99,6 +99,11 @@ Plans:
 **Wave 5** *(blocked on Wave 4 completion)*
 
 - [x] 02-06-PLAN.md — Package photo manager (upload/reorder/delete)
+
+**Gap Closure — Wave 1** *(parallel; addresses 02-VERIFICATION.md's gap plus 02-REVIEW.md's CR-01/CR-02/WR-06)*
+
+- [ ] 02-07-PLAN.md — Graceful permission-denied UX (error boundary + optimistic-UI catch) + password-reset PKCE code exchange fix
+- [ ] 02-08-PLAN.md — Atomic package-children write (migration + RPC), [BLOCKING] push
 
 **UI hint**: yes
 
@@ -142,6 +147,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
-| 2. Admin Access & Package Management | 6/6 | Gaps found | - |
+| 2. Admin Access & Package Management | 6/8 | Gap closure planned | - |
 | 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
