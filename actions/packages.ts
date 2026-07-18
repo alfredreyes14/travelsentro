@@ -13,79 +13,50 @@ const GENERIC_ERROR_MESSAGE =
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 /**
- * Deletes and reinserts a package's itinerary_days/package_inclusions/
- * faq_facts rows, exactly mirroring scripts/seed.ts's delete-then-reinsert
- * pattern (used by both createPackage — against an empty set — and
- * updatePackage). day_number/kind/sort_order are all derived from array
- * position, never user-entered fields.
+ * Atomically replaces a package's itinerary_days/package_inclusions/
+ * faq_facts rows via the write_package_children() RPC (used by both
+ * createPackage — against an empty set — and updatePackage). The RPC runs
+ * the delete+reinsert sequence inside a single Postgres transaction, so a
+ * failed insert can never leave the package's pre-existing content
+ * partially deleted (02-REVIEW.md CR-02). day_number/kind/sort_order are
+ * all derived from array position, never user-entered fields.
  */
 async function writePackageChildren(
   supabase: SupabaseServerClient,
   packageId: string,
   values: PackageFormValues
 ): Promise<ActionResult> {
-  const [delItinerary, delInclusions, delFaq] = await Promise.all([
-    supabase.from("itinerary_days").delete().eq("package_id", packageId),
-    supabase.from("package_inclusions").delete().eq("package_id", packageId),
-    supabase.from("faq_facts").delete().eq("package_id", packageId),
-  ]);
-
-  if (delItinerary.error || delInclusions.error || delFaq.error) {
-    return { ok: false, error: GENERIC_ERROR_MESSAGE };
-  }
-
-  if (values.itinerary.length > 0) {
-    const { error: itineraryError } = await supabase
-      .from("itinerary_days")
-      .insert(
-        values.itinerary.map((day, index) => ({
-          package_id: packageId,
-          day_number: index + 1,
-          title: day.title,
-          description: day.description,
-        }))
-      );
-    if (itineraryError) {
-      return { ok: false, error: GENERIC_ERROR_MESSAGE };
-    }
-  }
-
   const inclusionRows = [
     ...values.inclusions.map((item, index) => ({
-      package_id: packageId,
       kind: "included",
       label: item.label,
       sort_order: index,
     })),
     ...values.exclusions.map((item, index) => ({
-      package_id: packageId,
       kind: "excluded",
       label: item.label,
       sort_order: index,
     })),
     ...values.bringItems.map((item, index) => ({
-      package_id: packageId,
       kind: "bring",
       label: item.label,
       sort_order: index,
     })),
   ];
 
-  if (inclusionRows.length > 0) {
-    const { error: inclusionsError } = await supabase
-      .from("package_inclusions")
-      .insert(inclusionRows);
-    if (inclusionsError) {
-      return { ok: false, error: GENERIC_ERROR_MESSAGE };
-    }
-  }
-
-  const { error: faqError } = await supabase.from("faq_facts").insert({
-    package_id: packageId,
-    best_time_to_go: values.bestTimeToGo,
-    group_size: values.groupSize,
+  const { error } = await supabase.rpc("write_package_children", {
+    p_package_id: packageId,
+    p_itinerary: values.itinerary.map((day, index) => ({
+      day_number: index + 1,
+      title: day.title,
+      description: day.description,
+    })),
+    p_inclusions: inclusionRows,
+    p_best_time_to_go: values.bestTimeToGo,
+    p_group_size: values.groupSize,
   });
-  if (faqError) {
+
+  if (error) {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
