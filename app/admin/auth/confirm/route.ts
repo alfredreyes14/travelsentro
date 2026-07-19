@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     // fixed literal and the request path.
     console.error("[admin-auth-confirm] missing code param", {
       path: request.nextUrl.pathname,
+      userAgent: request.headers.get("user-agent"),
     });
     return NextResponse.redirect(new URL("/admin/login", request.url));
   }
@@ -30,6 +31,15 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (!error) {
+    // 02-18 (AUTH-01/D-06 gap closure, hypothesis-testing diagnostic only):
+    // logs the User-Agent of a SUCCESSFUL exchange so a future live retest
+    // can compare it against a later failed exchange's User-Agent, to test
+    // whether a non-human client (e.g. an email link-scanner/prefetcher)
+    // consumed the single-use code before a human's click failed on it.
+    console.log("[admin-auth-confirm] exchangeCodeForSession succeeded", {
+      userAgent: request.headers.get("user-agent"),
+      timestamp: new Date().toISOString(),
+    });
     return NextResponse.redirect(
       new URL("/admin/reset-password", request.url)
     );
@@ -42,6 +52,7 @@ export async function GET(request: NextRequest) {
     message: error.message,
     status: error.status,
     code: error.code,
+    userAgent: request.headers.get("user-agent"),
   });
 
   // Missing or invalid code — never fall through to establishing a session.
