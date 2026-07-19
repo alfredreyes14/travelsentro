@@ -76,7 +76,7 @@ Plans:
   3. A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer
   4. Admin/Staff with "manage packages" permission can create, edit, delete, publish/unpublish, feature, and reorder tour packages, and those changes are reflected on the public site from Phase 1
 
-**Plans**: 9/10 plans complete
+**Plans**: 10/10 plans complete
 
 Plans:
 **Wave 1**
@@ -111,7 +111,7 @@ Plans:
 
 **Gap Closure — Wave 3** *(closes 02-VERIFICATION.md round-3's last remaining gap / 02-REVIEW.md CR-01 — a newly-discovered proxy allow-list gap in the same D-06 password-reset flow, distinct from AUTH-05 and the earlier config.toml fix)*
 
-- [ ] 02-10-PLAN.md — Add /admin/auth/confirm to proxy.ts's UNGATED_ADMIN_PATHS + method-based live-HTTP reachability script (dev + production build)
+- [x] 02-10-PLAN.md — Add /admin/auth/confirm to proxy.ts's UNGATED_ADMIN_PATHS + method-based live-HTTP reachability script (dev + production build)
 
 **UI hint**: yes
 
@@ -155,6 +155,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
-| 2. Admin Access & Package Management | 9/9 | Complete   | 2026-07-18 |
+| 2. Admin Access & Package Management | 10/10 | Complete   | 2026-07-18 |
 | 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
