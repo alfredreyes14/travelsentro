@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: resolved
 phase: 02-admin-access-package-management
 source: [02-VERIFICATION.md]
 started: 2026-07-19T03:28:49Z
-updated: 2026-07-19T05:35:00Z
+updated: 2026-07-19T06:30:00Z
 ---
 
 ## Current Test
@@ -60,7 +60,8 @@ blocked: 1
 ## Gaps
 
 - truth: "Reset email arrives with a working link; the code-exchange lands the user authenticated on /admin/reset-password (not /admin/login); the new password logs in successfully."
-  status: failed
+  status: resolved
+  resolution: "02-12-PLAN.md's Management API re-save fixed the diagnosed root cause. Developer confirmed live with a real email: redirect_to=http://localhost:3000/admin/auth/confirm (intact), and the full reset (new password + login) succeeded. NOTE: two new, separately-tracked findings surfaced during this same live retest (unstyled /admin/reset-password rendering; a second independently-requested reset link bouncing to /admin/login) -- see 02-12-SUMMARY.md, STATE.md, and .planning/debug/resolved/password-reset-bounce-to-login.md's caveat field. Neither is root-caused yet; both need their own /gsd-debug session."
   reason: "User reported: I received the email but when I click the link, I got bounced back to login page. I clicked the link from the email tab (same browser, not a different one) then I got redirected to login."
   severity: major
   test: 2
@@ -76,7 +77,8 @@ blocked: 1
   debug_session: ".planning/debug/password-reset-bounce-to-login.md"
 
 - truth: "Admin/Staff with 'manage packages' permission can create tour packages via the package-form UI."
-  status: failed
+  status: resolved
+  resolution: "02-11-PLAN.md wired onInvalid into form.handleSubmit, made Tabs controlled with auto-switch to the first errored tab, and added keepMounted to all 4 tabs. All automated acceptance criteria plus npm run lint/build passed. Live browser retest of Test 5 (and the newly-unblocked Test 6, photo upload) not yet explicitly confirmed by the developer in this session -- carried forward to end-of-phase human verification per human_verify_mode: end-of-phase."
   reason: "User reported: There is no save or publish button. Just create package, nothing happens when I click it."
   severity: major
   test: 5
@@ -94,7 +96,8 @@ blocked: 1
   debug_session: ".planning/debug/create-package-button-noop.md"
 
 - truth: "Admin panel matches TravelSentro brand tokens (teal/orange sidebar, Prata/Inter typography) consistently across all screens."
-  status: failed
+  status: resolved
+  resolution: "02-13-PLAN.md updated app/globals.css's --primary/--secondary and 4 derived --sidebar-* tokens to #021f4a/#f49314, fixed components/packages/checklist.tsx's hardcoded hex drift, and updated both Phase 1/2 UI-SPEC.md docs. npm run build passed. Full visual retest carried forward to end-of-phase human verification per human_verify_mode: end-of-phase."
   reason: "User reported: Use #021f4a for primary and #f49314 for secondary. Current tokens in app/globals.css: --primary: #f5793a, --secondary: #0e5c63, --sidebar: #0e5c63 (same as --secondary), --sidebar-primary: #f5793a (same as --primary). User's requested values differ from both current hex codes and, for --primary specifically, from the previously documented UI-SPEC accent-orange role."
   severity: cosmetic
   test: 7
