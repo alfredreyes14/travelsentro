@@ -68,11 +68,11 @@ Only 2 weights used system-wide: **400 (regular)** for body/label text, **600 (s
 | Role | Value | Usage |
 |------|-------|-------|
 | Dominant (60%) | `#FAF7F2` (warm off-white / sand) | Page background, package detail body surface |
-| Secondary (30%) | `#0E5C63` (deep ocean teal) | Header/nav bar, footer, package card imagery overlay scrim, section dividers |
-| Accent (10%) | `#F5793A` (sunset coral/orange) | See explicit reserved-for list below |
+| Secondary (30%) | `#F49314` (marigold orange) | Header/nav bar, footer, package card imagery overlay scrim, section dividers |
+| Accent (10%) | `#021F4A` (deep navy blue) | See explicit reserved-for list below |
 | Destructive | `#DC2626` (red) | Not used in this phase (public browse/inquire only — no delete/edit actions exist here). Declared now for visual consistency with Phase 2+ admin panel. |
 
-Accent (`#F5793A`) reserved for:
+Accent (`#021F4A`) reserved for:
 - "Send Inquiry" form submit button (primary CTA on both per-package and Contact Us forms)
 - "From ₱X" price emphasis text/badge on package list cards and detail page
 - "Featured" badge/ribbon on featured packages (PKG-05 will populate this in Phase 2; Phase 1 renders the badge if seed data marks a package featured)
