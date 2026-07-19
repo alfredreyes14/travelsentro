@@ -76,7 +76,7 @@ Plans:
   3. A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer
   4. Admin/Staff with "manage packages" permission can create, edit, delete, publish/unpublish, feature, and reorder tour packages, and those changes are reflected on the public site from Phase 1
 
-**Plans**: 15/15 plans complete
+**Plans**: 15/18 plans complete
 
 Plans:
 
@@ -122,6 +122,12 @@ Plans:
 - [x] 02-11-PLAN.md — Fix create-package button silent validation failure (onInvalid + auto-tab-switch + keepMounted)
 - [x] 02-12-PLAN.md — Automated Supabase Management API re-save attempt + human-action fallback for the upstream password-reset redirect_to defect
 - [x] 02-13-PLAN.md — Update brand color tokens (--primary #021F4A, --secondary #F49314) across globals.css, checklist.tsx, and both UI-SPEC docs
+
+**Gap Closure — Wave 5** *(closes 02-VERIFICATION.md round 6's gaps: 02-REVIEW.md CR-01 photo-upload body-size limit, CR-02 self-/last-admin deactivation lockout; 02-18 is a hypothesis-testing diagnostic only for the still-unresolved password-reset second-link bounce, not a confirmed fix)*
+
+- [ ] 02-16-PLAN.md — Raise Server Action body size limit (next.config.ts) + chunk photo uploads to one Server Action call per file
+- [ ] 02-17-PLAN.md — Reject self-/last-admin deactivation in deactivateAccount() + harden seed-admin.ts's break-glass recovery check
+- [ ] 02-18-PLAN.md — Add User-Agent diagnostic logging to the password-reset confirm route (hypothesis test only, not a fix)
 
 **UI hint**: yes
 
