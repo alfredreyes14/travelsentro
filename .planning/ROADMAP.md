@@ -76,7 +76,7 @@ Plans:
   3. A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer
   4. Admin/Staff with "manage packages" permission can create, edit, delete, publish/unpublish, feature, and reorder tour packages, and those changes are reflected on the public site from Phase 1
 
-**Plans**: 15/18 plans complete
+**Plans**: 16/18 plans executed
 
 Plans:
 
@@ -125,7 +125,7 @@ Plans:
 
 **Gap Closure — Wave 5** *(closes 02-VERIFICATION.md round 6's gaps: 02-REVIEW.md CR-01 photo-upload body-size limit, CR-02 self-/last-admin deactivation lockout; 02-18 is a hypothesis-testing diagnostic only for the still-unresolved password-reset second-link bounce, not a confirmed fix)*
 
-- [ ] 02-16-PLAN.md — Raise Server Action body size limit (next.config.ts) + chunk photo uploads to one Server Action call per file
+- [x] 02-16-PLAN.md — Raise Server Action body size limit (next.config.ts) + chunk photo uploads to one Server Action call per file
 - [ ] 02-17-PLAN.md — Reject self-/last-admin deactivation in deactivateAccount() + harden seed-admin.ts's break-glass recovery check
 - [ ] 02-18-PLAN.md — Add User-Agent diagnostic logging to the password-reset confirm route (hypothesis test only, not a fix)
 
@@ -171,6 +171,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
-| 2. Admin Access & Package Management | 15/15 | Complete   | 2026-07-19 |
+| 2. Admin Access & Package Management | 16/18 | In Progress|  |
 | 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
