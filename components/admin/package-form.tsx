@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
@@ -56,6 +56,24 @@ function slugify(value: string): string {
 }
 
 /**
+ * Maps each tab's string value to the PackageFormValues field names rendered
+ * on it, used by onInvalid to find and switch to the first tab containing a
+ * validation error. Declaration order is the search order. The "photos" tab
+ * has no schema-backed fields and is intentionally excluded.
+ */
+const TAB_FIELD_MAP: Array<{
+  tab: string;
+  fields: Array<keyof PackageFormValues>;
+}> = [
+  { tab: "details", fields: ["name", "slug", "fromPrice", "durationDays", "durationLabel"] },
+  { tab: "itinerary", fields: ["itinerary"] },
+  {
+    tab: "inclusions",
+    fields: ["inclusions", "exclusions", "bringItems", "bestTimeToGo", "groupSize"],
+  },
+];
+
+/**
  * Tabbed create/edit form for a package's Details, Itinerary, Photos, and
  * Inclusions & FAQ content. `packageId` absent = create mode (submit calls
  * createPackage and redirects to the new edit page so the Photos tab has a
@@ -73,6 +91,7 @@ export function PackageForm({
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState("details");
   // Once the user hand-edits the slug, the name -> slug auto-suggestion on
   // blur stops overwriting it (still fully editable either way).
   const [slugTouched, setSlugTouched] = useState(
@@ -128,14 +147,27 @@ export function PackageForm({
     }
   }
 
+  function onInvalid(errors: FieldErrors<PackageFormValues>) {
+    const erroredTab = TAB_FIELD_MAP.find(({ fields }) =>
+      fields.some((field) => field in errors)
+    );
+    if (erroredTab) {
+      setActiveTab(erroredTab.tab);
+    }
+    toast.error("Please fix the highlighted fields before submitting.");
+  }
+
   return (
     <Form {...form}>
       <form
-        onSubmit={form.handleSubmit(onSubmit)}
+        onSubmit={form.handleSubmit(onSubmit, onInvalid)}
         className="flex flex-col gap-6"
         noValidate
       >
-        <Tabs defaultValue="details">
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as string)}
+        >
           <TabsList>
             <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
@@ -143,7 +175,11 @@ export function PackageForm({
             <TabsTrigger value="inclusions">Inclusions & FAQ</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="details" className="flex flex-col gap-4 pt-4">
+          <TabsContent
+            value="details"
+            keepMounted
+            className="flex flex-col gap-4 pt-4"
+          >
             <FormField
               control={form.control}
               name="name"
@@ -254,7 +290,11 @@ export function PackageForm({
             />
           </TabsContent>
 
-          <TabsContent value="itinerary" className="flex flex-col gap-4 pt-4">
+          <TabsContent
+            value="itinerary"
+            keepMounted
+            className="flex flex-col gap-4 pt-4"
+          >
             {itineraryArray.fields.map((field, index) => (
               <div
                 key={field.id}
@@ -310,7 +350,11 @@ export function PackageForm({
             </Button>
           </TabsContent>
 
-          <TabsContent value="photos" className="flex flex-col gap-4 pt-4">
+          <TabsContent
+            value="photos"
+            keepMounted
+            className="flex flex-col gap-4 pt-4"
+          >
             {packageId ? (
               <PhotoManager
                 packageId={packageId}
@@ -323,7 +367,11 @@ export function PackageForm({
             )}
           </TabsContent>
 
-          <TabsContent value="inclusions" className="flex flex-col gap-6 pt-4">
+          <TabsContent
+            value="inclusions"
+            keepMounted
+            className="flex flex-col gap-6 pt-4"
+          >
             <div className="flex flex-col gap-3">
               <h3 className="font-heading text-[16px] leading-[1.2] font-semibold">
                 Included
