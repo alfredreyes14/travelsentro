@@ -76,7 +76,7 @@ Plans:
   3. A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer
   4. Admin/Staff with "manage packages" permission can create, edit, delete, publish/unpublish, feature, and reorder tour packages, and those changes are reflected on the public site from Phase 1
 
-**Plans**: 11/13 plans executed
+**Plans**: 12/13 plans executed
 
 Plans:
 **Wave 1**
@@ -117,7 +117,7 @@ Plans:
 
 - [x] 02-11-PLAN.md — Fix create-package button silent validation failure (onInvalid + auto-tab-switch + keepMounted)
 - [ ] 02-12-PLAN.md — Automated Supabase Management API re-save attempt + human-action fallback for the upstream password-reset redirect_to defect
-- [ ] 02-13-PLAN.md — Update brand color tokens (--primary #021F4A, --secondary #F49314) across globals.css, checklist.tsx, and both UI-SPEC docs
+- [x] 02-13-PLAN.md — Update brand color tokens (--primary #021F4A, --secondary #F49314) across globals.css, checklist.tsx, and both UI-SPEC docs
 
 **UI hint**: yes
 
@@ -161,6 +161,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
-| 2. Admin Access & Package Management | 11/13 | In Progress|  |
+| 2. Admin Access & Package Management | 12/13 | In Progress|  |
 | 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
