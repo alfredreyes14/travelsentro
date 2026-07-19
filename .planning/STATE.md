@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: admin-access-package-management
 status: executing
-stopped_at: Completed 02-15-PLAN.md (password-reset diagnostic instrumentation -- confirm-route logging added, code_verifier hypothesis refuted, reset-password bare-HTML symptom non-reproduced against dev cache and prod build)
-last_updated: "2026-07-19T15:10:36.076Z"
+stopped_at: Completed 02-17-PLAN.md (self-/last-admin deactivation lockout guard -- deactivateAccount() rejects self/last-admin deactivation, seed-admin.ts recovery check requires is_active)
+last_updated: "2026-07-19T15:14:16.894Z"
 last_activity: 2026-07-19
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 25
-  completed_plans: 23
+  completed_plans: 24
   percent: 25
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 ## Current Position
 
 Phase: 02 (admin-access-package-management) — EXECUTING
-Plan: 2 of 18
+Plan: 3 of 18
 Status: Ready to execute
 Last activity: 2026-07-19 — Phase 02 execution started
 
@@ -78,6 +78,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P14 | 6min | 1 tasks | 2 files |
 | Phase 02 P15 | 15min | 2 tasks | 1 files |
 | Phase 02 P16 | 12min | 2 tasks | 2 files |
+| Phase 02 P17 | 6min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,8 @@ Recent decisions affecting current work:
 - [Phase ?]: [Phase 02-15] Refuted the stale code_verifier cookie hypothesis via direct read of @supabase/auth-js's _exchangeCodeForSession -- removeItemAsync runs on both success and failure paths, so the SDK already self-cleans on every attempt; no cookie-clearing patch applied
 - [Phase ?]: [Phase 02-15] /admin/reset-password bare-HTML symptom did not reproduce against a clean dev cache or a production build -- closed by elimination, no code change made
 - [Phase ?]: [Phase 02-16]: Raised experimental.serverActions.bodySizeLimit to a bounded '10mb' (not unlimited) combined with per-file sequential Server Action calls (never Promise.all, since uploadPhotos computes display_order from a freshly-queried max at call time) -- closes 02-REVIEW.md CR-01
+- [Phase ?]: [Phase 02-17]: deactivateAccount() self-deactivation guard runs before the last-remaining-admin count query (cheaper check first); self-deactivation is rejected unconditionally regardless of admin count
+- [Phase ?]: [Phase 02-17]: Last-admin count query excludes the target id from the active-admin count (role='admin', is_active=true, id != target) rather than special-casing the target's own role, so it works whether the target is admin or staff
 
 ### Pending Todos
 
@@ -161,7 +164,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-19T15:10:01.514Z
-Stopped at: Completed 02-15-PLAN.md (password-reset diagnostic instrumentation -- confirm-route logging added, code_verifier hypothesis refuted, reset-password bare-HTML symptom non-reproduced against dev cache and prod build)
+Last session: 2026-07-19T15:14:16.890Z
+Stopped at: Completed 02-17-PLAN.md (self-/last-admin deactivation lockout guard -- deactivateAccount() rejects self/last-admin deactivation, seed-admin.ts recovery check requires is_active)
 Resume file: 
 None
