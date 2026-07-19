@@ -15,6 +15,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  experimental: {
+    serverActions: {
+      // Default 1MB is too small for realistic phone/DSLR photos once
+      // base64-encoded (~33% overhead); raised to a bounded value rather
+      // than left unlimited (02-REVIEW.md CR-01, T-02-38). Paired with
+      // photo-manager.tsx sending one file per Server Action call so a
+      // single request never carries more than one photo's payload.
+      bodySizeLimit: "10mb",
+    },
+  },
 };
 
 export default nextConfig;
