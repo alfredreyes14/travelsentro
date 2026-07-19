@@ -5,6 +5,7 @@ const UNGATED_ADMIN_PATHS = [
   "/admin/login",
   "/admin/forgot-password",
   "/admin/reset-password",
+  "/admin/auth/confirm",
 ];
 
 /**

@@ -9,7 +9,8 @@
     "lint": "eslint",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "seed:admin": "tsx --env-file=.env.local scripts/seed-admin.ts",
-    "verify:permission-denial": "tsx --env-file=.env.local scripts/verify-permission-denial.ts"
+    "verify:permission-denial": "tsx --env-file=.env.local scripts/verify-permission-denial.ts",
+    "verify:auth-confirm": "tsx --env-file=.env.local scripts/verify-auth-confirm-reachable.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
