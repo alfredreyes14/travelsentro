@@ -16,16 +16,33 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
 
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-    if (!error) {
-      return NextResponse.redirect(
-        new URL("/admin/reset-password", request.url)
-      );
-    }
+  if (!code) {
+    // 02-15 (AUTH-01/D-06 gap closure): distinguishable diagnostic for the
+    // missing-code failure path — never logs a query-supplied value, only a
+    // fixed literal and the request path.
+    console.error("[admin-auth-confirm] missing code param", {
+      path: request.nextUrl.pathname,
+    });
+    return NextResponse.redirect(new URL("/admin/login", request.url));
   }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (!error) {
+    return NextResponse.redirect(
+      new URL("/admin/reset-password", request.url)
+    );
+  }
+
+  // 02-15 (AUTH-01/D-06 gap closure): distinguishable diagnostic for the
+  // exchange-failure path — only the SDK's own AuthError fields are logged,
+  // never the raw single-use PKCE code or any cookie/session content.
+  console.error("[admin-auth-confirm] exchangeCodeForSession failed", {
+    message: error.message,
+    status: error.status,
+    code: error.code,
+  });
 
   // Missing or invalid code — never fall through to establishing a session.
   return NextResponse.redirect(new URL("/admin/login", request.url));
