@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: admin-access-package-management
 status: executing
-stopped_at: "Completed 02-13-PLAN.md (brand color token update: navy/marigold + checklist.tsx hex drift fix)"
-last_updated: "2026-07-19T06:11:49.050Z"
+stopped_at: Completed 02-12-PLAN.md (password-reset redirect_to upstream fix -- confirmed resolved via real-email test; 2 new unrelated findings flagged for /gsd-debug)
+last_updated: "2026-07-19T06:27:24.357Z"
 last_activity: 2026-07-19
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 20
-  completed_plans: 19
-  percent: 25
+  completed_plans: 20
+  percent: 50
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 ## Current Position
 
 Phase: 02 (admin-access-package-management) — EXECUTING
-Plan: 3 of 13
+Plan: 4 of 13
 Status: Ready to execute
 Last activity: 2026-07-19 — Phase 02 execution started
 
@@ -74,6 +74,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P10 | 15min | 2 tasks | 3 files |
 | Phase 02 P11 | 12min | 1 tasks | 1 files |
 | Phase 02 P13 | 10min | 2 tasks | 4 files |
+| Phase 02 P12 | 15min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -122,6 +123,8 @@ Recent decisions affecting current work:
 - [Phase 02-11]: TAB_FIELD_MAP declared as an ordered array (not object) so onInvalid's tab search order matches visual tab order; photos tab excluded (no schema-backed fields)
 - [Phase 02-13]: Applied the color change globally (public site + admin panel) since --primary/--secondary are shared CSS custom properties with no stated exception for the public site in the user's UAT feedback
 - [Phase 02-13]: Fixed components/packages/checklist.tsx's hardcoded text-[#0E5C63] drift at its source (switched to text-secondary) rather than just updating the CSS variable
+- [Phase 02-12]: Password-reset redirect_to stripping (02-UAT.md Test 2, D-06) confirmed resolved via real end-to-end email test: redirect_to=/admin/auth/confirm survived, full reset (new password + login) succeeded.
+- [Phase 02-12]: Two new, unresolved findings discovered during 02-12 real-email verification (bare-HTML styling on /admin/reset-password; second freshly-requested reset link bounces to /admin/login) are explicitly out of scope and NOT fixed -- recommend separate /gsd-debug sessions for each, not silently dropped.
 
 ### Pending Todos
 
@@ -136,6 +139,7 @@ None yet.
 - Vercel Hobby plan is licensed non-commercial only — plan the Pro upgrade at/before public launch.
 - Webhook automation (Phase 3) needs idempotency (dedup key, mark-processed-before-side-effects) to avoid duplicate leads/auto-replies on at-least-once delivery.
 - Bulk messaging (Phase 4) needs consent/opt-out modeled in the CRM schema from Phase 3, not retrofitted later — PH Data Privacy Act and provider suspension risk.
+- Phase 02: two unresolved auth findings from 02-12 real-email verification need /gsd-debug -- (1) /admin/reset-password renders bare/unstyled HTML (persists after refresh, not FOUC; possible stale .next dev cache, unconfirmed); (2) a second freshly-requested password-reset link bounces to /admin/login instead of succeeding (possible session/cookie interference, unconfirmed).
 
 ## Deferred Items
 
@@ -150,6 +154,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-19T06:11:49.046Z
-Stopped at: Completed 02-13-PLAN.md (brand color token update: navy/marigold + checklist.tsx hex drift fix)
-Resume file: None
+Last session: 2026-07-19T06:27:24.353Z
+Stopped at: Completed 02-12-PLAN.md (password-reset redirect_to upstream fix -- confirmed resolved via real-email test; 2 new unrelated findings flagged for /gsd-debug)
+Resume file: 
