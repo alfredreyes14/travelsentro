@@ -1,187 +1,198 @@
 ---
 phase: 02-admin-access-package-management
-verified: 2026-07-19T20:10:00Z
+verified: 2026-07-19T08:00:00Z
 status: gaps_found
-score: "8/9 must-haves verified (1 failed: password-reset PKCE flow still non-functional end-to-end — new proxy-level regression, not the AUTH-05 item this round targeted)"
-behavior_unverified: 0
+score: "10/14 must-haves verified (1 present-behavior-unverified, 3 failed)"
+behavior_unverified: 1
 overrides_applied: 0
 re_verification:
-  previous_status: gaps_found
-  previous_score: "4/5 (this-round truths; 1 failed — AUTH-05 permission-denied crash)"
+  previous_status: human_needed
+  previous_score: "9/10 (round 4; 1 present-behavior-unverified — full real-email PKCE round trip)"
   gaps_closed:
-    - "AUTH-05 (permission-denied graceful UX): 02-09-PLAN.md's redirect()-based requirePermissionOrRedirect()/requireAdminOrRedirect() guards, wired to all 4 gated dashboard pages (packages/page.tsx, packages/new/page.tsx, packages/[id]/page.tsx, users/page.tsx) plus a new app/admin/(dashboard)/forbidden/page.tsx, INDEPENDENTLY re-proven in THIS verification pass — not merely trusted from 02-09-SUMMARY.md. I personally started a live `npm run dev` server, created a disposable zero-permission Staff session via scripts/verify-permission-denial.ts, and confirmed all 4 checks (3 denied routes + 1 Admin positive control) PASS (HTTP 200, /admin/forbidden, exact UI-SPEC denial copy present, no __next_error__ crash marker). I then independently repeated the exact same live test against a freshly built `npm run build && npm run start` production server — also 4/4 PASS. This is the third closure attempt for this exact defect class and the first to survive independent live re-verification in both modes."
-  gaps_remaining: []
-  regressions:
-    - "NEW (not a regression to a previously-VERIFIED must-have, but a newly surfaced defect in the same D-06/AUTH-01 password-reset flow this phase has now attempted to fix three separate times): lib/supabase/proxy.ts's UNGATED_ADMIN_PATHS allow-list omits /admin/auth/confirm. First flagged by 02-REVIEW.md's CR-01 (this review pass, not carried from a prior round) and independently reproduced live by this verifier — see gaps below."
+    - "UAT Test 5 (major, create-package form gives no feedback on validation failure): 02-11-PLAN.md wired form.handleSubmit(onSubmit, onInvalid) with a TAB_FIELD_MAP-driven auto-tab-switch and toast.error, plus keepMounted on all 4 TabsContent panels. Verified by this session directly reading components/admin/package-form.tsx and components/ui/tabs.tsx: onInvalid searches TAB_FIELD_MAP in declared order and calls setActiveTab; 4x keepMounted, 4x toast.error, 1x value={activeTab}, matching 02-11-SUMMARY.md's claimed grep counts exactly. npm run build and lint both clean. NOT yet confirmed by a live browser retest this session (see behavior_unverified_items) — code-level fix is real and correctly wired, but the actual runtime state transition (submit invalid form -> toast appears -> tab switches) has not been exercised by any test."
+    - "UAT Test 7 (cosmetic, brand colors): 02-13-PLAN.md updated app/globals.css's --primary/--secondary (and 4 derived --sidebar-* tokens) to #021f4a/#f49314 and fixed components/packages/checklist.tsx's hardcoded text-[#0E5C63] drift to text-secondary. Verified by this session directly reading app/globals.css (line 63: --primary: #021f4a; line 65: --secondary: #f49314; sidebar tokens at lines 84-90 all correctly derived) and checklist.tsx (ICON_COLORS now text-secondary). grep -rni for the old hex values (f5793a, 0e5c63) across app/, components/, lib/ returns zero matches. 01-UI-SPEC.md and 02-UI-SPEC.md both updated to the new hex values. This is a CSS custom-property value, not a runtime code branch, so direct source inspection is authoritative proof — not treated as behavior-dependent."
+    - "UAT Test 2 (major, password-reset email link bounced to login) — ORIGINAL diagnosed defect only: 02-12-PLAN.md's Management API re-save + the developer's own real-email test confirmed the specific redirect_to-stripping defect (upstream Supabase platform behavior, not app code) is fixed: a real emailed link's redirect_to=http://localhost:3000/admin/auth/confirm survived intact, and a full reset (new password + login) succeeded end-to-end. This specific, originally-diagnosed root cause is genuinely closed."
+  gaps_remaining:
+    - "Two NEW, distinct findings surfaced during 02-12's same real-email verification session are NOT fixed and NOT closed by 02-12 or any later plan in this phase (see gaps below): (1) /admin/reset-password renders bare/unstyled HTML in some observed sessions; (2) a second, independently-requested password-reset link bounces to /admin/login instead of succeeding."
+    - "02-REVIEW.md's CR-01 (Critical): SortablePackageList's local items state is never re-synced when router.refresh() delivers a fresh (shorter) initialItems prop after a delete, so a deleted package's row does not disappear from the admin list without a hard reload — contradicting the delete dialog's own copy ('will be removed from the admin list ... immediately'). Not touched by any of 02-11/02-12/02-13; confirmed still present by this session's direct read of components/admin/sortable-package-list.tsx and components/admin/package-list-row.tsx."
+  regressions: []
 gaps:
-  - truth: "A real password-reset email link's PKCE `code` establishes a session at /admin/auth/confirm before the user reaches /admin/reset-password, so requestPasswordReset() → click link → updatePassword() succeeds end-to-end (D-06; 02-02-PLAN.md must-have truth #5 'A logged-in user can request a password reset email and set a new password end-to-end (D-06)'; 02-07-PLAN.md must-have truth #3, the exact CR-01 closure target)"
+  - truth: "A second, independently-requested password-reset link succeeds end-to-end (not just the first) (AUTH-01, D-06)"
     status: failed
-    reason: >
-      Live-reproduced independently by this verifier against both a running `npm run dev` server and a
-      clean `npm run build && npm run start` production server: `curl` (redirect not followed) against
-      `/admin/auth/confirm?code=<any-value>` with NO session cookie attached (the real state of an
-      unauthenticated visitor who just clicked the emailed link) returns `HTTP 307` redirecting to
-      `/admin/login` in both modes — the request never reaches `app/admin/auth/confirm/route.ts`'s
-      `GET` handler, so `exchangeCodeForSession(code)` never runs and no session is ever established.
-      Root cause, confirmed by direct source read: `lib/supabase/proxy.ts`'s `UNGATED_ADMIN_PATHS`
-      array (lines 4-8) contains only `/admin/login`, `/admin/forgot-password`, and
-      `/admin/reset-password` — `/admin/auth/confirm` is absent. `updateSession()`'s guard clause
-      (lines 50-56) evaluates `!user && pathname.startsWith("/admin") && !isUngatedAdminPath` as true
-      for this path (an unauthenticated visitor by definition has no session yet), so the proxy redirects
-      to `/admin/login` before Next.js's routing ever hands the request to the Route Handler. This is
-      the exact same class of "looks fixed but isn't" defect 02-VERIFICATION.md's prior round documented
-      for AUTH-05 (a clean build and a source-grep for the fix both pass while the live behavior is still
-      broken) — `npm run build` compiles this route as `ƒ /admin/auth/confirm` in the output and the
-      route.ts file itself is textually correct (verified: exchanges `code` via `exchangeCodeForSession`,
-      redirects to hardcoded `/admin/reset-password` on success / `/admin/login` on failure, no
-      open-redirect surface), but the proxy sitting in front of it never lets the request through. The
-      underlying `code`-exchange logic and its `supabase/config.toml` remote-Auth allow-list entry
-      (`additional_redirect_urls`, confirmed live via `supabase config push --yes` in the prior
-      verification round) are both genuinely correct — this is a separate, local Next.js proxy gate that
-      was simply never updated to match when `app/admin/auth/confirm/route.ts` was introduced in
-      02-07-PLAN.md.
+    reason: "During 02-12's own real-email human verification, the developer repeated the reset flow independently (fresh /admin/forgot-password request, fresh email, fresh code) and it bounced to /admin/login instead of succeeding — a second, distinct, confirmed-real defect, separate from the redirect_to-stripping defect 02-12 fixed. Root cause not yet diagnosed (plausible: code_verifier/session-cookie interference from the prior successful reset in the same browser). Documented in 02-12-SUMMARY.md, STATE.md Blockers/Concerns, and .planning/debug/resolved/password-reset-bounce-to-login.md's caveat field — but no fix has been attempted for this specific recurrence, and no plan in this phase (02-13 touched only CSS/UI-SPEC docs) addresses it."
     artifacts:
-      - path: "lib/supabase/proxy.ts"
-        issue: "UNGATED_ADMIN_PATHS (lines 4-8) does not include \"/admin/auth/confirm\", so updateSession()'s unauthenticated-visitor redirect fires for this path before app/admin/auth/confirm/route.ts's GET handler ever executes."
       - path: "app/admin/auth/confirm/route.ts"
-        issue: "Textually correct and unreachable by design flaw elsewhere — not itself broken, but never invoked for the realistic case (an unauthenticated visitor with a fresh PKCE code and no existing session cookie) because the proxy intercepts the request first."
+        issue: "exchangeCodeForSession(code) failure falls through to redirect('/admin/login') with no diagnostic signal distinguishing 'invalid/expired code' from 'code_verifier cookie mismatch on a second attempt in the same browser' — code unchanged since 02-07, confirmed via git log, so this is the same code path implicated by both the original (now-fixed) and this still-open recurrence."
     missing:
-      - "Add \"/admin/auth/confirm\" to lib/supabase/proxy.ts's UNGATED_ADMIN_PATHS array (the one-line fix 02-REVIEW.md's CR-01 already proposes), then re-verify with a LIVE unauthenticated request (not just a build or grep) — e.g. curl -sI \"$BASE_URL/admin/auth/confirm?code=test\" with no cookie header, against both a dev server and a production build, asserting the response is NOT a redirect to /admin/login. A full real-email round trip (request reset -> click emailed link -> land authenticated on /admin/reset-password -> set new password -> log in with it) should also be exercised at least once before this is considered closed, since scripts/verify-permission-denial.ts does not cover this route."
+      - "A dedicated /gsd-debug session (already recommended in 02-12-SUMMARY.md) reproducing in a fresh/incognito session with no prior successful reset in the same browser, to isolate whether prior-session auth/cookie state is the interfering factor"
+  - truth: "/admin/reset-password renders its intended styled UI (not bare/unstyled HTML) reliably"
+    status: failed
+    reason: "Observed by the developer during 02-12's real-email verification: bare/unstyled HTML rendering on /admin/reset-password, confirmed to persist after a page refresh (ruled out as a one-time FOUC). Root cause not confirmed (leading hypothesis: stale .next dev-cache/HMR artifact from the long-running dev server across 02-11/02-12/02-13's live edits to package-form.tsx/globals.css/checklist.tsx, but unconfirmed). No fix attempted in this phase; no plan addresses it."
+    artifacts:
+      - path: "app/admin/reset-password/page.tsx"
+        issue: "No code defect identified in the page itself (reads cleanly: a simple server component wrapping ResetPasswordForm inside standard Tailwind classes) — the bare-HTML symptom is unconfirmed as a code bug vs. a dev-server/cache artifact, and has not been reproduced against a clean cache or a production build."
+    missing:
+      - "A dedicated /gsd-debug session starting with a clean .next cache / fresh dev server restart, then checking reproduction on a genuinely cold start and on a production build, per 02-12-SUMMARY.md's own recommendation"
+  - truth: "Deleting a package removes it from the admin list immediately, as the delete-confirmation dialog itself promises ('will be removed from the admin list and the public site immediately') (PKG-03)"
+    status: failed
+    reason: "02-REVIEW.md's CR-01 (Critical, unresolved): components/admin/sortable-package-list.tsx seeds const [items, setItems] = useState(initialItems) once; PackageListRow.handleDelete() -> softDeletePackage() -> onMutated() only calls router.refresh(), which re-fetches the parent Server Component and passes a fresh (shorter) initialItems prop, but useState(initialItems) only consumes that value on first mount — SortablePackageList is not remounted (same tree position/type), so React preserves the stale items array and the deleted row keeps rendering (with a now-dangling packageId and a working drag handle) until a hard navigation/reload. Confirmed present by this session's direct read of both files — matches 02-REVIEW.md's finding exactly, byte-for-byte unchanged since that review. Not touched by 02-11 (package-form.tsx only), 02-12 (auth files only), or 02-13 (CSS/checklist.tsx only)."
+    artifacts:
+      - path: "components/admin/sortable-package-list.tsx"
+        issue: "useState(initialItems) never re-syncs on prop change (no useEffect keyed on initialItems, and handleMutated only calls router.refresh() with no local items mutation)"
+    missing:
+      - "Sync local state on prop change (useEffect(() => setItems(initialItems), [initialItems])), OR have PackageListRow's delete handler report the deleted id back up (onDeleted(item.id)) and filter it out of items directly, mirroring PhotoManager's existing local-removal pattern on delete (02-REVIEW.md's own suggested fix)"
 deferred: []
+behavior_unverified_items:
+  - truth: "Submitting the package-create/edit form with a required field left empty on a non-active tab shows a toast and auto-switches to the tab containing the error, and a fully-valid submission still creates/saves the package (PKG-01/PKG-02, UAT Test 5 retest, 02-11-PLAN.md truth D1)"
+    test: "In a real browser: open /admin/packages/new, fill the Details tab, leave a required field empty on the Inclusions & FAQ tab (e.g. Best Time to Go or Group Size), switch to a different tab, click Create Package. Confirm a toast reading 'Please fix the highlighted fields before submitting.' appears AND the form auto-switches to the Inclusions & FAQ tab with the error visible. Then fill all required fields correctly and resubmit; confirm the package is created and the browser redirects to its edit page."
+    expected: "Toast appears, tab auto-switches to the first tab containing an error, error text is visible on that tab without further navigation. A subsequent valid submission creates the package and redirects."
+    why_human: "This is a runtime state transition (React Hook Form's onInvalid callback firing, controlled Tabs value changing, a toast rendering) that only exists as source-level wiring today — no automated test exercises it, and this project has no test suite (package.json has no \"test\" script) to add one to cheaply. 02-11-SUMMARY.md itself states this retest was not performed this session; the plan's own <verify><human-check> block requires it, deferred to end-of-phase per human_verify_mode: end-of-phase."
 human_verification:
-  - test: "Full browser login click-through: visit /admin/login, log in with ADMIN_EMAIL/ADMIN_PASSWORD, confirm landing on /admin/packages with a visible sidebar (Packages + Users for Admin)."
-    expected: "Login succeeds, session persists across a page refresh, sidebar renders per D-13/D-14."
-    why_human: "Full redirect + session-cookie behavior across a real browser round-trip; deferred to end-of-phase per human_verify_mode config."
-  - test: "Real password-reset email round-trip: request a reset for a real mailbox, click the actual emailed link, set a new password, log in with it — AFTER the proxy.ts gap above is fixed."
-    expected: "Reset email arrives with a working link; the code-exchange lands the user authenticated on /admin/reset-password (not /admin/login); the new password logs in successfully."
-    why_human: "Real email delivery cannot be verified by curl/grep alone. Note: this item is currently blocked by the gap above — a curl-only proxy check confirms the defect but a full email click-through is the human item that should re-run once the one-line proxy fix lands."
-  - test: "Add-Staff-Account dialog: Admin creates a new Staff account, sets name/role/permission toggles, confirms the new account can log in and sees only the nav items its permissions allow."
-    expected: "Account created, permission toggles persist, new account's sidebar matches D-13/D-14 exactly."
-    why_human: "Multi-step dialog interaction and cross-session verification (new account's own login) not practical to grep-verify."
-  - test: "Drag-reorder package list + publish/feature switch interactions in a real browser."
-    expected: "Drag-reorder persists new sort_order; switches optimistically update and persist; a simulated failure reverts the switch and shows a toast."
-    why_human: "Drag-and-drop and optimistic-UI revert timing require real browser interaction."
-  - test: "Multi-tab package create/edit form: itinerary days, inclusions, FAQ facts, price/photos across the full package-form UI."
-    expected: "All fields save correctly; package appears/updates on the Phase 1 public site after publish."
-    why_human: "Large multi-section form UX and cross-phase (admin -> public site) visual confirmation."
-  - test: "Photo upload/reorder/delete flow in photo-manager.tsx."
+  - test: "Live retest of the 02-11 package-create/edit validation-feedback fix (see behavior_unverified_items above) — toast + auto-tab-switch on invalid submit, successful creation on valid submit."
+    expected: "Toast + tab-switch on invalid submit; package created/redirected on valid submit."
+    why_human: "Runtime UI state transition, not exercised by any test; see behavior_unverified_items."
+  - test: "Photo upload/reorder/delete flow in photo-manager.tsx (UAT Test 6 — previously blocked by Test 5's bug, now potentially unblocked by 02-11, but not retested this session)."
     expected: "Photos upload, drag-reorder persists display_order, delete removes the Storage object and DB row."
-    why_human: "File upload and drag interactions require a real browser; WR-08/WR-09/WR-10 in 02-REVIEW.md flag known edge-case gaps here worth exercising manually."
-  - test: "Full visual/styling pass across the admin panel against 02-UI-SPEC.md (sidebar colors, typography, spacing, the new /admin/forbidden page's visual parity with error.tsx)."
-    expected: "Admin panel matches TravelSentro brand tokens (teal/orange sidebar, Prata/Inter typography) consistently across all screens."
-    why_human: "Visual/brand-fidelity judgment is not greppable."
+    why_human: "File upload and drag interactions require a real browser; 02-REVIEW.md's WR-04/WR-05 (no server-side MIME/size validation, un-scoped bulk photo-reorder update) are worth exercising manually alongside the base flow."
+  - test: "Full visual/styling pass across the admin panel against 02-UI-SPEC.md beyond the two brand-color hex values already confirmed via source (sidebar layout, typography, spacing, the /admin/forbidden page's visual parity with error.tsx)."
+    expected: "Admin panel matches TravelSentro brand tokens (navy #021f4a / marigold #f49314) and typography/spacing consistently across all screens."
+    why_human: "Visual/brand-fidelity judgment beyond exact hex-value matching is not greppable; UAT Test 7's specific hex-value complaint is resolved and verified via source, but the broader visual pass was never itself a source-verifiable claim."
 ---
 
-# Phase 2: Admin Access & Package Management — Verification Report (Round 3)
+# Phase 2: Admin Access & Package Management — Verification Report (Round 5)
 
 **Phase Goal:** Admin and Staff can securely log into an admin panel, and manage the tour package catalog according to their individually-assigned permissions.
 **Mode:** mvp (user story: "As a TravelSentro Admin or Staff member, I want to securely log into an admin panel and manage the tour package catalog according to my individually-assigned permissions, so that the business can keep its live package catalog accurate and control exactly who can change it, without needing a developer for every update.")
 **Verified:** 2026-07-19
 **Status:** gaps_found
-**Re-verification:** Yes — third round, after gap-closure plan 02-09 (AUTH-05 redirect-based permission gate) and a fresh code-review pass (02-REVIEW.md) that surfaced one new critical finding (CR-01: proxy-level allow-list gap)
+**Re-verification:** Yes — fifth round, after gap-closure plans 02-11 (package-create validation UX), 02-12 (password-reset redirect_to upstream fix), 02-13 (brand color token update)
 
-## Methodology — this was not a source-only or SUMMARY-trusting pass
+## Methodology
 
-Per this task's explicit instruction, neither 02-09-SUMMARY.md's PASS claims nor 02-REVIEW.md's CR-01 finding were accepted on their own. This verifier independently:
+This phase has a documented, repeated failure pattern where a clean `npm run build` and source-level greps looked complete on still-broken flows (round 4's own methodology notes this explicitly for the password-reset chain). Per this round's task instruction, none of 02-11/02-12/02-13's SUMMARY.md PASS claims were accepted at face value:
 
-1. Started a live `npm run dev` server on port 3100 and ran `scripts/verify-permission-denial.ts` against it — a script that creates a real disposable zero-permission Staff auth user via the Supabase service-role client, signs in for a real session cookie, and fetches the 3 gated routes plus 1 Admin positive control over real HTTP. Result: **4/4 PASS**.
-2. Ran `npm run build` (clean compile, 0 type errors, `/admin/auth/confirm` and `/admin/forbidden` both present in the route output) then started `npm run start` on port 3100 and re-ran the identical live script against the production build. Result: **4/4 PASS**.
-3. Independently read `lib/supabase/proxy.ts` and confirmed by direct source inspection (not by trusting 02-REVIEW.md's text) that `/admin/auth/confirm` is absent from `UNGATED_ADMIN_PATHS`.
-4. Independently reproduced the CR-01 defect live with `curl` against both the dev server and the production server: an unauthenticated request to `/admin/auth/confirm?code=<value>` returns `HTTP 307` to `/admin/login` in both modes, confirming the Route Handler is unreachable for the realistic unauthenticated-visitor case.
-5. Cross-referenced 02-02-PLAN.md and 02-07-PLAN.md frontmatter to confirm the password-reset end-to-end flow is an explicit `must_haves.truths` entry for this phase (not merely a code-quality nice-to-have), so this is scored as a phase-goal gap, not a warning.
-6. Spot-checked for regressions: Server Actions (`actions/{packages,users,package-photos}.ts`) still call the throw-based `requirePermission()`/`requireAdmin()` (unchanged, 2 occurrences of `new Error("Forbidden")` in `lib/auth/dal.ts`); `write_package_children()` RPC wiring, `error.tsx`'s defense-in-depth boundary, and the 4 optimistic-UI try/catch fixes are all still present with no debt markers (TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER) in any file touched by 02-09.
+1. Read `components/admin/package-form.tsx` and `components/ui/tabs.tsx` directly and independently re-counted the grep evidence 02-11-SUMMARY.md claims (4x `keepMounted`, 4x `toast.error(`, 1x `value={activeTab}`, `onInvalid` searching `TAB_FIELD_MAP` in declared order) — all confirmed present and correctly wired at the source level. Ran `npm run build` and `npm run lint` myself — both clean.
+2. Read `app/globals.css` and `components/packages/checklist.tsx` directly and confirmed the exact new hex values (`--primary: #021f4a`, `--secondary: #f49314`, 4 derived `--sidebar-*` tokens, `text-secondary` replacing the hardcoded hex in checklist.tsx). Grepped the whole `app/`, `components/`, `lib/` trees for the old hex values (`f5793a`, `0e5c63`) — zero matches.
+3. Did NOT re-run this phase's live-HTTP round-4 checks for `/admin/auth/confirm` reachability, since `git diff --stat cfbe794 HEAD -- lib/supabase/proxy.ts app/admin/auth/confirm/route.ts lib/auth/dal.ts` shows only the single `+1` line from 02-10 (already independently live-tested in round 4, in both dev and production builds) — no file in this mechanism changed in 02-11/02-12/02-13, so round 4's live evidence still applies and was not stale-carried without checking.
+4. Per this session's explicit task context, independently investigated and confirmed (via direct source read + git log) that the two new findings surfaced during 02-12's real-email human verification — bare/unstyled `/admin/reset-password` rendering, and a second reset link bouncing to `/admin/login` — have **no corresponding code change** anywhere in this phase's commit history (`git log --oneline --all -- app/admin/reset-password app/admin/auth/confirm` shows only 02-02's original feature commit and 02-07's CR-01 PKCE-exchange fix; nothing since). These are treated as open, unresolved gaps, not assumed-fixed.
+5. Independently re-read `components/admin/sortable-package-list.tsx` and `components/admin/package-list-row.tsx` against 02-REVIEW.md's CR-01 finding (stale local list state after delete) — confirmed byte-for-byte present, unaddressed by any of the three gap-closure plans (which touched only `package-form.tsx`, auth files, and CSS/`checklist.tsx` respectively).
+6. Re-confirmed `lib/auth/dal.ts`'s `requirePermission`/`requireAdmin`/`*OrRedirect` functions and all 12 Server Action call sites (`actions/{packages,users,package-photos}.ts`) are unchanged and present via fresh grep.
+7. Cross-referenced every plan's `requirements:` frontmatter field (all 13 plans) against REQUIREMENTS.md's AUTH-01 through AUTH-05 and PKG-01 through PKG-06 — all 11 required IDs are claimed by at least one plan; no orphans.
+8. Scanned all files touched by 02-11/02-12/02-13, plus the CR-01/WR-02/WR-03-flagged files, for debt markers (TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER) — 0 matches.
+9. Ran `npm run build` fresh from this session (clean, 0 errors) and `npm run lint` (clean).
 
 ## Goal Achievement
+
+### User Flow Coverage (MVP mode)
+
+| Step | Expected | Evidence | Status |
+|------|----------|----------|--------|
+| Admin/Staff logs in securely | Email/password auth, session persists, sidebar renders per role | `actions/auth.ts` unchanged; UAT Test 1 passed live this session's predecessor round | VERIFIED |
+| Admin panel gated by individually-assigned permissions | Staff without a permission blocked in UI (redirect to /admin/forbidden) and at the API/data layer (RLS + `requirePermission`) | `lib/auth/dal.ts`, 12 Server Action call sites unchanged and confirmed present; UAT does not re-test this (no regression risk — files untouched) | VERIFIED |
+| Admin creates a new tour package | Form submits, validation failures give visible feedback, valid submission creates + redirects | 02-11 fix confirmed present/wired at source level; runtime toast+tab-switch behavior not yet exercised live | PRESENT_BEHAVIOR_UNVERIFIED |
+| Admin edits an existing tour package | Same form/validation path as create; save updates the DB | Same `onSubmit`/`onInvalid` wiring applies to edit mode; `onSubmit`/schema untouched by 02-11 | PRESENT_BEHAVIOR_UNVERIFIED (same underlying fix) |
+| Admin deletes a tour package | Package removed from admin list "immediately" (per the dialog's own copy) and from the public site | Server Action (`softDeletePackage`) + RLS confirmed correct; but admin list UI does NOT refresh without a hard reload — CR-01, confirmed present | **FAILED** |
+| Admin publishes/unpublishes, features, and reorders packages | Switches/drag-reorder persist, changes reflect on public site | UAT Test 4 passed live; `PackageListRow`'s own local `isPublished`/`isFeatured` state is independent of the CR-01 stale-array bug, so unaffected | VERIFIED |
+| Admin manages Staff accounts and permissions | Create/edit/deactivate accounts, toggle 3 permission booleans | UAT Test 3 passed live; `actions/users.ts` mechanism confirmed intact, though see WR-02/WR-03 defense-in-depth gaps below | VERIFIED (with noted non-blocking hardening gaps) |
+| Password reset lets a locked-out Admin/Staff back in reliably | Real emailed link works end-to-end, repeatably | First attempt confirmed working live (redirect_to defect fixed); a SECOND, independently-requested attempt in the same session bounced to /admin/login | **FAILED** (unreliable) |
 
 ### Observable Truths
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | A zero-permission Staff session that requests a gated dashboard page (`/admin/packages`, `/admin/packages/new`, `/admin/users`) sees a graceful HTTP 200 denial page with the UI-SPEC's exact copy, not an HTTP 500 crash (AUTH-05, 02-09-PLAN.md truth #1) | ✓ **VERIFIED** | Independently re-run live by this verifier: `scripts/verify-permission-denial.ts` against `npm run dev` → 4/4 PASS; against `npm run build && npm run start` → 4/4 PASS. All 3 denied routes: status 200, final URL ends `/admin/forbidden`, body contains "You don't have permission to do that. Contact an Admin if you think this is a mistake.", zero occurrences of `__next_error__`. |
-| 2 | The identical routes, requested with a real Admin session, continue to return HTTP 200 with real content — no regression (02-09-PLAN.md truth #2) | ✓ **VERIFIED** | Same live runs: positive control against `/admin/packages/new` with the bootstrap Admin session returned `status=200 body-contains-"New Package"=true` in both dev and prod. |
-| 3 | A real password-reset email link's PKCE `code` establishes a session at `/admin/auth/confirm` before the user reaches `/admin/reset-password` (D-06; 02-02-PLAN.md truth #5, 02-07-PLAN.md truth #3, CR-01) | ✗ **FAILED** | `curl` (no cookie, `redirect: manual`) against `/admin/auth/confirm?code=<value>` on both a live dev server and a live production build returns `HTTP 307` to `/admin/login` — the Route Handler is never reached. Root cause: `lib/supabase/proxy.ts`'s `UNGATED_ADMIN_PATHS` omits `/admin/auth/confirm`. See Gaps. |
-| 4 | Submitting valid `ADMIN_EMAIL`/`ADMIN_PASSWORD` on `/admin/login` logs in and lands on `/admin/packages` (02-02-PLAN.md truth #2, D-15) | ✓ VERIFIED (carried, regression-checked) | `actions/auth.ts`'s `login()` unchanged this round; `verifyDeniedRoute`/`verifyPositiveControl`'s own sign-in step in this round's live script succeeded for both the disposable Staff account and the real Admin account against the running server, confirming the underlying `signInWithPassword` + session-cookie path still works end-to-end. No source changes to this path since the prior round. |
-| 5 | Submitting wrong credentials shows the exact inline error without a redirect (02-02-PLAN.md truth #3) | ✓ VERIFIED (carried, unaffected by this round) | `actions/auth.ts` unchanged this round; previously confirmed via source + human-check deferral, no regression risk (file not in 02-09's `files_modified`). |
-| 6 | Deactivating a session (`is_active=false`) blocks the very next request, not just the next login (D-05) | ✓ VERIFIED (carried, unaffected) | `getProfile()` in `lib/auth/dal.ts` (unchanged by 02-09 — 02-09 only *added* `requirePermissionOrRedirect`/`requireAdminOrRedirect` after it) still re-queries `is_active` and `redirect()`s on every call. |
-| 7 | Admin can create/edit/deactivate Admin/Staff accounts and toggle per-staff permissions (AUTH-02/03/04) | ✓ VERIFIED (carried, unaffected) | `actions/users.ts` untouched by 02-09; still calls throw-based `requireAdmin()` (confirmed by direct grep this round, 3 call sites). |
-| 8 | Admin/Staff with `can_manage_packages` can create, edit, delete, publish/unpublish, feature, and reorder packages, reflected on the public site (PKG-01 through PKG-06), and package-children edits are atomic (CR-02) | ✓ VERIFIED (carried, regression-checked) | `actions/packages.ts` still calls throw-based `requirePermission("can_manage_packages")` at all 6 call sites (grep-confirmed this round); `writePackageChildren()` still calls `supabase.rpc("write_package_children", ...)` exactly once with zero occurrences of the old delete-then-insert pattern; the atomic-write migration file is still present. |
-| 9 | A Server Action thrown exception in an optimistic-UI component is caught client-side, reverts state, and shows a generic toast (02-REVIEW.md WR-06, 02-07-PLAN.md truth #2) | ✓ VERIFIED (carried, source-level, unaffected) | `GENERIC_ERROR_MESSAGE` occurrence counts in the 4 components unchanged from the prior verified round; none of these 4 files are in 02-09's `files_modified`. |
+| 1 | Admin/Staff can log in to the admin panel with email/password (SC1, AUTH-01) | VERIFIED | `actions/auth.ts` unchanged; UAT Test 1 passed live. |
+| 2 | Wrong credentials show the exact inline error without a redirect (02-02-PLAN.md truth #3) | VERIFIED (carried) | `actions/auth.ts` unchanged since round 3. |
+| 3 | `/admin/auth/confirm` is reachable through the proxy for an unauthenticated visitor (CR-01/AUTH-01, 02-10) | VERIFIED (carried) | `lib/supabase/proxy.ts` diff against cfbe794: only 02-10's `+1` line; independently live-tested in round 4 (dev + prod). |
+| 4 | The ORIGINALLY-diagnosed password-reset redirect_to-stripping defect is fixed for the real client flow (AUTH-01, D-06, UAT Test 2) | VERIFIED | Developer's real-email test: `redirect_to=http://localhost:3000/admin/auth/confirm` survived intact; full reset (new password + login) succeeded. 02-12-SUMMARY.md, STATE.md, debug session all corroborate. |
+| 5 | A second, independently-requested password-reset link also succeeds end-to-end (not just the first) (AUTH-01, D-06) | **FAILED** | Same real verification session: a fresh reset request/link bounced to `/admin/login`. No fix attempted; no code change since 02-07 in `app/admin/auth/confirm/route.ts`. See gaps. |
+| 6 | `/admin/reset-password` reliably renders its intended styled UI | **FAILED** | Developer observed bare/unstyled HTML, persisting after refresh (not a one-time FOUC). Root cause unconfirmed, no fix attempted. See gaps. |
+| 7 | Deactivating a session (`is_active=false`) blocks the very next request (D-05) | VERIFIED (carried) | `getProfile()` in `lib/auth/dal.ts` unchanged. |
+| 8 | Admin can create, edit, and deactivate Admin/Staff accounts, and toggle each staff member's permissions (SC2, AUTH-02/03/04) | VERIFIED (carried) | `actions/users.ts` unchanged; UAT Test 3 passed live. Non-blocking hardening gaps noted (WR-02 orphaned account on partial create failure, WR-03 no self/last-admin deactivation guard) — see Anti-Patterns. |
+| 9 | A Staff member without a given permission is blocked from that action in the UI and at the API/data layer (SC3, AUTH-05) | VERIFIED (carried) | `lib/auth/dal.ts` and all 12 `requirePermission(`/`requireAdmin(` call sites confirmed unchanged/present. |
+| 10 | Admin/Staff with "manage packages" permission can create/edit a package via the form, with visible validation feedback on failure (PKG-01, PKG-02, UAT Test 5) | PRESENT_BEHAVIOR_UNVERIFIED | 02-11's `onInvalid`/`TAB_FIELD_MAP`/`keepMounted`/controlled-`Tabs` fix confirmed present and correctly wired at the source level (exact grep counts match SUMMARY claims); `npm run build`/`lint` clean. No live browser retest yet this session — the actual toast-appears/tab-switches runtime transition is unexercised by any test (project has no test suite). |
+| 11 | Deleting a package removes it from the admin list immediately (PKG-03) | **FAILED** | 02-REVIEW.md CR-01, confirmed still present: `SortablePackageList`'s `useState(initialItems)` never re-syncs on `router.refresh()`'s fresh prop, so the deleted row stays visible until a hard reload — contradicting the delete dialog's own "removed ... immediately" copy. Not touched by 02-11/02-12/02-13. See gaps. |
+| 12 | Publish/unpublish, feature, and reorder packages work and persist (PKG-04, PKG-05, PKG-06) | VERIFIED (carried) | UAT Test 4 passed live; `PackageListRow`'s local `isPublished`/`isFeatured` state is independent of the CR-01 bug (only the *shared items array*, used for delete/row-identity, is stale — per-row toggle state is not). `reorderPackages`/`actions/packages.ts` unchanged. |
+| 13 | Package create/edit atomically writes itinerary/inclusions/faq_facts via the RPC (PKG-01/PKG-02) | VERIFIED (carried) | `write_package_children()` RPC wiring and `actions/packages.ts` unchanged since round 4. |
+| 14 | Admin panel and public site brand colors match the user's requested hex values (UAT Test 7) | VERIFIED | `app/globals.css` line 63/65: `--primary: #021f4a`, `--secondary: #f49314`; 4 derived `--sidebar-*` tokens correct; `checklist.tsx`'s hardcoded-hex drift fixed to `text-secondary`. Zero old-hex (`f5793a`/`0e5c63`) matches anywhere in `app/`, `components/`, `lib/`. `01-UI-SPEC.md`/`02-UI-SPEC.md` updated to match. This is a static CSS custom-property value (no runtime branch), so direct source inspection is authoritative — not classified as behavior-dependent. |
 
-**Score:** 8/9 truths verified. 1 failed — the password-reset end-to-end flow, which is a distinct must-have from the AUTH-05 item this round's plan (02-09) targeted and closed successfully.
+**Score:** 10/14 truths verified programmatically or via human-confirmed UAT this session. 1 present-behavior-unverified (package-form validation feedback — code correct, runtime transition unexercised). 3 FAILED (second reset-link bounce, bare-HTML reset-password rendering, delete-doesn't-refresh-list).
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `lib/auth/dal.ts` | `requirePermissionOrRedirect()`/`requireAdminOrRedirect()` added; throw-based guards unchanged | ✓ VERIFIED, WIRED, LIVE | Both new functions present, call `redirect("/admin/forbidden")` as a bare statement (not in try/catch); `new Error("Forbidden")` still occurs exactly twice (throw-based guards byte-for-byte preserved). |
-| `app/admin/(dashboard)/{packages/page.tsx,packages/new/page.tsx,packages/[id]/page.tsx,users/page.tsx}` | First statement calls the new redirect-based guard | ✓ VERIFIED, WIRED | Grep-confirmed: all 4 files import and call `requirePermissionOrRedirect`/`requireAdminOrRedirect`; none call the throw-based guards anymore. |
-| `app/admin/(dashboard)/forbidden/page.tsx` | Renders UI-SPEC denial copy inside the dashboard shell | ✓ VERIFIED, WIRED, LIVE | Source read confirms exact copy; live HTTP responses in both dev and prod render this page's content at the `/admin/forbidden` URL. |
-| `scripts/verify-permission-denial.ts` | Repeatable, self-cleaning live-HTTP check | ✓ VERIFIED, LIVE, RE-RUN INDEPENDENTLY | Not just present — actually executed twice by this verifier (dev + prod) with fresh results, both 4/4 PASS; disposable account cleanup confirmed via the script's own finally-block deletion logic. |
-| `lib/supabase/proxy.ts` | Gate unauthenticated `/admin/*` visits, allow-listing all pages that must be reachable pre-session | ⚠️ **PRESENT + WIRED, but incomplete allow-list** | `UNGATED_ADMIN_PATHS` correctly gates the dashboard but omits `/admin/auth/confirm`, breaking the password-reset Route Handler's reachability. See Gaps. |
-| `app/admin/auth/confirm/route.ts` | PKCE code-exchange Route Handler | ✓ Textually correct, ✗ UNREACHABLE for the real unauthenticated case | Source is correct (verified: `exchangeCodeForSession`, hardcoded redirect targets, no open-redirect surface) but the proxy intercepts the request before this handler ever runs. Data-flow trace (Level 4): the "data" here is the session-establishing side effect of `exchangeCodeForSession` — it never fires because the request never reaches this file. |
+| `components/admin/package-form.tsx` | `onInvalid` handler + controlled `Tabs` + `keepMounted` on all 4 panels | VERIFIED, WIRED | Source confirms `TAB_FIELD_MAP`, `onInvalid`, `value={activeTab}`, 4x `keepMounted`, 4x `toast.error(`. |
+| `components/ui/tabs.tsx` | `TabsContent` forwards `keepMounted` to Base UI's `Tabs.Panel` | VERIFIED, WIRED | `{...props}` spread onto `TabsPrimitive.Panel` passes `keepMounted` through unmodified. |
+| `app/globals.css` | `--primary`/`--secondary` + 4 `--sidebar-*` tokens = new brand hex values | VERIFIED | Confirmed at lines 63-90. |
+| `components/packages/checklist.tsx` | No hardcoded hex; uses `text-secondary` | VERIFIED | `ICON_COLORS.included`/`.bring` = `"text-secondary"`. |
+| `scripts/verify-password-reset-redirect.ts` | Management API re-save + differential regression check | VERIFIED, PRESENT | `npm run verify:password-reset-redirect` script entry confirmed in `package.json`; not re-run this session (requires live Management API credentials and mutates hosted project config — out of scope for a read-only re-verification pass; its Task-1-time PASS result is not in dispute, only the separately-discovered Test-2-recurrence and reset-password-styling findings are). |
+| `components/admin/sortable-package-list.tsx` | Local `items` state re-syncs with fresh `initialItems` after a delete | STILL STUB (CR-01) | `useState(initialItems)` with no re-sync `useEffect`; confirmed unchanged. |
+| `app/admin/reset-password/page.tsx` | Renders styled UI reliably | Cannot determine root cause from source alone | Page source itself is clean (no missing CSS import, no conditional class logic); symptom is either a dev-cache artifact or something not visible in static source. See gaps. |
+| `app/admin/auth/confirm/route.ts` | PKCE exchange succeeds reliably across repeated requests | Code unchanged, but real-world behavior shows a failure mode on a second attempt | `exchangeCodeForSession()` error path uniformly redirects to `/admin/login`; no code-level fix has been attempted for the specific "second link" recurrence, root cause not yet isolated. |
+| `lib/auth/dal.ts` + gated dashboard pages + `forbidden/page.tsx` (AUTH-05 mechanism) | Unchanged | VERIFIED, NO REGRESSION | Confirmed via fresh grep of all call sites. |
+| `actions/users.ts` | `createAccount`/`updateAccount`/`deactivateAccount`, `requireAdmin()`-gated | VERIFIED, WIRED (with WR-02/WR-03 hardening gaps) | Present and correct for the primary permission boundary; `createAccount` leaves an orphaned live auth user if the `profiles` update fails (no rollback); `deactivateAccount` has no guard against self- or last-admin deactivation. Neither breaks the core capability under normal use — flagged as anti-patterns, not blocking gaps. |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|-----|-----|--------|---------|
-| `app/admin/(dashboard)/{...}.tsx` | `lib/auth/dal.ts`'s `requirePermissionOrRedirect()`/`requireAdminOrRedirect()` | first-statement call | ✓ WIRED, LIVE | Confirmed both by source grep and live HTTP behavior (dev + prod). |
-| `lib/auth/dal.ts`'s `requirePermissionOrRedirect()`/`requireAdminOrRedirect()` | `app/admin/(dashboard)/forbidden/page.tsx` | `redirect("/admin/forbidden")` bare statement | ✓ WIRED, LIVE | Live responses land on `/admin/forbidden` with 200 and the correct copy, in both dev and prod. |
-| `actions/auth.ts`'s `requestPasswordReset()` | `app/admin/auth/confirm/route.ts` | `redirectTo` pointing at `/admin/auth/confirm` | ✓ WIRED (redirectTo target correct) | Confirmed by source read: `redirectTo` is `${origin}/admin/auth/confirm`. |
-| Browser (unauthenticated, real reset-link click) | `app/admin/auth/confirm/route.ts` | direct navigation via the emailed link's URL | ✗ **NOT REACHABLE** | `lib/supabase/proxy.ts` intercepts and redirects to `/admin/login` before the Route Handler runs — live-confirmed via `curl` in both dev and prod. This is the actual end-to-end link that matters for D-06 and it is broken, even though the `redirectTo` wiring one hop upstream is correct. |
-| `actions/{packages,users,package-photos}.ts` | throw-based `requirePermission()`/`requireAdmin()` | direct call | ✓ WIRED (unchanged) | Grep-confirmed, no regression. |
-| `actions/packages.ts`'s `writePackageChildren()` | `public.write_package_children()` RPC | `supabase.rpc(...)` | ✓ WIRED, LIVE (carried) | 1 occurrence, migration still present. |
-
-### Behavioral Spot-Checks (live, run by this verifier)
-
-| Behavior | Command | Result | Status |
-|----------|---------|--------|--------|
-| Zero-permission Staff session hits `/admin/packages`, `/admin/packages/new`, `/admin/users` (dev, port 3100) | `scripts/verify-permission-denial.ts` | 4/4 PASS, all denial routes 200 + UI-SPEC copy + no crash marker | ✓ PASS |
-| Same, against a clean `npm run build && npm run start` (prod, port 3100) | `scripts/verify-permission-denial.ts` | 4/4 PASS | ✓ PASS |
-| Positive control: Admin session hits `/admin/packages/new` (dev + prod) | same script | 200, "New Package" content present in both modes | ✓ PASS |
-| Unauthenticated `curl` against `/admin/auth/confirm?code=<value>` (dev, manual redirect) | `curl -sI` | `307` to `/admin/login` | ✗ **FAIL** — confirms CR-01 live |
-| Same, against the production build | `curl -sI` | `307` to `/admin/login` | ✗ **FAIL** — confirms CR-01 live, rules out a dev-only artifact |
-| `npm run build` | full production build | Compiles cleanly, 0 type errors, 14 routes listed including `/admin/auth/confirm` and `/admin/forbidden` | ✓ PASS |
-| Debt-marker scan on all files touched by 02-09 | grep TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER | 0 matches | ✓ PASS |
-| Server Action guard regression check | grep `requirePermission(`/`requireAdmin(` in `actions/*.ts` | All 12 call sites still present, unchanged | ✓ PASS (no regression) |
-
-### Probe Execution
-
-No `scripts/*/tests/probe-*.sh` convention exists in this repo. SKIPPED (no runnable probe entry points), consistent with prior rounds.
+| `components/admin/package-list-row.tsx` (`handleDelete`) | `actions/packages.ts` (`softDeletePackage`) | Server Action call + `onMutated()` -> `router.refresh()` | PARTIAL | Server Action call succeeds and the DB row is soft-deleted correctly (RLS + `requirePermission` intact); but the UI-side link back to `SortablePackageList`'s rendered list is broken — `router.refresh()`'s fresh props never reach the already-mounted component's local state. |
+| `components/admin/package-form.tsx` (`onInvalid`) | `components/ui/tabs.tsx` (`Tabs value={activeTab}`) | `setActiveTab(erroredTab.tab)` on validation failure | WIRED (source-confirmed; not yet runtime-confirmed) | `TAB_FIELD_MAP` lookup correctly maps errored fields to a tab name, calling `setActiveTab`, which drives the controlled `Tabs`' `value` prop. |
+| `actions/auth.ts` (`requestPasswordReset`) | `app/admin/auth/confirm/route.ts` (`exchangeCodeForSession`) | Emailed link's `redirect_to`/`code` query param | PARTIAL (intermittent) | Reachability (proxy-level) is fixed and the first tested round trip succeeded; a second independently-requested round trip failed the same way the original defect did, indicating the link is not reliably reaching a successful exchange every time. |
+| `app/admin/auth/confirm/route.ts` | `app/admin/reset-password/page.tsx` | `NextResponse.redirect(new URL("/admin/reset-password", request.url))` on successful exchange | PARTIAL | Redirect itself is correct/unconditional on success; but the destination page has been observed rendering unstyled in some sessions — a rendering-layer issue downstream of a successful redirect, not a routing defect. |
 
 ### Requirements Coverage
 
-| Requirement | Status | Evidence |
-|--------------|--------|----------|
-| AUTH-01 | ⚠️ **PARTIALLY SATISFIED** | Core email/password login (happy path + wrong-credentials path) is sound and unaffected by this round. However, AUTH-01's password-reset sub-flow — explicitly scoped as a must-have under this requirement by both 02-02-PLAN.md (D-06) and 02-07-PLAN.md (the CR-01 closure attempt) — is live-confirmed broken end-to-end via the proxy allow-list gap. Not fully satisfied until that gap closes. |
-| AUTH-02 | ✓ SATISFIED | Unaffected by this round. |
-| AUTH-03 | ✓ SATISFIED | Unaffected by this round. |
-| AUTH-04 | ✓ SATISFIED | Unaffected by this round. |
-| AUTH-05 | ✓ **SATISFIED — closed this round** | Independently live-verified by this verifier (not merely trusted from 02-09-SUMMARY.md) against both a dev server and a production build. This closes the original 02-VERIFICATION.md gap and the round-2 re-verification failure. |
-| PKG-01 through PKG-06 | ✓ SATISFIED | Unaffected by this round; PKG-02's atomicity strengthened by CR-02 (carried, regression-checked). |
+| Requirement | Source Plan(s) | Description | Status | Evidence |
+|-------------|-----------------|--------------|--------|----------|
+| AUTH-01 | 02-02, 02-07, 02-10, 02-12 | Admin/Staff can log in with email/password | SATISFIED (login itself); password-reset recovery path only partially reliable | Login mechanism fully verified; password-reset sub-flow has 2 open gaps (see above) — AUTH-01's core "log in with email/password" clause is satisfied, but the reset/recovery mechanism this phase also built under AUTH-01/D-06 is not fully reliable yet. |
+| AUTH-02 | 02-03 | Admin can create new Admin or Staff accounts | SATISFIED | `createAccount` present, `requireAdmin()`-gated, UAT Test 3 passed live. WR-02 (no rollback on partial failure) is a hardening gap, not a functional blocker. |
+| AUTH-03 | 02-03 | Admin can edit or deactivate existing accounts | SATISFIED | `updateAccount`/`deactivateAccount` present and gated. WR-03 (no self/last-admin guard) is a hardening gap. |
+| AUTH-04 | 02-03 | Admin can toggle per-staff permissions individually | SATISFIED | 3 boolean columns wired through `AccountInput`, confirmed in `createAccount`/`updateAccount`. |
+| AUTH-05 | 02-01, 02-02, 02-04, 02-05, 02-06, 02-07, 02-09 | Staff without a permission blocked in UI and at API/data layer | SATISFIED | `requirePermission`/`requireAdmin`/`*OrRedirect` + RLS confirmed unchanged and present at all 12 call sites. |
+| PKG-01 | 02-05, 02-06, 02-11 | Create a new tour package (itinerary, price, inclusions/exclusions, photos) | SATISFIED AT CODE LEVEL, RUNTIME UNCONFIRMED | Form + validation-feedback fix present and wired; live retest pending (behavior_unverified_items). |
+| PKG-02 | 02-05, 02-06, 02-08 | Edit an existing tour package | SATISFIED AT CODE LEVEL, RUNTIME UNCONFIRMED | Shares the same form/validation code path as PKG-01. |
+| PKG-03 | 02-04 | Delete a tour package | BLOCKED (UI) | Server Action + RLS deletion mechanism itself works; the admin list's visual reflection of that deletion does not, without a hard reload (CR-01). |
+| PKG-04 | 02-04 | Publish/unpublish a package | SATISFIED | UAT Test 4 passed live; unaffected by CR-01 (per-row local state). |
+| PKG-05 | 02-04 | Mark a package as featured | SATISFIED | UAT Test 4 passed live; unaffected by CR-01. |
+| PKG-06 | 02-04 | Set manual display order (drag-reorder) | SATISFIED | UAT Test 4 passed live; drag-reorder manages its own local state directly (`setItems(reordered)`), unaffected by CR-01's specific delete-path gap. |
 
-**Documentation hygiene note (informational only, carried forward unchanged):** REQUIREMENTS.md's own Traceability table still lists "AUTH-01 through AUTH-05 | Phase 2 | Pending" and "PKG-01 through PKG-06 | Phase 2 | Pending" despite the individual checkboxes above being checked. Not a functional gap.
+No orphaned requirements — all 11 IDs (AUTH-01 through AUTH-05, PKG-01 through PKG-06) are claimed by at least one of this phase's 13 plans, cross-referenced against REQUIREMENTS.md.
 
 ### Anti-Patterns Found
 
-None in the files touched by 02-09 (`lib/auth/dal.ts`, the 4 gated page files, `app/admin/(dashboard)/forbidden/page.tsx`, `scripts/verify-permission-denial.ts`, `package.json`) — 0 occurrences of TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER.
+| File | Line | Pattern | Severity | Impact |
+|------|------|---------|----------|--------|
+| `components/admin/sortable-package-list.tsx` | 49, 85-87 | Stale `useState(initialItems)` never re-synced on `router.refresh()` | Blocker (see gaps) | Deleted packages stay visible in the admin list until a hard reload; contradicts the delete dialog's own promised behavior. |
+| `actions/users.ts` | 79-92 | `createAccount` leaves an orphaned, fully-active auth user if the subsequent `profiles` update fails (no rollback) | Warning (WR-02, not blocking under normal operation) | A failure mid-account-creation leaves a loginable ghost account with default no-permission Staff role and no admin visibility into its existence. |
+| `actions/users.ts` | 127-145 | `deactivateAccount` has no guard against an admin deactivating their own account or the last remaining active admin | Warning (WR-03, not blocking under normal operation) | An admin can accidentally lock themselves/the whole team out of the admin panel with no in-app recovery path (the `seed-admin.ts` "break glass" script's existing-admin check doesn't filter on `is_active`, so it won't recover this specific state either). |
+| `actions/package-photos.ts` | 25-28, 76-89 | No server-side MIME-type or size validation on photo uploads (WR-04) | Warning (not re-verified live this session; carried from 02-REVIEW.md, untouched by any of 02-11/12/13) | Defense-in-depth gap on a public-read Storage bucket; gated behind a real permission today. |
+| `actions/package-photos.ts` | 175-208 | `reorderPhotos` updates by photo `id` without scoping to `packageId` (WR-05) | Warning (carried, untouched) | Data-integrity gap, not a permission-boundary break. |
+| 0 debt markers (TBD/FIXME/XXX/TODO/HACK/PLACEHOLDER) found in any file touched by 02-11/02-12/02-13, or in the CR-01/WR-02/WR-03/WR-04/WR-05-flagged files | — | — | — | Confirmed via fresh grep this session. |
 
-`lib/supabase/proxy.ts` (the file with this round's one gap) also contains no debt markers, no stub returns, and no hardcoded empty state — the defect is a logic omission (a missing array entry), not a code-smell pattern grep would catch on its own. This is exactly why this round's proof standard required a live, unauthenticated `curl` request rather than a source-level scan.
+### UAT / Gap-Tracking Consistency Note
 
-## Human Verification Required
+`02-UAT.md`'s frontmatter declares `status: resolved` and marks all 3 of its documented Gaps entries `status: resolved`. This session's independent verification confirms that framing is accurate **only for the originally-reported symptoms** (Test 2's original redirect_to defect, Test 5's no-feedback defect, Test 7's wrong-hex defect — all three genuinely fixed and source-confirmed). However, the "resolved" label on the Test 2 gap entry sits alongside its own documented caveat of two brand-new, still-open findings discovered in the same verification session — a nuance easy to miss reading the top-level `status: resolved` field in isolation. This verification treats those two findings as open gaps (see `gaps:` above), consistent with the task's explicit instruction not to assume they're resolved just because the originally-diagnosed defect is fixed.
 
-7 items deferred per `human_verify_mode: end-of-phase` (6 carried from prior rounds, unchanged in scope, plus the real-email round-trip item explicitly flagged as currently blocked by this round's gap). See frontmatter `human_verification` list for full detail — summary: full browser login click-through; real password-reset email round-trip (blocked until the proxy fix lands); Add-Staff-Account dialog; drag-reorder + switch interactions; multi-tab package form; photo upload/reorder/delete; visual/styling pass against 02-UI-SPEC.md.
+### Human Verification Required
 
-## Gaps Summary
+See `human_verification` in frontmatter — summarized:
 
-**One gap remains, and it is a new discovery in this round, not a leftover from AUTH-05.** 02-09-PLAN.md set out to close exactly one thing — the permission-denied crash — and it succeeded: this verifier independently re-ran the live proof (not the SUMMARY's claims) against both a dev server and a fresh production build, and got 4/4 PASS both times. AUTH-05 is genuinely closed.
+1. **Package create/edit form validation-feedback retest** — toast + auto-tab-switch on invalid submit; successful creation/redirect on valid submit. Code-verified, runtime-unverified.
+2. **Photo upload/reorder/delete flow** — previously blocked by the now-fixed create-form bug; not yet retested.
+3. **Full visual/styling pass beyond the two confirmed hex values** — typography, spacing, `/admin/forbidden` parity with `error.tsx`.
 
-However, a fresh code-review pass (02-REVIEW.md, this same session) surfaced a different critical defect in the same D-06 password-reset flow this phase has now touched three times (the original PKCE-exchange-route creation in 02-07, the `supabase/config.toml` allow-list fix in commit `a7c84a6`, and now this proxy-level allow-list gap). This verifier did not accept 02-REVIEW.md's finding on its own — it independently read `lib/supabase/proxy.ts`'s source and then live-reproduced the defect with `curl` against both a running dev server and a running production server, confirming an unauthenticated visitor's request to `/admin/auth/confirm` (the exact URL a real password-reset email link points at) is redirected to `/admin/login` by the proxy before the code-exchange Route Handler ever executes, in both modes.
+### Gaps Summary
 
-This is scored as a phase-goal-blocking gap, not a warning, because 02-02-PLAN.md's own `must_haves.truths` explicitly commits to "A logged-in user can request a password reset email and set a new password end-to-end (D-06)" as a phase must-have — and that flow is currently non-functional for the realistic case of a real, unauthenticated user clicking a real emailed link.
+Three confirmed, reproducible gaps block full goal achievement, none of which were introduced or worsened by this round's gap-closure plans (02-11/02-12/02-13) — they are either pre-existing (CR-01) or newly-discovered as a side effect of 02-12's own human verification (the two password-reset findings), and none has yet had a fix attempted:
 
-**The fix is a one-line addition** (`"/admin/auth/confirm"` to `lib/supabase/proxy.ts`'s `UNGATED_ADMIN_PATHS` array, exactly as 02-REVIEW.md's CR-01 proposes) — but per this phase's own established lesson (three "looks fixed but isn't" findings in a row for different mechanisms protecting this exact flow), the next closure attempt must be verified with a live, unauthenticated HTTP request against both a dev server and a production build — not a build-success check or a source-level grep, both of which would currently pass on a still-broken proxy.ts if the fix were made without re-testing this specific path (the `route.ts` file itself already passes both those checks and still doesn't work end-to-end).
+1. **Delete doesn't refresh the admin package list (PKG-03, CR-01).** A confirmed, unaddressed Critical finding from 02-REVIEW.md. The underlying deletion is correct and permission-gated; only the admin's visual list fails to update without a hard reload.
+2. **A second password-reset link bounces to login (AUTH-01).** The originally-diagnosed upstream `redirect_to`-stripping defect is genuinely fixed, but a second, independently-requested reset in the same session reproduced the same symptom via an apparently different mechanism. Root cause not yet diagnosed.
+3. **`/admin/reset-password` sometimes renders bare/unstyled HTML.** Observed persisting after refresh; root cause (dev-cache artifact vs. real bug) not yet diagnosed.
 
-Everything else checks out under this round's independent re-verification: AUTH-05 is genuinely closed (the phase's primary remaining item going into this round), CR-02's atomic package-write RPC and WR-06's client-side exception handling show no regressions, and all Server Action authorization call sites remain unchanged and correctly wired.
+Additionally, one truth (package-create/edit validation feedback, PKG-01/PKG-02) is present and correctly wired at the source level but has not been runtime-verified by a live browser test this session, and is therefore held at PRESENT_BEHAVIOR_UNVERIFIED rather than VERIFIED.
+
+Two non-blocking hardening gaps (WR-02 orphaned-account-on-failure, WR-03 no self/last-admin deactivation guard) are documented for awareness but do not block the phase goal under normal operating conditions.
 
 ---
 
