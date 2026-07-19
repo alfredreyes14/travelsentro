@@ -182,14 +182,37 @@ export function PhotoManager({
         }))
       );
 
-      const result = await uploadPhotos(packageId, files);
-      if (result.ok) {
-        setPhotos((current) => [...current, ...(result.photos ?? [])]);
+      // One Server Action call per file, awaited sequentially (never
+      // Promise.all): uploadPhotos computes each file's display_order from
+      // the current max at call time, so concurrent calls would race and
+      // collide. Sequential awaiting also means a failure partway through a
+      // multi-file selection leaves already-uploaded files visible instead
+      // of discarding the whole batch.
+      let succeededCount = 0;
+      const failedNames: string[] = [];
+      for (const file of files) {
+        const result = await uploadPhotos(packageId, [file]);
+        if (result.ok) {
+          setPhotos((current) => [...current, ...(result.photos ?? [])]);
+          succeededCount += 1;
+        } else {
+          failedNames.push(file.name);
+        }
+      }
+
+      if (succeededCount > 0) {
         toast.success(
-          files.length === 1 ? "Photo uploaded." : `${files.length} photos uploaded.`
+          succeededCount === 1
+            ? "Photo uploaded."
+            : `${succeededCount} photos uploaded.`
         );
-      } else {
-        toast.error(result.error);
+      }
+      if (failedNames.length > 0) {
+        toast.error(
+          failedNames.length === 1
+            ? `Failed to upload ${failedNames[0]}.`
+            : `Failed to upload ${failedNames.length} photos.`
+        );
       }
     } catch {
       toast.error(GENERIC_ERROR_MESSAGE);
