@@ -11,9 +11,9 @@ const ICONS: Record<ChecklistKind, LucideIcon> = {
 };
 
 const ICON_COLORS: Record<ChecklistKind, string> = {
-  included: "text-[#0E5C63]",
+  included: "text-secondary",
   excluded: "text-muted-foreground",
-  bring: "text-[#0E5C63]",
+  bring: "text-secondary",
 };
 
 /**
