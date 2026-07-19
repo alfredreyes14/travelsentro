@@ -67,6 +67,7 @@ async function seedAdmin() {
     .from('profiles')
     .select('id, email')
     .eq('role', 'admin')
+    .eq('is_active', true)
     .limit(1)
     .maybeSingle()
 
