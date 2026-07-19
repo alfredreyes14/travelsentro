@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: admin-access-package-management
 status: executing
-stopped_at: Completed 02-10-PLAN.md (AUTH-01 gap closure -- proxy allow-list fix for /admin/auth/confirm)
-last_updated: "2026-07-19T03:14:06.320Z"
+stopped_at: Completed 02-11-PLAN.md (PKG-01 gap closure -- package-create form onInvalid feedback + keepMounted tabs)
+last_updated: "2026-07-19T06:08:19.732Z"
 last_activity: 2026-07-19
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 17
-  completed_plans: 17
-  percent: 50
+  completed_phases: 1
+  total_plans: 20
+  completed_plans: 18
+  percent: 25
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 ## Current Position
 
 Phase: 02 (admin-access-package-management) — EXECUTING
-Plan: 2 of 10
+Plan: 2 of 13
 Status: Ready to execute
 Last activity: 2026-07-19 — Phase 02 execution started
 
@@ -72,6 +72,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P08 | 10min | 2 tasks | 3 files |
 | Phase 02 P09 | 12min | 2 tasks | 8 files |
 | Phase 02 P10 | 15min | 2 tasks | 3 files |
+| Phase 02 P11 | 12min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,7 @@ Recent decisions affecting current work:
 - [Phase 02-09]: Chose redirect()-based permission gate over retrying throw+error.tsx or Next 16's experimental forbidden() primitive, mirroring dal.ts's already-proven redirect("/admin/login") pattern
 - [Phase 02-09]: Left requirePermission()/requireAdmin() and error.tsx untouched -- Server Actions and 02-07's client-side try/catch still depend on the throw-based mechanism
 - [Phase 02-10]: Used a method-based (POST -> 405 vs 307) differential live-HTTP check instead of a synthetic-code GET, since the route handler's own invalid-code fallback also redirects to /admin/login
+- [Phase 02-11]: TAB_FIELD_MAP declared as an ordered array (not object) so onInvalid's tab search order matches visual tab order; photos tab excluded (no schema-backed fields)
 
 ### Pending Todos
 
@@ -145,6 +147,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-19T03:14:06.316Z
-Stopped at: Completed 02-10-PLAN.md (AUTH-01 gap closure -- proxy allow-list fix for /admin/auth/confirm)
+Last session: 2026-07-19T06:08:19.728Z
+Stopped at: Completed 02-11-PLAN.md (PKG-01 gap closure -- package-create form onInvalid feedback + keepMounted tabs)
 Resume file: None
