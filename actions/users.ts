@@ -125,12 +125,33 @@ export async function updateAccount(
 }
 
 export async function deactivateAccount(id: string): Promise<ActionResult> {
-  await requireAdmin();
+  const caller = await requireAdmin();
+
+  // T-02-40 — reject self-deactivation unconditionally, regardless of how
+  // many other admins exist. Without this, an admin could sign themselves
+  // out of the entire panel on their next request (D-05) with no recovery.
+  if (caller.id === id) {
+    return { ok: false, error: "You can't deactivate your own account." };
+  }
+
+  const supabase = await createClient();
+
+  // T-02-41 — reject deactivating the last remaining active admin, so the
+  // panel is never left with zero admins able to log in.
+  const { count: otherActiveAdminCount } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("role", "admin")
+    .eq("is_active", true)
+    .neq("id", id);
+
+  if (!otherActiveAdminCount) {
+    return { ok: false, error: "Can't deactivate the last remaining admin." };
+  }
 
   // D-05 — is_active is re-checked in lib/auth/dal.ts's getProfile() on
   // every request, so flipping this flag kills the account's session
   // immediately, not just at next login.
-  const supabase = await createClient();
   const { error } = await supabase
     .from("profiles")
     .update({ is_active: false })
