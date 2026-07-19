@@ -45,9 +45,11 @@ const GENERIC_ERROR_MESSAGE =
 export function PackageListRow({
   item,
   onMutated,
+  onDeleted,
 }: {
   item: AdminPackageListItem;
   onMutated: () => void;
+  onDeleted: (id: string) => void;
 }) {
   const {
     attributes,
@@ -112,7 +114,7 @@ export function PackageListRow({
         if (result.ok) {
           toast.success("Package deleted.");
           setIsDeleteOpen(false);
-          onMutated();
+          onDeleted(item.id);
         } else {
           toast.error(result.error);
         }

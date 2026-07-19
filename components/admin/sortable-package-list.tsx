@@ -86,6 +86,10 @@ export function SortablePackageList({
     router.refresh();
   }
 
+  function handleDeleted(id: string) {
+    setItems((current) => current.filter((item) => item.id !== id));
+  }
+
   return (
     <div className="overflow-hidden rounded-xl border border-border">
       <Table>
@@ -120,6 +124,7 @@ export function SortablePackageList({
                   key={item.id}
                   item={item}
                   onMutated={handleMutated}
+                  onDeleted={handleDeleted}
                 />
               ))}
             </TableBody>
