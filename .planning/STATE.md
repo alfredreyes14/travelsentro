@@ -6,15 +6,15 @@ current_phase: 02
 current_phase_name: admin-access-package-management
 status: executing
 stopped_at: Completed 02-12-PLAN.md (password-reset redirect_to upstream fix -- confirmed resolved via real-email test; 2 new unrelated findings flagged for /gsd-debug)
-last_updated: "2026-07-19T06:27:24.357Z"
+last_updated: "2026-07-19T12:37:57.082Z"
 last_activity: 2026-07-19
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
-  completed_phases: 2
-  total_plans: 20
-  completed_plans: 20
-  percent: 50
+  completed_phases: 1
+  total_plans: 22
+  completed_plans: 21
+  percent: 25
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 ## Current Position
 
 Phase: 02 (admin-access-package-management) — EXECUTING
-Plan: 4 of 13
+Plan: 2 of 15
 Status: Ready to execute
 Last activity: 2026-07-19 — Phase 02 execution started
 
@@ -75,6 +75,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P11 | 12min | 1 tasks | 1 files |
 | Phase 02 P13 | 10min | 2 tasks | 4 files |
 | Phase 02 P12 | 15min | 2 tasks | 2 files |
+| Phase 02 P14 | 6min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,7 @@ Recent decisions affecting current work:
 - [Phase 02-13]: Fixed components/packages/checklist.tsx's hardcoded text-[#0E5C63] drift at its source (switched to text-secondary) rather than just updating the CSS variable
 - [Phase 02-12]: Password-reset redirect_to stripping (02-UAT.md Test 2, D-06) confirmed resolved via real end-to-end email test: redirect_to=/admin/auth/confirm survived, full reset (new password + login) succeeded.
 - [Phase 02-12]: Two new, unresolved findings discovered during 02-12 real-email verification (bare-HTML styling on /admin/reset-password; second freshly-requested reset link bounces to /admin/login) are explicitly out of scope and NOT fixed -- recommend separate /gsd-debug sessions for each, not silently dropped.
+- [Phase 02]: [Phase 02-14]: Added a dedicated onDeleted(id) callback (separate from onMutated()) so publish/feature toggles keep their existing router.refresh()-based revalidation path completely untouched
 
 ### Pending Todos
 
@@ -154,6 +156,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-19T06:27:24.353Z
+Last session: 2026-07-19T12:36:59.683Z
 Stopped at: Completed 02-12-PLAN.md (password-reset redirect_to upstream fix -- confirmed resolved via real-email test; 2 new unrelated findings flagged for /gsd-debug)
 Resume file: 
+None
