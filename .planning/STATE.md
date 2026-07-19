@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: admin-access-package-management
 status: executing
-stopped_at: Completed 02-12-PLAN.md (password-reset redirect_to upstream fix -- confirmed resolved via real-email test; 2 new unrelated findings flagged for /gsd-debug)
-last_updated: "2026-07-19T12:37:57.082Z"
+stopped_at: Completed 02-15-PLAN.md (password-reset diagnostic instrumentation -- confirm-route logging added, code_verifier hypothesis refuted, reset-password bare-HTML symptom non-reproduced against dev cache and prod build)
+last_updated: "2026-07-19T12:43:50.981Z"
 last_activity: 2026-07-19
 last_activity_desc: Phase 02 execution started
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 22
-  completed_plans: 21
-  percent: 25
+  completed_plans: 22
+  percent: 50
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 
 ## Current Position
 
-Phase: 02 (admin-access-package-management) — EXECUTING
-Plan: 2 of 15
-Status: Ready to execute
-Last activity: 2026-07-19 — Phase 02 execution started
+Phase: 02 (admin-access-package-management) — ALL PLANS EXECUTED
+Plan: 15 of 15
+Status: Phase 02 execution complete -- 2 password-reset gaps carry documented diagnostics/elimination evidence, pending end-of-phase human_verify_mode live retest
+Last activity: 2026-07-19 — Completed 02-15-PLAN.md
 
 Progress: [█████░░░░░] 50%
 
@@ -76,6 +76,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P13 | 10min | 2 tasks | 4 files |
 | Phase 02 P12 | 15min | 2 tasks | 2 files |
 | Phase 02 P14 | 6min | 1 tasks | 2 files |
+| Phase 02 P15 | 15min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -127,6 +128,8 @@ Recent decisions affecting current work:
 - [Phase 02-12]: Password-reset redirect_to stripping (02-UAT.md Test 2, D-06) confirmed resolved via real end-to-end email test: redirect_to=/admin/auth/confirm survived, full reset (new password + login) succeeded.
 - [Phase 02-12]: Two new, unresolved findings discovered during 02-12 real-email verification (bare-HTML styling on /admin/reset-password; second freshly-requested reset link bounces to /admin/login) are explicitly out of scope and NOT fixed -- recommend separate /gsd-debug sessions for each, not silently dropped.
 - [Phase 02]: [Phase 02-14]: Added a dedicated onDeleted(id) callback (separate from onMutated()) so publish/feature toggles keep their existing router.refresh()-based revalidation path completely untouched
+- [Phase ?]: [Phase 02-15] Refuted the stale code_verifier cookie hypothesis via direct read of @supabase/auth-js's _exchangeCodeForSession -- removeItemAsync runs on both success and failure paths, so the SDK already self-cleans on every attempt; no cookie-clearing patch applied
+- [Phase ?]: [Phase 02-15] /admin/reset-password bare-HTML symptom did not reproduce against a clean dev cache or a production build -- closed by elimination, no code change made
 
 ### Pending Todos
 
@@ -156,7 +159,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-19T12:36:59.683Z
-Stopped at: Completed 02-12-PLAN.md (password-reset redirect_to upstream fix -- confirmed resolved via real-email test; 2 new unrelated findings flagged for /gsd-debug)
+Last session: 2026-07-19T12:43:50.977Z
+Stopped at: Completed 02-15-PLAN.md (password-reset diagnostic instrumentation -- confirm-route logging added, code_verifier hypothesis refuted, reset-password bare-HTML symptom non-reproduced against dev cache and prod build)
 Resume file: 
 None
