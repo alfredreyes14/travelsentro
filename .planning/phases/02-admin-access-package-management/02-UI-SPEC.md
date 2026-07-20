@@ -76,17 +76,17 @@ Reused directly from `app/globals.css` (already implemented in Phase 1 — not r
 | Role | Value | Usage |
 |------|-------|-------|
 | Dominant (60%) | `#FAF7F2` (warm off-white / sand) | Admin page background, card/table surfaces |
-| Secondary (30%) | `#F49314` (marigold orange) | **Admin sidebar background** (new this phase — see mapping note), section dividers |
-| Accent (10%) | `#021F4A` (deep navy blue) | See explicit reserved-for list below |
+| Secondary (30%) | `#021F4A` (deep navy blue) | **Admin sidebar background** (new this phase — see mapping note), section dividers |
+| Accent (10%) | `#F49314` (marigold orange) | See explicit reserved-for list below |
 | Destructive | `#DC2626` (red) | Delete package, deactivate account — buttons and confirmation dialog text/icon |
 
 **Sidebar token mapping (new this phase):** shadcn's `sidebar` component reads its own `--sidebar` / `--sidebar-foreground` / `--sidebar-primary` / `--sidebar-accent` tokens, which currently sit at generic shadcn gray defaults in `app/globals.css` (unused until now — Phase 1 had no sidebar). To keep the admin panel visually continuous with the public site's header/nav/footer (which already use the Secondary color), update these tokens in `app/globals.css`:
-- `--sidebar` → `#F49314` (same as `--secondary`)
+- `--sidebar` → `#021F4A` (same as `--secondary`)
 - `--sidebar-foreground` → `#FAF7F2` (same as `--secondary-foreground`)
-- `--sidebar-accent` (hover/active row background within the sidebar) → a lighter tint, e.g. `oklch(from #F49314 calc(l + 0.12) c h)` or a simple `color-mix(in oklch, #F49314 85%, white)` — exact value is an implementation detail, but must stay visibly distinct from the accent color so the active nav indicator (below) remains clearly distinguishable in the sidebar
-- `--sidebar-primary` (active/selected nav item indicator) → `#021F4A` (the accent), consistent with Phase 1's "active nav link underline" accent usage
+- `--sidebar-accent` (hover/active row background within the sidebar) → a lighter tint, e.g. `oklch(from #021F4A calc(l + 0.12) c h)` or a simple `color-mix(in oklch, #021F4A 85%, white)` — exact value is an implementation detail, but must stay visibly distinct from the accent color so the active nav indicator (below) remains clearly distinguishable in the sidebar
+- `--sidebar-primary` (active/selected nav item indicator) → `#F49314` (the accent), consistent with Phase 1's "active nav link underline" accent usage
 
-Accent (`#021F4A`) reserved for, in this phase:
+Accent (`#F49314`) reserved for, in this phase:
 - Primary submit buttons: "Log In", "Add Package", "Create Package" / "Save Changes" (package form), "Add Staff Account" / "Save Changes" (user form), "Send Reset Link", "Set New Password"
 - Active/selected sidebar nav item indicator (Packages vs Users)
 - Switch "on" state (Published toggle, Featured toggle, per-staff permission toggles) — shadcn's `switch` component defaults its checked state to `bg-primary`, which already resolves to this accent — no custom override needed, just don't recolor it
