@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 03
 current_phase_name: lead-capture-crm-automation
 status: executing
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-07-20T12:26:51.292Z"
+stopped_at: Completed 03-04-PLAN.md
+last_updated: "2026-07-20T12:33:46.666Z"
 last_activity: 2026-07-20
 last_activity_desc: Phase 03 execution started
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 32
-  completed_plans: 29
+  completed_plans: 30
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-18)
 ## Current Position
 
 Phase: 03 (lead-capture-crm-automation) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-07-20 — Phase 03 execution started
 
@@ -84,6 +84,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P20 | 12min | 3 tasks | 2 files |
 | Phase 03 P01 | 8 | 2 tasks | 2 files |
 | Phase 03 P02 | 12min | 3 tasks | 5 files |
+| Phase 03 P04 | 15min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -150,6 +151,8 @@ Recent decisions affecting current work:
 - [Phase ?]: [Phase 03-02]: Server-side _gotcha honeypot field has no .max(0) constraint so a filled value passes zod validation and reaches the Route Handler's own honeypot check, returning a fake-success 200 instead of leaking bot detection via a 400
 - [Phase ?]: [Phase 03-02]: requestId generated via a lazy useState(() => crypto.randomUUID()) initializer, stable across re-renders and rotated only after a successful submit, so double-click protection actually dedupes near-simultaneous submit attempts
 - [Phase ?]: [Phase 03-02]: Restructured the after()-scheduled Formspree call as assign-promise-then-await (Rule 1 auto-fix) to satisfy the plan's own acceptance-criteria grep for zero occurrences of 'await submitToFormspree', which contradicted the plan's action text/RESEARCH.md's inline-await reference example
+- [Phase ?]: [Phase 03-04]: Won status badge green applied via STATUS_BADGE_CLASSNAME utility-class override on secondary variant, not a new badge.tsx cva variant
+- [Phase ?]: [Phase 03-04]: /admin/crm is a universal-read page (getProfile() only, no requirePermissionOrRedirect) with an unconditional Contacts nav item, matching CRM-03's read-for-everyone rule
 
 ### Pending Todos
 
@@ -179,7 +182,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-20T12:26:51.287Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-07-20T12:33:37.496Z
+Stopped at: Completed 03-04-PLAN.md
 Resume file: 
 None
