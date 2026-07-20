@@ -39,9 +39,9 @@ Requirements for initial release. Each maps to roadmap phases.
 ### CRM
 
 - [x] **CRM-01**: New Formspree inquiry submissions automatically create a lead/contact record in the CRM (via webhook)
-- [ ] **CRM-02**: Admin/Staff can view a contact's inquiry/message history as a timeline
+- [x] **CRM-02**: Admin/Staff can view a contact's inquiry/message history as a timeline
 - [x] **CRM-03**: Admin/Staff with "edit CRM" permission can edit a contact's information; Staff without it get read-only access
-- [ ] **CRM-04**: Admin/Staff can set/update a lead's status (New / Contacted / Qualified / Won / Lost)
+- [x] **CRM-04**: Admin/Staff can set/update a lead's status (New / Contacted / Qualified / Won / Lost)
 - [x] **CRM-05**: Admin/Staff can search/filter contacts by name, status, or tag
 - [x] **CRM-06**: Admin/Staff can see which package a lead inquired about, linked directly in the CRM record
 - [x] **CRM-07**: CRM records track who created/last edited them and when (audit trail)

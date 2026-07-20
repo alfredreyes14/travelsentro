@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Public Catalog & Inquiry Entry Point** - Customers browse tour packages and reach out via WhatsApp, Facebook, or the inquiry form (completed 2026-07-18)
 - [x] **Phase 2: Admin Access & Package Management** - Admin/Staff log in and manage the package catalog under a role/permission model (gaps found 2026-07-18 — see 02-VERIFICATION.md) (completed 2026-07-18)
-- [ ] **Phase 3: Lead Capture, CRM & Automation** - Every inquiry becomes a tracked CRM lead with auto-reply and internal alert
+- [x] **Phase 3: Lead Capture, CRM & Automation** - Every inquiry becomes a tracked CRM lead with auto-reply and internal alert (completed 2026-07-20)
 - [ ] **Phase 4: Customer Messaging (Email & SMS)** - Admin/Staff message customers individually or in bulk, with opt-out enforcement
 
 ## Phase Details
@@ -150,7 +150,7 @@ Plans:
   3. Admin/Staff can view a contact's inquiry/message history as a timeline, see which package the lead inquired about, and search/filter contacts by name, status, or tag
   4. Admin/Staff can set/update a lead's status (New/Contacted/Qualified/Won/Lost); Staff without "edit CRM" permission get read-only access; every record tracks who created/last edited it and when
 
-**Plans**: 4/5 plans executed
+**Plans**: 5/5 plans complete
 
 Plans:
 
@@ -166,7 +166,7 @@ Plans:
 **Wave 3** *(blocked on Wave 2 completion)*
 
 - [x] 03-03-PLAN.md — Auto-reply + internal notification emails (Resend + React Email)
-- [ ] 03-05-PLAN.md — CRM contact detail (timeline, status editor, contact edit dialog)
+- [x] 03-05-PLAN.md — CRM contact detail (timeline, status editor, contact edit dialog)
 
 **UI hint**: yes
 
@@ -195,5 +195,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
 | 2. Admin Access & Package Management | 20/20 | Complete   | 2026-07-19 |
-| 3. Lead Capture, CRM & Automation | 4/5 | In Progress|  |
+| 3. Lead Capture, CRM & Automation | 5/5 | Complete   | 2026-07-20 |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
