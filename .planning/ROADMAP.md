@@ -76,7 +76,7 @@ Plans:
   3. A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer
   4. Admin/Staff with "manage packages" permission can create, edit, delete, publish/unpublish, feature, and reorder tour packages, and those changes are reflected on the public site from Phase 1
 
-**Plans**: 18/18 plans complete
+**Plans**: 18/19 plans complete
 
 Plans:
 
@@ -128,6 +128,10 @@ Plans:
 - [x] 02-16-PLAN.md — Raise Server Action body size limit (next.config.ts) + chunk photo uploads to one Server Action call per file
 - [x] 02-17-PLAN.md — Reject self-/last-admin deactivation in deactivateAccount() + harden seed-admin.ts's break-glass recovery check
 - [x] 02-18-PLAN.md — Add User-Agent diagnostic logging to the password-reset confirm route (hypothesis test only, not a fix)
+
+**Gap Closure — Wave 6** *(closes 02-UAT.md Test 44 / 02-VERIFICATION.md round 7's "brand color hierarchy inverted" gap, diagnosed in .planning/debug/admin-brand-color-hierarchy-inverted.md — the Secondary/Accent role assignment, not the hex-to-token mapping fixed by 02-13, was inverted)*
+
+- [ ] 02-19-PLAN.md — Swap Secondary/Accent color-role assignment (navy #021F4A → 30% large-surface Secondary; marigold #F49314 → 10% small-element Accent) across both UI-SPEC docs and app/globals.css
 
 **UI hint**: yes
 
