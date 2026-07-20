@@ -38,13 +38,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### CRM
 
-- [ ] **CRM-01**: New Formspree inquiry submissions automatically create a lead/contact record in the CRM (via webhook)
+- [x] **CRM-01**: New Formspree inquiry submissions automatically create a lead/contact record in the CRM (via webhook)
 - [ ] **CRM-02**: Admin/Staff can view a contact's inquiry/message history as a timeline
-- [ ] **CRM-03**: Admin/Staff with "edit CRM" permission can edit a contact's information; Staff without it get read-only access
+- [x] **CRM-03**: Admin/Staff with "edit CRM" permission can edit a contact's information; Staff without it get read-only access
 - [ ] **CRM-04**: Admin/Staff can set/update a lead's status (New / Contacted / Qualified / Won / Lost)
 - [ ] **CRM-05**: Admin/Staff can search/filter contacts by name, status, or tag
-- [ ] **CRM-06**: Admin/Staff can see which package a lead inquired about, linked directly in the CRM record
-- [ ] **CRM-07**: CRM records track who created/last edited them and when (audit trail)
+- [x] **CRM-06**: Admin/Staff can see which package a lead inquired about, linked directly in the CRM record
+- [x] **CRM-07**: CRM records track who created/last edited them and when (audit trail)
 
 ### Messaging
 
@@ -58,8 +58,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Automation
 
 - [ ] **AUTO-01**: Customer receives an instant auto-reply email when their inquiry is received
-- [ ] **AUTO-02**: Admin/Staff with "message customers" permission receive an internal notification when a new inquiry arrives
-- [ ] **AUTO-03**: Duplicate webhook deliveries for the same inquiry do not create duplicate leads or duplicate auto-reply/notification sends (idempotency)
+- [x] **AUTO-02**: Admin/Staff with "message customers" permission receive an internal notification when a new inquiry arrives
+- [x] **AUTO-03**: Duplicate webhook deliveries for the same inquiry do not create duplicate leads or duplicate auto-reply/notification sends (idempotency)
 
 ## v2 Requirements
 

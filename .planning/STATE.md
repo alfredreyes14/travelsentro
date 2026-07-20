@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 02
-current_phase_name: admin-access-package-management
+current_phase: 03
+current_phase_name: lead-capture-crm-automation
 status: executing
-stopped_at: Phase 03 UI-SPEC approved
-last_updated: "2026-07-20T11:26:28.790Z"
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-07-20T12:18:54.285Z"
 last_activity: 2026-07-20
-last_activity_desc: Completed 02-20-PLAN.md
+last_activity_desc: Phase 03 execution started
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 27
-  completed_plans: 27
+  total_plans: 32
+  completed_plans: 28
   percent: 50
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-18)
 
 **Core value:** A prospective customer can browse tour packages and reach out to inquire (via WhatsApp, Facebook, or the inquiry form) in under a minute, and that inquiry reliably lands in the business's CRM so no lead is lost.
-**Current focus:** Phase 02 — admin-access-package-management
+**Current focus:** Phase 03 — lead-capture-crm-automation
 
 ## Current Position
 
-Phase: 02 (admin-access-package-management) — EXECUTING
-Plan: 20 of 20
-Status: All plans complete (pending end-of-phase human verification)
-Last activity: 2026-07-20 — Completed 02-20-PLAN.md
+Phase: 03 (lead-capture-crm-automation) — EXECUTING
+Plan: 2 of 5
+Status: Ready to execute
+Last activity: 2026-07-20 — Phase 03 execution started
 
 Progress: [█████░░░░░] 50%
 
@@ -82,6 +82,7 @@ Progress: [█████░░░░░] 50%
 | Phase 02 P18 | 4min | 1 tasks | 1 files |
 | Phase 02 P19 | 8min | 2 tasks | 3 files |
 | Phase 02 P20 | 12min | 3 tasks | 2 files |
+| Phase 03 P01 | 8 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -143,6 +144,8 @@ Recent decisions affecting current work:
 - [Phase ?]: [Phase 02-19]: Swapped which UI-SPEC role (Secondary vs Accent) each hex fills, rather than repeating 02-13's approach of swapping which hex sits in which CSS variable name -- confirmed root cause was the 30%-large-surface role staying marigold regardless of variable naming
 - [Phase ?]: [Phase 02-20]: updateAccount()'s new guards scoped to values.role !== "admin" so non-role edits and Staff-to-Admin promotions are unaffected; mirrors deactivateAccount()'s exact last-admin count query shape
 - [Phase ?]: [Phase 02-20]: prevent_self_last_admin_lockout() BEFORE UPDATE trigger only fires when OLD.role='admin' and OLD.is_active=true and the update removes that -- returns NEW immediately for every other case, added as an independent DB-layer backstop behind the app-layer guard (WR-06)
+- [Phase ?]: record_inquiry() is SECURITY DEFINER (not INVOKER) to avoid ever needing an anon-scoped UPDATE RLS policy on contacts, closing arbitrary-PATCH tampering risk
+- [Phase ?]: created_by_name/updated_by_name denormalized as plain text on contacts to avoid a cross-table profiles read blocked by Phase 2 RLS
 
 ### Pending Todos
 
@@ -172,7 +175,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-20T11:26:28.784Z
-Stopped at: Phase 03 UI-SPEC approved
+Last session: 2026-07-20T12:18:54.281Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: 
-.planning/phases/03-lead-capture-crm-automation/03-UI-SPEC.md
+None

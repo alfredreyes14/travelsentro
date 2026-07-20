@@ -150,13 +150,13 @@ Plans:
   3. Admin/Staff can view a contact's inquiry/message history as a timeline, see which package the lead inquired about, and search/filter contacts by name, status, or tag
   4. Admin/Staff can set/update a lead's status (New/Contacted/Qualified/Won/Lost); Staff without "edit CRM" permission get read-only access; every record tracks who created/last edited it and when
 
-**Plans**: 5 plans
+**Plans**: 1/5 plans executed
 
 Plans:
 
 **Wave 1**
 
-- [ ] 03-01-PLAN.md — CRM schema (contacts/inquiries), record_inquiry() + get_notification_recipients() RPCs, RLS, [BLOCKING] push
+- [x] 03-01-PLAN.md — CRM schema (contacts/inquiries), record_inquiry() + get_notification_recipients() RPCs, RLS, [BLOCKING] push
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -195,5 +195,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
 | 2. Admin Access & Package Management | 20/20 | Complete   | 2026-07-19 |
-| 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
+| 3. Lead Capture, CRM & Automation | 1/5 | In Progress|  |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
