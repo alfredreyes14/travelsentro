@@ -60,9 +60,9 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: #021f4a; /* Accent (10%) — reserved for Send Inquiry CTA, From ₱X badge, Featured badge, active nav underline */
+  --primary: #f49314; /* Accent (10%) — reserved for Send Inquiry CTA, From ₱X badge, Featured badge, active nav underline */
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: #f49314; /* Secondary (30%) — header/nav/footer/dividers */
+  --secondary: #021f4a; /* Secondary (30%) — header/nav/footer/dividers */
   --secondary-foreground: #faf7f2;
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
@@ -78,16 +78,16 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  /* Phase 2 admin sidebar — mapped to the same Secondary teal used in the
+  /* Phase 2 admin sidebar — mapped to the same Secondary color used in the
      public site header/nav/footer (UI-SPEC.md Color section) so the admin
      panel reads as visually continuous with the public site. */
-  --sidebar: #f49314; /* same as --secondary */
+  --sidebar: #021f4a; /* same as --secondary */
   --sidebar-foreground: #faf7f2; /* same as --secondary-foreground */
-  --sidebar-primary: #021f4a; /* accent — active/selected nav item indicator */
+  --sidebar-primary: #f49314; /* accent — active/selected nav item indicator */
   --sidebar-primary-foreground: #faf7f2;
-  --sidebar-accent: color-mix(in oklch, #f49314 85%, white); /* hover/active row background — lighter tint, stays visibly distinct from the accent */
+  --sidebar-accent: color-mix(in oklch, #021f4a 85%, white); /* hover/active row background — lighter tint, stays visibly distinct from the accent */
   --sidebar-accent-foreground: #faf7f2;
-  --sidebar-border: color-mix(in oklch, #f49314 70%, black);
+  --sidebar-border: color-mix(in oklch, #021f4a 70%, black);
   --sidebar-ring: oklch(0.708 0 0);
 }
 
