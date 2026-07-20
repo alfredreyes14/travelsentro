@@ -150,7 +150,7 @@ Plans:
   3. Admin/Staff can view a contact's inquiry/message history as a timeline, see which package the lead inquired about, and search/filter contacts by name, status, or tag
   4. Admin/Staff can set/update a lead's status (New/Contacted/Qualified/Won/Lost); Staff without "edit CRM" permission get read-only access; every record tracks who created/last edited it and when
 
-**Plans**: 1/5 plans executed
+**Plans**: 2/5 plans executed
 
 Plans:
 
@@ -160,7 +160,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 03-02-PLAN.md — Inquiry-ingestion Route Handler + inquiry form wiring + live verification script
+- [x] 03-02-PLAN.md — Inquiry-ingestion Route Handler + inquiry form wiring + live verification script
 - [ ] 03-04-PLAN.md — CRM contact list (search/filter) + unconditional Contacts nav item
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -195,5 +195,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
 | 2. Admin Access & Package Management | 20/20 | Complete   | 2026-07-19 |
-| 3. Lead Capture, CRM & Automation | 1/5 | In Progress|  |
+| 3. Lead Capture, CRM & Automation | 2/5 | In Progress|  |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
