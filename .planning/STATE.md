@@ -159,6 +159,7 @@ Recent decisions affecting current work:
 - [Phase 03-03]: lib/crm/notify-staff.ts and app/api/inquiries/route.ts use React.createElement(Component, props) instead of JSX syntax since both are .ts (not .tsx) files
 - [Phase ?]: [Phase 03-05]: actions/crm.ts uses two distinct error-message constants (STATUS_ERROR_MESSAGE/CONTACT_ERROR_MESSAGE) per UI-SPEC's differing status-update vs contact-edit copy, instead of one shared GENERIC_ERROR_MESSAGE
 - [Phase ?]: [Phase 03-05]: page.tsx casts the joined contacts+inquiries+packages query result via 'as unknown as ContactDetail', mirroring packages/[id]/page.tsx's existing nested-relation typing pattern
+- [Phase 03]: 03-REVIEW.md found 3 Critical issues in the pushed CRM schema (email not normalized before dedup, staff-corrected name/phone silently overwritten by repeat anonymous inquiries, dead anon INSERT RLS policies giving unauthenticated direct write access). Fixed via follow-up migration 20260720130816_fix_crm_schema_review_findings.sql, pushed live and verified (9/9 checks) before phase verification.
 
 ### Pending Todos
 
