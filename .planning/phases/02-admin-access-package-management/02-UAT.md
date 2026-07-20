@@ -1,113 +1,302 @@
 ---
-status: resolved
+status: complete
 phase: 02-admin-access-package-management
-source: [02-VERIFICATION.md]
-started: 2026-07-19T03:28:49Z
-updated: 2026-07-19T06:30:00Z
+source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md, 02-06-SUMMARY.md, 02-07-SUMMARY.md, 02-08-SUMMARY.md, 02-09-SUMMARY.md, 02-10-SUMMARY.md, 02-11-SUMMARY.md, 02-12-SUMMARY.md, 02-13-SUMMARY.md, 02-14-SUMMARY.md, 02-15-SUMMARY.md, 02-16-SUMMARY.md, 02-17-SUMMARY.md, 02-18-SUMMARY.md, 02-VERIFICATION.md]
+started: 2026-07-20T06:40:06Z
+updated: 2026-07-20T07:40:00Z
 ---
 
 ## Current Test
 
-[testing paused — 1 item outstanding]
+[testing complete]
 
 ## Tests
 
-### 1. Full browser login click-through
-expected: Visit /admin/login, log in with ADMIN_EMAIL/ADMIN_PASSWORD, confirm landing on /admin/packages with a visible sidebar (Packages + Users for Admin). Login succeeds, session persists across a page refresh, sidebar renders per D-13/D-14.
+### 1. profiles/RLS/has_permission() live on Supabase
+expected: profiles table + has_permission() helper + split SELECT/UPDATE RLS policies + auto-create trigger + soft-delete column + updated public-read policies + write RLS on all 5 package tables + storage.objects write RLS, authored and pushed live to the Supabase project
+result: pass
+source: automated
+coverage_id: 02-01/D1
+
+### 2. Working Admin bootstrap account
+expected: At least one working Admin account exists (role=admin, is_active=true, all 3 permissions true) and authenticates via Supabase Auth's password grant; script is idempotent
+result: pass
+source: automated
+coverage_id: 02-01/D2
+
+### 3. Session-refresh proxy gates /admin/*
+expected: proxy.ts + lib/supabase/proxy.ts refresh the Supabase session on every request and redirect unauthenticated /admin/* visits to /admin/login, except the 3 ungated auth pages
+result: pass
+source: automated
+coverage_id: 02-02/D1
+
+### 4. Users Server Actions require admin
+expected: createAccount()/updateAccount()/deactivateAccount() Server Actions exist in actions/users.ts, each calling requireAdmin() before any Supabase write
+result: pass
+source: automated
+coverage_id: 02-03/D1
+
+### 5. Package lifecycle actions require permission
+expected: actions/packages.ts exports softDeletePackage, publishPackage, featurePackage, reorderPackages — each calls requirePermission('can_manage_packages') before any Supabase write, and softDeletePackage sets both deleted_at and is_published=false atomically
+result: pass
+source: automated
+coverage_id: 02-04/D1
+
+### 6. Lifecycle actions revalidate public + admin paths
+expected: Every lifecycle Server Action calls revalidatePath so Phase 1's public /packages and /packages/{slug} pages, plus the admin list, reflect mutations without a redeploy
+result: pass
+source: automated
+coverage_id: 02-04/D2
+
+### 7. Admin package list query + gate
+expected: Admin package list is requirePermission-gated, queries packages filtering .is('deleted_at', null) with no is_published filter (so admin sees drafts), ordered by sort_order, with a UI-SPEC-matching empty state
+result: pass
+source: automated
+coverage_id: 02-04/D3
+
+### 8. Package form schema validation message
+expected: package-form-schema.ts exports PackageFormValues; price rejects non-positive values with the exact message "Price must be a positive number"
+result: pass
+source: automated
+coverage_id: 02-05/D1
+
+### 9. Package form field-array naming
+expected: package-form.tsx uses template-literal field names for every useFieldArray row, and does not reference PhotoManager (that lands in 02-06)
+result: pass
+source: automated
+coverage_id: 02-05/D2
+
+### 10. Create/update package permission + draft defaults
+expected: createPackage/updatePackage both call requirePermission('can_manage_packages') before any write; createPackage explicitly sets is_published: false; edit page queries by id with no is_published filter so drafts remain editable
+result: pass
+source: automated
+coverage_id: 02-05/D3
+
+### 11. New/edit package routes gated server-side
+expected: Unauthenticated requests to /admin/packages/new and /admin/packages/[id] are rejected server-side (redirect to /admin/login)
+result: pass
+source: automated
+coverage_id: 02-05/D4
+
+### 12. Photo actions require permission
+expected: actions/package-photos.ts exports uploadPhotos, deletePhoto, reorderPhotos, each calling requirePermission('can_manage_packages') before any Storage/DB write
+result: pass
+source: automated
+coverage_id: 02-06/D1
+
+### 13. Photo actions touch both Storage and DB
+expected: uploadPhotos calls Storage upload; deletePhoto calls both Storage remove and a package_photos row delete
+result: pass
+source: automated
+coverage_id: 02-06/D2
+
+### 14. Photo manager wiring (dnd-kit, conditional render)
+expected: photo-manager.tsx imports dnd-kit; package-form.tsx renders PhotoManager conditionally on packageId; photo delete has no alert-dialog wrapper
+result: pass
+source: automated
+coverage_id: 02-06/D3
+
+### 15. Photo actions defense-in-depth (RLS backstop)
+expected: A Staff session without can_manage_packages cannot call photo actions even with a direct request (app-layer check + RLS backstop)
+result: pass
+source: automated
+coverage_id: 02-06/D4
+
+### 16. write_package_children() RPC is SECURITY INVOKER
+expected: public.write_package_children() exists on the live Supabase project as a SECURITY INVOKER plpgsql function with EXECUTE granted only to authenticated
+result: pass
+source: automated
+coverage_id: 02-08/D1
+
+### 17. Package children writes go through the RPC exclusively
+expected: actions/packages.ts's writePackageChildren() calls the RPC exclusively — no independent multi-call delete-then-insert path remains
+result: pass
+source: automated
+coverage_id: 02-08/D2
+
+### 18. Generated types reflect the new RPC
+expected: types/database.ts reflects write_package_children in its Functions block
+result: pass
+source: automated
+coverage_id: 02-08/D3
+
+### 19. Redirect-based permission gate wired on all 4 pages
+expected: requirePermissionOrRedirect()/requireAdminOrRedirect() added to dal.ts, redirecting to /admin/forbidden on denial; all 4 gated dashboard pages call the new guards as their first statement
+result: pass
+source: automated
+coverage_id: 02-09/D1
+
+### 20. Live permission-denial verified via script (dev + prod build)
+expected: A zero-permission Staff session requesting a gated page receives a graceful HTTP 200 denial page (never 500), proven via scripts/verify-permission-denial.ts against both a live dev server and a live production build; Admin session unaffected
+result: pass
+source: automated
+coverage_id: 02-09/D2
+
+### 21. /admin/auth/confirm reachable through the proxy
+expected: lib/supabase/proxy.ts's UNGATED_ADMIN_PATHS allow-lists /admin/auth/confirm; verified live via scripts/verify-auth-confirm-reachable.ts against dev and production build
+result: pass
+source: automated
+coverage_id: 02-10/D1
+
+### 22. Proxy still gates /admin/packages (no regression)
+expected: Control check — /admin/packages remains gated (307 to /admin/login) for an unauthenticated visitor in both dev and production build
+result: pass
+source: automated
+coverage_id: 02-10/D2
+
+### 23. Valid package-create submission still works after 02-11's onInvalid fix
+expected: A fully-valid package-create form submission still creates the package and redirects to its edit page, unchanged by 02-11's validation fix
+result: pass
+source: automated
+coverage_id: 02-11/D2
+
+### 24. Automated Management API re-save + regression check for redirect_to stripping
+expected: scripts/verify-password-reset-redirect.ts performs the Management API re-save and a disposable-user differential regression check for this defect class
+result: pass
+source: automated
+coverage_id: 02-12/D2
+
+### 25. Brand color tokens updated in globals.css
+expected: --primary/--secondary and all 4 derived --sidebar-* tokens updated to #021f4a navy / #f49314 marigold with zero old-hex references remaining
+result: pass
+source: automated
+coverage_id: 02-13/D1
+
+### 26. checklist.tsx uses the token, not a hardcoded hex
+expected: components/packages/checklist.tsx icon colors resolve via text-secondary Tailwind utility instead of hardcoded text-[#0E5C63]
+result: pass
+source: automated
+coverage_id: 02-13/D2
+
+### 27. UI-SPEC docs updated to match new brand hex values
+expected: 01-UI-SPEC.md and 02-UI-SPEC.md document the new hex values with no stale color-name adjectives left describing the wrong hue
+result: pass
+source: automated
+coverage_id: 02-13/D3
+
+### 28. Auth-confirm diagnostic logging present on all failure paths
+expected: app/admin/auth/confirm/route.ts logs a distinguishable diagnostic entry for every failure path, without changing any redirect target or success-path behavior
+result: pass
+source: automated
+coverage_id: 02-15/D1
+
+### 29. code_verifier cookie hypothesis investigated and refuted
+expected: Stale code_verifier cookie hypothesis investigated against the installed @supabase/auth-js SDK's own source, with the finding documented (SDK self-cleans on both success and failure paths)
+result: pass
+source: automated
+coverage_id: 02-15/D2
+
+### 30. reset-password bare-HTML symptom non-reproduced against clean cache / prod build
+expected: /admin/reset-password's bare-HTML symptom tested against a clean dev cache and a production build via curl — did not reproduce in either condition (evidence, not proof, since neither exercises a real PKCE-redirect browser landing)
+result: pass
+source: automated
+coverage_id: 02-15/D3
+
+### 31. Photo body-size-limit config raised correctly
+expected: next.config.ts raises the Server Action body size limit to 10mb via the config key confirmed correct for this project's installed Next.js version
+result: pass
+source: automated
+coverage_id: 02-16/D1
+
+### 32. Photo uploads chunked to one Server Action call per file
+expected: photo-manager.tsx sends one uploadPhotos() call per selected file, awaited sequentially, instead of one batched call for the whole selection
+result: pass
+source: automated
+coverage_id: 02-16/D2
+
+### 33. Self-deactivation rejected at the code level
+expected: deactivateAccount(id) rejects self-deactivation (caller.id === id) with a specific error message before any database write
+result: pass
+source: automated
+coverage_id: 02-17/D1
+
+### 34. Auth-confirm route logs User-Agent on all 3 code paths
+expected: app/admin/auth/confirm/route.ts logs userAgent on all 3 code paths (success, missing-code, exchange-failure), additive to 02-15's diagnostics with zero behavior change
+result: pass
+source: automated
+coverage_id: 02-18/D1
+
+### 35. Full admin login + dashboard shell
+expected: Visit /admin/login, log in with ADMIN_EMAIL/ADMIN_PASSWORD (from .env.local). Land on /admin/packages with a visible sidebar showing Packages + Users nav items. Session persists across a page refresh.
 result: pass
 
-### 2. Real password-reset email round-trip
-expected: Request a reset for a real mailbox, click the actual emailed link, set a new password, log in with it. Reset email arrives with a working link; the code-exchange lands the user authenticated on /admin/reset-password (not /admin/login); the new password logs in successfully. Newly unblocked this round — the proxy-level defect (CR-01) that made this unreachable is now independently confirmed closed; this is the single highest-priority item remaining.
-result: issue
-reported: "I received the email but when I click the link, I got bounced back to login page. I clicked the link from the email tab (same browser, not a different one) then I got redirected to login."
-severity: major
-
-### 3. Add-Staff-Account dialog
-expected: Admin creates a new Staff account, sets name/role/permission toggles, confirms the new account can log in and sees only the nav items its permissions allow. Account created, permission toggles persist, new account's sidebar matches D-13/D-14 exactly.
+### 36. Staff account lifecycle + immediate deactivation kick
+expected: |
+  As Admin, create a new Staff account via "Add Staff Account", set permission toggles (e.g. only "manage packages" on). Confirm the new account logs in and its sidebar shows ONLY the nav items its permissions allow.
+  Then deactivate that Staff account from the Users list. On the Staff session's very next request (not just next login), it's signed out and redirected to /admin/login — confirming is_active is re-checked live, not just cached at login.
 result: pass
 
-### 4. Drag-reorder package list + publish/feature switch interactions
-expected: Drag-reorder persists new sort_order; switches optimistically update and persist; a simulated failure reverts the switch and shows a toast.
+### 37. Self-deactivation lockout guard (NEW this session, 02-17)
+expected: |
+  As the sole/current Admin, attempt to deactivate your OWN account from the Users list. A toast shows "You can't deactivate your own account." and your account remains active — no write occurs, you are NOT signed out.
 result: pass
 
-### 5. Multi-tab package create/edit form
-expected: Itinerary days, inclusions, FAQ facts, price/photos across the full package-form UI. All fields save correctly; package appears/updates on the Phase 1 public site after publish.
-result: issue
-reported: "There is no save or publish button. Just create package, nothing happens when I click it."
-severity: major
+### 38. Package list management — drag-reorder, publish/feature, delete
+expected: |
+  On /admin/packages: drag a package row to a new position — new order persists after a page refresh. Toggle the Published/Featured switches — they update optimistically and persist.
+  Delete a package via its row menu (confirm the alert dialog) — the row disappears from the list IMMEDIATELY with no page reload.
+result: pass
 
-### 6. Photo upload/reorder/delete flow
-expected: Photos upload, drag-reorder persists display_order, delete removes the Storage object and DB row. Known edge-case gaps flagged in 02-REVIEW.md (commit cfbe794) WR-08/WR-09/WR-10 worth exercising manually.
-result: blocked
-blocked_by: other
-reason: "Photo upload requires an existing package (photos says 'need to save the package first'), but Test 5's Create Package button does nothing — same root cause, could not reach photo upload to test it independently."
+### 39. Package create/edit form — multi-tab validation
+expected: |
+  Open "New Package", fill the Details tab, leave a required field empty on the Inclusions & FAQ tab, switch to a different tab, then click Create Package. A toast appears AND the form auto-switches to the tab containing the error.
+  Fill all required fields correctly and resubmit — the package is created and you're redirected to its edit page. Then edit one of the existing seeded packages' itinerary — changes persist and appear on its public detail page once published.
+result: pass
 
-### 7. Full visual/styling pass
-expected: Admin panel matches TravelSentro brand tokens (teal/orange sidebar, Prata/Inter typography) consistently across all screens, including the /admin/forbidden page's visual parity with error.tsx.
+### 40. Photo upload with realistic file sizes, reorder, delete (NEW this session, 02-16)
+expected: |
+  On a package's edit page, Photos tab: select one or more REALISTIC-sized photo files (multi-hundred-KB to several-MB, as a phone or DSLR camera would produce — NOT a tiny test image) via the file input. Each uploads successfully (thumbnail appears, success toast) instead of failing against the old 1MB limit.
+  Drag-reorder photos — new order persists. Delete a photo — removed from both the gallery and the public package detail page.
+  If you select a multi-file batch where one file is deliberately oversized/invalid alongside valid ones, the valid files stay visible even if the oversized one fails with its own error toast.
+result: pass
+
+### 41. Permission-denial UX for zero-permission Staff
+expected: |
+  As a Staff account with NO permissions granted, visit a gated page directly (e.g. /admin/packages/new or /admin/users). You see the graceful message "You don't have permission to do that. Contact an Admin if you think this is a mistake." — never a raw crash/500 error page.
+result: pass
+
+### 42. Second, independently-requested password-reset link (AUTH-01 — still unresolved)
+expected: |
+  The FIRST password-reset round trip is already confirmed working (verified live with a real email in a prior session). This test is specifically about a SECOND, independent reset.
+  Complete one password reset successfully (new password + login). Then, in the SAME browser session, immediately request a SECOND, independent password reset and click that new email's link.
+  Ideally it now succeeds. If it still bounces to /admin/login, check the server logs for the new "[admin-auth-confirm] exchangeCodeForSession succeeded" entry's userAgent value and the failure log's userAgent value (both added this session for diagnosis) and report both — this is the concrete signal we're trying to capture, whichever way the test goes.
+result: pass
+
+### 43. Reset-password page visual styling post-redirect
+expected: Immediately after a successful password-reset redirect, /admin/reset-password renders its intended styled UI (brand colors/typography) — not bare/unstyled HTML. Refresh the page — styling should persist.
+result: pass
+
+### 44. Full visual/brand pass across admin panel
+expected: Admin panel (sidebar, buttons, switches, badges, forms) consistently uses the navy #021f4a / marigold #f49314 brand tokens and Prata/Inter typography across all screens, including the /admin/forbidden denial page visually matching error.tsx's style.
 result: issue
-reported: "Use #021f4a for primary and #f49314 for secondary."
+reported: "failed, public site and admin panel uses #f49314 for primary color. Again primary color is #021f4a and #f49314 secondary"
 severity: cosmetic
+
+### 45. Break-glass admin recovery script (technical check, NEW this session, 02-17) — optional
+expected: |
+  Requires direct Supabase DB + terminal access, not just a browser. Type "skip" if you'd rather not run this right now — it's a lower-priority operational check.
+  Manually set a role='admin' profile's is_active to false in Supabase (simulating an accidental lockout), then run `npm run seed:admin`. It should NOT silently no-op — instead it finds/recreates the ADMIN_EMAIL auth user and promotes it (is_active: true) to a working login.
+result: skipped
+reason: user declined this optional operational/technical check for now
 
 ## Summary
 
-total: 7
-passed: 3
-issues: 3
+total: 45
+passed: 43
+issues: 1
 pending: 0
-skipped: 0
-blocked: 1
+skipped: 1
+blocked: 0
 
 ## Gaps
 
-- truth: "Reset email arrives with a working link; the code-exchange lands the user authenticated on /admin/reset-password (not /admin/login); the new password logs in successfully."
-  status: resolved
-  resolution: "02-12-PLAN.md's Management API re-save fixed the diagnosed root cause. Developer confirmed live with a real email: redirect_to=http://localhost:3000/admin/auth/confirm (intact), and the full reset (new password + login) succeeded. NOTE: two new, separately-tracked findings surfaced during this same live retest (unstyled /admin/reset-password rendering; a second independently-requested reset link bouncing to /admin/login) -- see 02-12-SUMMARY.md, STATE.md, and .planning/debug/resolved/password-reset-bounce-to-login.md's caveat field. Neither is root-caused yet; both need their own /gsd-debug session."
-  reason: "User reported: I received the email but when I click the link, I got bounced back to login page. I clicked the link from the email tab (same browser, not a different one) then I got redirected to login."
-  severity: major
-  test: 2
-  root_cause: "NOT an application code bug -- the hosted Supabase Auth project (ref wisesrmizzgfbwlktoxh) does not honor the redirect_to value requestPasswordReset() requests (http://localhost:3000/admin/auth/confirm) when generating password-recovery links, EVEN THOUGH that exact URL is present in the project's configured Redirect URL allow-list (confirmed live via the Supabase Management API). Live reproduction (via disposable test users created and cleaned up through the Management API -- no real email sent to anyone) showed every tested redirect_to variant, including exact allow-list matches, gets silently replaced with the bare Site URL (http://127.0.0.1:3000, path stripped). Because of this, the emailed reset link's redirect never actually targets /admin/auth/confirm, so exchangeCodeForSession() in route.ts is never reached -- the round trip fails BEFORE the app's own PKCE-exchange code runs. This is a known class of Supabase/GoTrue platform behavior for resetPasswordForEmail() with localhost-based redirect URLs (upstream: supabase/supabase#10534, #36640, #39718), not a defect in this codebase. 02-10's proxy-layer reachability fix (lib/supabase/proxy.ts) remains valid and necessary -- it is just not sufficient, since this defect is upstream of the proxy entirely. Caveat: the debug agent's reproduction used admin.generateLink() (architecturally distinct from the real resetPasswordForEmail() client flow per Supabase's own docs), so the redirect_to/path-stripping finding is strongly evidenced but not 100% confirmed against a real received email -- recommended one-look confirmation: copy the raw link address (not click) from a real reset email and inspect its redirect_to= param."
-  artifacts:
-    - path: "Supabase hosted project config (Authentication -> URL Configuration, project ref wisesrmizzgfbwlktoxh)"
-      issue: "Declared Redirect URL allow-list and the live GoTrue server's actual redirect_to-handling behavior are out of sync -- config declares the URL is allowed, but generated links don't route to it"
-  missing:
-    - "Re-save the Redirect URLs list in the Supabase dashboard (Authentication -> URL Configuration) to force GoTrue to reload its config -- config/server state may just be stale"
-    - "Confirm with a real received email: copy the link address (don't click) and inspect its redirect_to= param to settle the remaining reproduction nuance"
-    - "Consider testing against a real deployed URL (once Vercel is linked) instead of localhost, since the known upstream reports are specifically about localhost redirect URLs -- production may not exhibit this at all"
-    - "If the dashboard re-save doesn't resolve it, escalate to Supabase support referencing supabase/supabase#10534, #36640, #39718"
-  debug_session: ".planning/debug/password-reset-bounce-to-login.md"
-
-- truth: "Admin/Staff with 'manage packages' permission can create tour packages via the package-form UI."
-  status: resolved
-  resolution: "02-11-PLAN.md wired onInvalid into form.handleSubmit, made Tabs controlled with auto-switch to the first errored tab, and added keepMounted to all 4 tabs. All automated acceptance criteria plus npm run lint/build passed. Live browser retest of Test 5 (and the newly-unblocked Test 6, photo upload) not yet explicitly confirmed by the developer in this session -- carried forward to end-of-phase human verification per human_verify_mode: end-of-phase."
-  reason: "User reported: There is no save or publish button. Just create package, nothing happens when I click it."
-  severity: major
-  test: 5
-  root_cause: "PackageForm's submit is wired as form.handleSubmit(onSubmit) with NO onInvalid handler (components/admin/package-form.tsx:134) -- on Zod validation failure, react-hook-form silently updates formState.errors and never calls onSubmit, so nothing observable happens (no toast, no navigation, no DB row). Compounded by components/ui/tabs.tsx's TabsContent sitting on Base UI's Tabs.Panel, whose keepMounted defaults to false (confirmed in node_modules/@base-ui/react/tabs/panel/TabsPanel.mjs) -- an inactive tab's FormField/FormMessage error UI is fully unmounted from the DOM, not just hidden, so even if the user WAS on the right tab when submitting, errors on OTHER tabs are invisible. Likely concrete trigger: bestTimeToGo and groupSize (both min(1)-required in package-form-schema.ts) sit at the bottom of the crowded 'Inclusions & FAQ' tab and are easy to miss; the Create Package button lives outside <Tabs> (always visible regardless of active tab), so a user can fill Details/Itinerary, skip those two fields, land on a different tab, and click submit with zero visible feedback."
-  artifacts:
-    - path: "components/admin/package-form.tsx"
-      issue: "form.handleSubmit(onSubmit) has no onInvalid handler to surface validation failures to the user"
-    - path: "components/ui/tabs.tsx"
-      issue: "TabsContent doesn't set keepMounted on Base UI's Tabs.Panel, so inactive tabs' error UI is unmounted rather than hidden"
-    - path: "components/admin/package-form-schema.ts"
-      issue: "bestTimeToGo/groupSize required fields are easy to overlook, positioned at the bottom of a crowded tab"
-  missing:
-    - "Add an onInvalid handler to form.handleSubmit(onSubmit, onInvalid) that shows a toast (e.g. \"Please fix the highlighted fields\") and/or programmatically switches to the first tab containing an error"
-    - "Consider setting keepMounted on TabsContent for tabs containing form fields so FormMessage errors remain visible/reachable even when not the active tab"
-  debug_session: ".planning/debug/create-package-button-noop.md"
-
-- truth: "Admin panel matches TravelSentro brand tokens (teal/orange sidebar, Prata/Inter typography) consistently across all screens."
-  status: resolved
-  resolution: "02-13-PLAN.md updated app/globals.css's --primary/--secondary and 4 derived --sidebar-* tokens to #021f4a/#f49314, fixed components/packages/checklist.tsx's hardcoded hex drift, and updated both Phase 1/2 UI-SPEC.md docs. npm run build passed. Full visual retest carried forward to end-of-phase human verification per human_verify_mode: end-of-phase."
-  reason: "User reported: Use #021f4a for primary and #f49314 for secondary. Current tokens in app/globals.css: --primary: #f5793a, --secondary: #0e5c63, --sidebar: #0e5c63 (same as --secondary), --sidebar-primary: #f5793a (same as --primary). User's requested values differ from both current hex codes and, for --primary specifically, from the previously documented UI-SPEC accent-orange role."
+<!-- YAML format for plan-phase --gaps consumption -->
+- truth: "Admin panel (sidebar, buttons, switches, badges, forms) consistently uses the navy #021f4a / marigold #f49314 brand tokens as Dominant/Secondary per UI-SPEC, across all screens."
+  status: failed
+  reason: "User reported: failed, public site and admin panel uses #f49314 for primary color. Again primary color is #021f4a and #f49314 secondary"
   severity: cosmetic
-  test: 7
-  root_cause: "Not a bug -- the brand color values hardcoded in app/globals.css (--primary: #f5793a, --secondary: #0e5c63) simply don't match the values the user now wants (#021f4a primary, #f49314 secondary). No investigation needed; this is a direct token-value update."
-  artifacts:
-    - path: "app/globals.css"
-      issue: "--primary (#f5793a -> #021f4a) and --secondary (#0e5c63 -> #f49314) need updating; --sidebar/--sidebar-primary/--sidebar-accent/--sidebar-border are derived from these two via literal duplication or color-mix() and must be updated in lockstep (lines ~63-91 in the :root block)."
-  missing:
-    - "Update --primary and --secondary in app/globals.css to the new hex values"
-    - "Update the 3 derived --sidebar-* tokens that currently hardcode or color-mix() off the old --secondary value"
-    - "Scope check: these are global CSS custom properties, not admin-scoped -- changing them also re-colors the already-shipped Phase 1 public site (WhatsApp/Facebook CTA buttons, package badges, header/footer), not just the admin panel. Confirm with the user whether that's intended before applying, since Test 7 was scoped as an admin-panel visual check but the fix's blast radius is site-wide."
-    - "Update .planning/phases/01-public-catalog-inquiry-entry-point/01-UI-SPEC.md and .planning/phases/02-admin-access-package-management/02-UI-SPEC.md's documented hex values so future phases don't regress back to the old colors"
+  test: 44
+  root_cause: ""
+  artifacts: []
+  missing: []
   debug_session: ""
