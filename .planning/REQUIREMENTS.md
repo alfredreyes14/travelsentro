@@ -57,7 +57,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Automation
 
-- [ ] **AUTO-01**: Customer receives an instant auto-reply email when their inquiry is received
+- [x] **AUTO-01**: Customer receives an instant auto-reply email when their inquiry is received
 - [x] **AUTO-02**: Admin/Staff with "message customers" permission receive an internal notification when a new inquiry arrives
 - [x] **AUTO-03**: Duplicate webhook deliveries for the same inquiry do not create duplicate leads or duplicate auto-reply/notification sends (idempotency)
 
