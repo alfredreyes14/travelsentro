@@ -65,7 +65,7 @@ Plans:
 
 ### Phase 2: Admin Access & Package Management
 
-**Goal**: Admin and Staff can securely log into an admin panel, and manage the tour package catalog according to their individually-assigned permissions.
+**Goal**: As a TravelSentro Admin or Staff member, I want to securely log into an admin panel and manage the tour package catalog according to my individually-assigned permissions, so that the business can keep its live package catalog accurate and control exactly who can change it, without needing a developer for every update.
 **Mode:** mvp
 **Depends on**: Phase 1
 **Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, PKG-01, PKG-02, PKG-03, PKG-04, PKG-05, PKG-06
