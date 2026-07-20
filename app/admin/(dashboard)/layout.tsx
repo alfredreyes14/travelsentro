@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PackageIcon, UsersIcon, LogOutIcon } from "lucide-react";
+import { PackageIcon, ContactIcon, UsersIcon, LogOutIcon } from "lucide-react";
 
 import { getProfile } from "@/lib/auth/dal";
 import { logout } from "@/actions/auth";
@@ -55,6 +55,15 @@ export default async function AdminDashboardLayout({
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
+                {/* CRM-03: universal read -- every authenticated Admin/Staff
+                    sees "Contacts" regardless of can_edit_crm, deliberately
+                    NOT permission-gated (unlike Packages/Users above). */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton render={<Link href="/admin/crm" />}>
+                    <ContactIcon />
+                    <span>Contacts</span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 {canManageUsers && (
                   <SidebarMenuItem>
                     <SidebarMenuButton render={<Link href="/admin/users" />}>
