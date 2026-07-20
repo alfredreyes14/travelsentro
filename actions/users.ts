@@ -102,9 +102,38 @@ export async function updateAccount(
   // T-02-14 — requireAdmin() here, and the profiles UPDATE RLS policy
   // (admin-only, no self-referential clause) independently rejects any
   // non-admin write at the database layer regardless of this check.
-  await requireAdmin();
+  const caller = await requireAdmin();
+
+  // AUTH-03 — reject self-demotion unconditionally, regardless of how many
+  // other admins exist, mirroring deactivateAccount()'s T-02-40 self-check.
+  // Without this, an ordinary "Edit Account" role change on the caller's own
+  // row (reachable unconditionally per components/admin/users-table.tsx)
+  // could silently lock the caller out of every admin-gated request.
+  if (values.role !== "admin" && caller.id === id) {
+    return { ok: false, error: "You can't remove your own admin role." };
+  }
 
   const supabase = await createClient();
+
+  // AUTH-03 — reject removing the last remaining active admin's admin role,
+  // mirroring deactivateAccount()'s T-02-41 last-admin check, so the panel
+  // is never left with zero admins able to log in.
+  if (values.role !== "admin") {
+    const { count: otherActiveAdminCount } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "admin")
+      .eq("is_active", true)
+      .neq("id", id);
+
+    if (!otherActiveAdminCount) {
+      return {
+        ok: false,
+        error: "Can't remove the last remaining admin's admin role.",
+      };
+    }
+  }
+
   const { error } = await supabase
     .from("profiles")
     .update({
