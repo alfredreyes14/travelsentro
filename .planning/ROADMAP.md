@@ -150,7 +150,24 @@ Plans:
   3. Admin/Staff can view a contact's inquiry/message history as a timeline, see which package the lead inquired about, and search/filter contacts by name, status, or tag
   4. Admin/Staff can set/update a lead's status (New/Contacted/Qualified/Won/Lost); Staff without "edit CRM" permission get read-only access; every record tracks who created/last edited it and when
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — CRM schema (contacts/inquiries), record_inquiry() + get_notification_recipients() RPCs, RLS, [BLOCKING] push
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 03-02-PLAN.md — Inquiry-ingestion Route Handler + inquiry form wiring + live verification script
+- [ ] 03-04-PLAN.md — CRM contact list (search/filter) + unconditional Contacts nav item
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 03-03-PLAN.md — Auto-reply + internal notification emails (Resend + React Email)
+- [ ] 03-05-PLAN.md — CRM contact detail (timeline, status editor, contact edit dialog)
+
 **UI hint**: yes
 
 ### Phase 4: Customer Messaging (Email & SMS)
