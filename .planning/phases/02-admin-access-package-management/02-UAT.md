@@ -1,9 +1,9 @@
 ---
-status: diagnosed
+status: complete
 phase: 02-admin-access-package-management
-source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md, 02-06-SUMMARY.md, 02-07-SUMMARY.md, 02-08-SUMMARY.md, 02-09-SUMMARY.md, 02-10-SUMMARY.md, 02-11-SUMMARY.md, 02-12-SUMMARY.md, 02-13-SUMMARY.md, 02-14-SUMMARY.md, 02-15-SUMMARY.md, 02-16-SUMMARY.md, 02-17-SUMMARY.md, 02-18-SUMMARY.md, 02-VERIFICATION.md]
+source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md, 02-06-SUMMARY.md, 02-07-SUMMARY.md, 02-08-SUMMARY.md, 02-09-SUMMARY.md, 02-10-SUMMARY.md, 02-11-SUMMARY.md, 02-12-SUMMARY.md, 02-13-SUMMARY.md, 02-14-SUMMARY.md, 02-15-SUMMARY.md, 02-16-SUMMARY.md, 02-17-SUMMARY.md, 02-18-SUMMARY.md, 02-19-SUMMARY.md, 02-20-SUMMARY.md, 02-VERIFICATION.md (round 9)]
 started: 2026-07-20T06:40:06Z
-updated: 2026-07-20T07:40:00Z
+updated: 2026-07-20T12:05:00Z
 ---
 
 ## Current Test
@@ -279,13 +279,46 @@ expected: |
 result: skipped
 reason: user declined this optional operational/technical check for now
 
+### 46. updateAccount() self-/last-admin lockout guard (NEW this session, 02-20)
+expected: |
+  As the current Admin, use Edit Account to try setting your OWN role to Staff. You're rejected with "You can't remove your own admin role." and no write occurs.
+  With exactly one other active admin, try demoting THAT admin's role to Staff. You're rejected with "Can't remove the last remaining admin's admin role." and no write occurs.
+  Then edit any account's name or permissions only (role unchanged) -- saves normally. Separately promote a Staff account to Admin -- also saves normally.
+result: pass
+
+### 47. profiles BEFORE UPDATE trigger backstop (NEW this session, 02-20) -- optional, requires Supabase SQL editor access
+expected: |
+  Issue a raw SQL UPDATE against the profiles table directly in the Supabase SQL editor (bypassing the app), attempting to remove admin role/is_active from a self- or last-admin row.
+  Postgres raises "Cannot remove admin access from your own account." or "Cannot remove admin access from the last remaining admin." and the row is unchanged.
+result: skipped
+reason: user declined this optional check requiring Supabase SQL editor access
+
+### 48. Last-remaining-admin deactivation of a DIFFERENT account (retest, round 8/9 behavior_unverified)
+expected: |
+  With exactly one other active admin remaining, attempt to deactivate that OTHER admin (not yourself) via /admin/users.
+  A toast shows "Can't deactivate the last remaining admin." and no write occurs -- the target account remains active.
+result: pass
+
+### 49. Break-glass admin recovery script (retest of skipped Test 45)
+expected: |
+  Manually set a role='admin' profile's is_active to false in Supabase, then run `npm run seed:admin`.
+  It finds/recreates the ADMIN_EMAIL auth user and promotes it (is_active: true) to a working login, instead of silently no-op'ing.
+result: skipped
+reason: user declined this optional operational/technical check again this round
+
+### 50. Live visual retest of 02-19's color-role swap (retest of Test 44)
+expected: |
+  Visit the admin panel (sidebar, login page, buttons, switches, badges) and the public site (header, footer, "From ₱X" badges, Featured badge, active nav underline).
+  Navy (#021F4A) reads as the dominant large-surface color (sidebar background, header/footer); marigold (#F49314) is confined to small elements only (buttons, badges, switch-on states, active nav indicator) -- the reverse of the previously-reported hierarchy.
+result: pass
+
 ## Summary
 
-total: 45
-passed: 43
+total: 50
+passed: 46
 issues: 1
 pending: 0
-skipped: 1
+skipped: 3
 blocked: 0
 
 ## Gaps
@@ -310,3 +343,5 @@ blocked: 0
     - "Update app/globals.css: --secondary should become #021f4a (was #f49314), --primary/--sidebar-primary (Accent role) should become/stay #f49314 for small elements; --sidebar and its 4 derived --sidebar-* tokens should shift from marigold-based to navy-based since --sidebar currently mirrors --secondary"
     - "Update app/(public)/layout.tsx's header/footer bg-secondary usage -- no code change needed there since it already correctly references the token by role name (bg-secondary), only the token's underlying hex value changes"
   debug_session: ".planning/debug/admin-brand-color-hierarchy-inverted.md"
+  resolved: true
+  resolved_via: "Plan 02-19 (color-role swap) + this round's Test 50 live retest, both passed -- navy now dominant on admin sidebar and public header/footer, marigold confined to small elements. No longer an open gap."
