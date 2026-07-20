@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
-import { submitToFormspree } from "@/lib/formspree";
 import { inquirySchema, type InquiryFormValues } from "./inquiry-schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,8 +21,18 @@ import {
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong sending your inquiry. Please try again, or reach us directly on WhatsApp or Facebook.";
 
-export function InquiryForm({ packageName }: { packageName?: string }) {
+export function InquiryForm({
+  packageName,
+  packageId,
+}: {
+  packageName?: string;
+  packageId?: string;
+}) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Stable across a rapid double-click (only rotated after a successful
+  // submit, below) so record_inquiry()'s request_id-keyed dedup actually
+  // catches near-simultaneous duplicate submit attempts (D-03).
+  const [requestId, setRequestId] = useState(() => crypto.randomUUID());
 
   const form = useForm<InquiryFormValues>({
     resolver: zodResolver(inquirySchema),
@@ -39,14 +48,17 @@ export function InquiryForm({ packageName }: { packageName?: string }) {
   async function onSubmit(values: InquiryFormValues) {
     setIsSubmitting(true);
     try {
-      const result = await submitToFormspree({
-        ...values,
-        package: packageName,
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId, ...values, packageId, packageName }),
       });
+      const result = await res.json();
 
-      if (result.ok) {
+      if (res.ok && result.ok) {
         toast.success("Inquiry sent! We'll get back to you soon.");
         form.reset();
+        setRequestId(crypto.randomUUID());
       } else {
         toast.error(GENERIC_ERROR_MESSAGE);
       }
