@@ -305,6 +305,8 @@ blocked: 0
     - path: "app/globals.css"
       issue: "Correctly implements the spec's role assignments -- not itself buggy, but is where any fix lands (--sidebar, --secondary, --primary, and derived --sidebar-* tokens)"
   missing:
-    - "Design decision needed: (a) swap which role marigold vs. navy occupy (make navy the 30%/large-surface Secondary color and marigold the 10%/small-element Accent), or (b) keep role assignments but shrink marigold's footprint (don't paint the entire sidebar/header/footer background in it) and give navy a larger dominant surface"
-    - "Propagate the revised role table into app/globals.css's --sidebar/--secondary/--primary tokens and both UI-SPEC docs once the direction is chosen"
+    - "USER DECISION (confirmed): swap color roles -- navy #021f4a becomes the 30%/large-surface Secondary color (site header, site footer, admin sidebar background); marigold #f49314 becomes the 10%/small-element Accent color (buttons, badges, active-nav indicator, switch-on state)"
+    - "Update 01-UI-SPEC.md and 02-UI-SPEC.md's color role tables to reflect the swapped Secondary/Accent role assignments (keep the 60/30/10 Dominant/Secondary/Accent structure, just swap which hex fills the 30% vs 10% role)"
+    - "Update app/globals.css: --secondary should become #021f4a (was #f49314), --primary/--sidebar-primary (Accent role) should become/stay #f49314 for small elements; --sidebar and its 4 derived --sidebar-* tokens should shift from marigold-based to navy-based since --sidebar currently mirrors --secondary"
+    - "Update app/(public)/layout.tsx's header/footer bg-secondary usage -- no code change needed there since it already correctly references the token by role name (bg-secondary), only the token's underlying hex value changes"
   debug_session: ".planning/debug/admin-brand-color-hierarchy-inverted.md"
