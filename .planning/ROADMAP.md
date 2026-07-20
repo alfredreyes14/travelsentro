@@ -76,7 +76,7 @@ Plans:
   3. A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer
   4. Admin/Staff with "manage packages" permission can create, edit, delete, publish/unpublish, feature, and reorder tour packages, and those changes are reflected on the public site from Phase 1
 
-**Plans**: 18/19 plans complete
+**Plans**: 19/19 plans complete
 
 Plans:
 
@@ -131,7 +131,7 @@ Plans:
 
 **Gap Closure — Wave 6** *(closes 02-UAT.md Test 44 / 02-VERIFICATION.md round 7's "brand color hierarchy inverted" gap, diagnosed in .planning/debug/admin-brand-color-hierarchy-inverted.md — the Secondary/Accent role assignment, not the hex-to-token mapping fixed by 02-13, was inverted)*
 
-- [ ] 02-19-PLAN.md — Swap Secondary/Accent color-role assignment (navy #021F4A → 30% large-surface Secondary; marigold #F49314 → 10% small-element Accent) across both UI-SPEC docs and app/globals.css
+- [x] 02-19-PLAN.md — Swap Secondary/Accent color-role assignment (navy #021F4A → 30% large-surface Secondary; marigold #F49314 → 10% small-element Accent) across both UI-SPEC docs and app/globals.css
 
 **UI hint**: yes
 
@@ -175,6 +175,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
-| 2. Admin Access & Package Management | 18/18 | Complete   | 2026-07-19 |
+| 2. Admin Access & Package Management | 19/19 | Complete   | 2026-07-19 |
 | 3. Lead Capture, CRM & Automation | 0/TBD | Not started | - |
 | 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
