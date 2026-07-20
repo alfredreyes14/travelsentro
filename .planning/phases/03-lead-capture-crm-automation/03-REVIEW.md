@@ -278,6 +278,37 @@ them to `CrmDetailInquiry` if they're meant to be used soon.
 
 ---
 
+## Resolution (post-review)
+
+All 3 Critical findings were fixed via a follow-up migration,
+`supabase/migrations/20260720130816_fix_crm_schema_review_findings.sql`,
+pushed live to the linked Supabase project immediately after this review:
+
+- **CR-01** (email normalization): `record_inquiry()` now normalizes
+  `p_email := lower(trim(p_email))` before the insert/conflict, so
+  case/whitespace variants of the same address resolve to one contact.
+- **CR-02** (silent overwrite of staff edits): the `on conflict (email) do
+  update` branch now only fills `name`/`phone` from the submission when the
+  existing value is blank — once set (at creation or by a staff edit via
+  `updateContact()`), only a staff edit can change it again. This also
+  closes a spoofing angle where an anonymous caller who knew a contact's
+  email could overwrite their real name/phone.
+- **CR-03** (unauthenticated public write access): the dead
+  `anon`/`authenticated` `INSERT` policies on `contacts` and `inquiries`
+  were dropped. `record_inquiry()` (`SECURITY DEFINER`) remains the sole
+  write path for both tables.
+
+Live-verified via a throwaway anon+service-role RPC/RLS script (9/9 checks
+passed: dedup across case/whitespace variants, staff-corrected name/phone
+surviving a subsequent anonymous inquiry, and anon direct `INSERT` now
+rejected on both tables by RLS).
+
+**Warnings (WR-01–WR-05) and Info (IN-01–IN-02) remain open** — not
+blocking, tracked for a future pass.
+
+---
+
 _Reviewed: 2026-07-20T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
+_Resolution appended: 2026-07-20 (orchestrator, post-review)_
