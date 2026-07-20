@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      contacts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          email: string
+          id: string
+          name: string
+          phone: string | null
+          status: string
+          tags: string[]
+          updated_at: string
+          updated_by: string | null
+          updated_by_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          email: string
+          id?: string
+          name: string
+          phone?: string | null
+          status?: string
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+          status?: string
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       faq_facts: {
         Row: {
           best_time_to_go: string
@@ -38,6 +98,48 @@ export type Database = {
             foreignKeyName: "faq_facts_package_id_fkey"
             columns: ["package_id"]
             isOneToOne: true
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inquiries: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          message: string
+          package_id: string | null
+          request_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          message: string
+          package_id?: string | null
+          request_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          package_id?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inquiries_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
             referencedRelation: "packages"
             referencedColumns: ["id"]
           },
@@ -222,7 +324,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_notification_recipients: {
+        Args: never
+        Returns: {
+          email: string
+        }[]
+      }
       has_permission: { Args: { perm: string; uid: string }; Returns: boolean }
+      record_inquiry: {
+        Args: {
+          p_email: string
+          p_message: string
+          p_name: string
+          p_package_id?: string
+          p_phone: string
+          p_request_id: string
+        }
+        Returns: {
+          contact_id: string
+          inquiry_id: string
+          is_new: boolean
+        }[]
+      }
       write_package_children: {
         Args: {
           p_best_time_to_go: string
