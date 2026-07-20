@@ -1,5 +1,5 @@
 ---
-status: complete
+status: diagnosed
 phase: 02-admin-access-package-management
 source: [02-01-SUMMARY.md, 02-02-SUMMARY.md, 02-03-SUMMARY.md, 02-04-SUMMARY.md, 02-05-SUMMARY.md, 02-06-SUMMARY.md, 02-07-SUMMARY.md, 02-08-SUMMARY.md, 02-09-SUMMARY.md, 02-10-SUMMARY.md, 02-11-SUMMARY.md, 02-12-SUMMARY.md, 02-13-SUMMARY.md, 02-14-SUMMARY.md, 02-15-SUMMARY.md, 02-16-SUMMARY.md, 02-17-SUMMARY.md, 02-18-SUMMARY.md, 02-VERIFICATION.md]
 started: 2026-07-20T06:40:06Z
@@ -296,7 +296,15 @@ blocked: 0
   reason: "User reported: failed, public site and admin panel uses #f49314 for primary color. Again primary color is #021f4a and #f49314 secondary"
   severity: cosmetic
   test: 44
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Not a coding defect. 01-UI-SPEC.md/02-UI-SPEC.md's color-role table assigns marigold #F49314 to the Secondary (30%) role -- the LARGEST, most persistent surfaces (site header, site footer, admin sidebar background) -- while navy #021F4A is assigned only to the Accent (10%) role, confined to small elements (buttons, badges, active-nav indicator, switch-on state). app/globals.css and app/(public)/layout.tsx correctly implement this exact role table. 02-13-PLAN.md's brand-color fix only swapped which hex value fills the pre-existing --primary/--secondary CSS variable slots -- it never revisited which UI-SPEC role (and therefore how much surface area) each color occupies. Since the 30%-large-surface role is still marigold, marigold visually dominates every screen regardless of which hex sits in which CSS variable name."
+  artifacts:
+    - path: ".planning/phases/02-admin-access-package-management/02-UI-SPEC.md"
+      issue: "Color role table assigns 30%-weighted large-surface role to marigold, 10%-weighted small-element role to navy"
+    - path: ".planning/phases/01-public-catalog-inquiry-entry-point/01-UI-SPEC.md"
+      issue: "Same role table, applies to public site header/footer"
+    - path: "app/globals.css"
+      issue: "Correctly implements the spec's role assignments -- not itself buggy, but is where any fix lands (--sidebar, --secondary, --primary, and derived --sidebar-* tokens)"
+  missing:
+    - "Design decision needed: (a) swap which role marigold vs. navy occupy (make navy the 30%/large-surface Secondary color and marigold the 10%/small-element Accent), or (b) keep role assignments but shrink marigold's footprint (don't paint the entire sidebar/header/footer background in it) and give navy a larger dominant surface"
+    - "Propagate the revised role table into app/globals.css's --sidebar/--secondary/--primary tokens and both UI-SPEC docs once the direction is chosen"
+  debug_session: ".planning/debug/admin-brand-color-hierarchy-inverted.md"
