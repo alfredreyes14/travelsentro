@@ -172,7 +172,7 @@ Plans:
 
 ### Phase 4: Customer Messaging (Email & SMS)
 
-**Goal**: Admin/Staff can proactively reach out to customers individually or in bulk via email and SMS, with opt-outs respected and every message logged to CRM history.
+**Goal**: As a TravelSentro Admin or Staff member, I want to proactively reach out to customers individually or in bulk via email and SMS, with opt-outs respected and every message logged to CRM history, so that the business can follow up on leads without risking spam complaints, provider suspension, or losing a record of what was said.
 **Mode:** mvp
 **Depends on**: Phase 3
 **Requirements**: MSG-01, MSG-02, MSG-03, MSG-04, MSG-05, MSG-06
