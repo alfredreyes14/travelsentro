@@ -48,10 +48,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Messaging
 
-- [ ] **MSG-01**: Admin/Staff with "message customers" permission can send an individual email to a contact
-- [ ] **MSG-02**: Admin/Staff with "message customers" permission can send an individual SMS to a contact
-- [ ] **MSG-03**: Admin/Staff with "message customers" permission can send a bulk email to a selected set of contacts
-- [ ] **MSG-04**: Admin/Staff with "message customers" permission can send a bulk SMS to a selected set of contacts
+- [x] **MSG-01**: Admin/Staff with "message customers" permission can send an individual email to a contact
+- [x] **MSG-02**: Admin/Staff with "message customers" permission can send an individual SMS to a contact
+- [x] **MSG-03**: Admin/Staff with "message customers" permission can send a bulk email to a selected set of contacts
+- [x] **MSG-04**: Admin/Staff with "message customers" permission can send a bulk SMS to a selected set of contacts
 - [x] **MSG-05**: Contacts can opt out of bulk email/SMS, and opted-out contacts are excluded from future bulk sends
 - [x] **MSG-06**: Sent messages (individual and bulk) are logged and visible in the contact's history
 
