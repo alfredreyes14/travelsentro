@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 4
-current_phase_name: Email & SMS
-status: verifying
-stopped_at: Completed 04-04-PLAN.md (final plan of Phase 4)
-last_updated: "2026-07-24T10:35:19.145Z"
+current_phase: 04
+current_phase_name: Customer Messaging (Email & SMS
+status: executing
+stopped_at: Paused 04-05-PLAN.md Task 2 (Semaphore credential provisioning) pending account approval
+last_updated: "2026-07-24T12:00:27.602Z"
 last_activity: 2026-07-24
-last_activity_desc: Phase 03 complete, transitioned to Phase 4
+last_activity_desc: Phase 04 execution started
 progress:
   total_phases: 4
-  completed_phases: 4
-  total_plans: 36
+  completed_phases: 3
+  total_plans: 37
   completed_plans: 36
-  percent: 100
+  percent: 75
 ---
 
 # Project State
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-24)
 
 **Core value:** A prospective customer can browse tour packages and reach out to inquire (via WhatsApp, Facebook, or the inquiry form) in under a minute, and that inquiry reliably lands in the business's CRM so no lead is lost.
-**Current focus:** Phase 4 — customer-messaging-(email-&-sms)
+**Current focus:** Phase 04 — Customer Messaging (Email & SMS)
 
 ## Current Position
 
-Phase: 4 — Customer Messaging (Email & SMS)
-Plan: 4 of 4
-Status: Phase complete — ready for verification
-Last activity: 2026-07-24 — Phase 03 complete, transitioned to Phase 4
+Phase: 04 (Customer Messaging (Email & SMS)) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 04
+Last activity: 2026-07-24 — Phase 04 execution started
 
 Progress: [████████████████████] 32/32 plans (100%)
 
@@ -188,6 +188,7 @@ None yet.
 - ⚠️ [Phase 3 → Phase 4] Bulk messaging needs consent/opt-out modeled in the CRM schema — Phase 3's `contacts` table shipped WITHOUT an opt-out/consent column (only email, name, phone, status, tags, audit columns). This did not get retrofitted as originally hoped; Phase 4 planning must add it to the schema before building bulk send, not after — PH Data Privacy Act and provider suspension risk.
 - Phase 02: two unresolved auth findings from 02-12 real-email verification need /gsd-debug -- (1) /admin/reset-password renders bare/unstyled HTML (persists after refresh, not FOUC; possible stale .next dev cache, unconfirmed); (2) a second freshly-requested password-reset link bounces to /admin/login instead of succeeding (possible session/cookie interference, unconfirmed).
 - [Phase 3] Two non-blocking code-review warnings remain open (tracked in 03-REVIEW.md, not re-litigated by 03-SECURITY.md's audit): WR-01 (`actions/crm.ts`'s `updateStatus`/`updateContact` have no server-side re-validation, client-zod only) and WR-03 (client-supplied `packageName` forwarded unverified into outbound emails).
+- Phase 4 gap-closure plan 04-05 Task 2 blocked: Semaphore SMS account pending approval (user-reported 2026-07-24). Task 1 (response-validation hardening) is done and committed (696c789). Once approved: set SEMAPHORE_API_KEY/SEMAPHORE_SENDER_NAME in .env.local, restart dev server, replay 04-UAT.md Test 3, then resume /gsd-execute-phase 04 --gaps-only to complete 04-05.
 
 ## Deferred Items
 
@@ -202,6 +203,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-24T10:35:19.141Z
-Stopped at: Completed 04-04-PLAN.md (final plan of Phase 4)
+Last session: 2026-07-24T12:00:27.598Z
+Stopped at: Paused 04-05-PLAN.md Task 2 (Semaphore credential provisioning) pending account approval
 Resume file: None
