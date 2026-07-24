@@ -221,3 +221,41 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Admin Access & Package Management | 20/20 | Complete   | 2026-07-19 |
 | 3. Lead Capture, CRM & Automation | 5/5 | Complete    | 2026-07-20 |
 | 4. Customer Messaging (Email & SMS) | 5/6 | In Progress|  |
+
+### Phase 5: Mobile Responsive & Visual Polish
+
+**Goal:** The admin CRM/packages/users tables work as touch-friendly stacked cards on mobile with bulk actions preserved, the public site reflows correctly at any browser zoom level up to 200%, and visual polish (empty/loading states, spacing, hover/focus/shadows) is applied throughout — all within the existing locked brand system, with no new capabilities added.
+**Requirements**: None (retrofit/polish phase — governed by 05-CONTEXT.md decisions D-01 through D-07, not REQUIREMENTS.md)
+**Depends on**: Phase 4
+**Success Criteria** (what must be TRUE):
+
+  1. All public pages (package list, package detail, inquiry/Contact Us form) reflow with no horizontal overflow and no overlapping elements up to 200% browser zoom
+  2. `crm-table.tsx`, the packages table, and the users table render as stacked cards (not horizontal-scroll-only or column-hiding) below the mobile breakpoint
+  3. Bulk row-selection and "Message Selected" (MSG-03/MSG-04) work identically in the CRM's mobile card layout, including the opted-out disabled-checkbox guard
+  4. The admin sidebar drawer opens/closes on mobile with adequately sized tap targets, using the existing shadcn Sidebar/Sheet pattern
+  5. Admin packages/users pages show skeleton loading states instead of a blank flash; cards/dialogs/dropdowns show a consistent shadow/elevation hierarchy, all within the locked #021F4A/#F49314/#FAF7F2 + Inter/Plus Jakarta Sans brand system
+
+**Plans:** 5 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 05-01-PLAN.md — Public site zoom-reflow fix (gallery lightbox) + live 200%/400% audit across 5 routes
+- [ ] 05-02-PLAN.md — CRM table → mobile card retrofit, bulk-select/opt-out guard preserved
+- [ ] 05-03-PLAN.md — Packages list → mobile card retrofit (dnd-kit) + packages/loading.tsx
+- [ ] 05-04-PLAN.md — Users table → mobile card retrofit + users/loading.tsx
+- [ ] 05-05-PLAN.md — Dashboard chrome polish: sidebar tap targets + Card elevation
+
+**UI hint**: yes
+
+### Phase 6: Public Site Content Sections & Hero Carousel
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 6 to break down)
