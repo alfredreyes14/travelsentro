@@ -22,19 +22,19 @@ A prospective customer can browse tour packages and reach out to inquire (via Wh
 - [x] Public site: browse tour packages (list + detail pages) — Validated in Phase 01: public-catalog-inquiry-entry-point
 - [x] Package detail: itinerary/duration, price & inclusions/exclusions, photo gallery — Validated in Phase 01: public-catalog-inquiry-entry-point
 - [x] Package CTA: "Contact us" via WhatsApp deep link and Facebook page link (no checkout) — Validated in Phase 01: public-catalog-inquiry-entry-point
+- [x] Inquiry capture: Formspree form submissions reliably become CRM leads, no duplicates on redelivery — Validated in Phase 03: lead-capture-crm-automation. Architecture pivoted from a literal Formspree webhook to routing inquiries through our own `/api/inquiries` endpoint first (synchronous `record_inquiry()` write), with Formspree kept only as a best-effort backup forward — a stronger guarantee than the original "via webhook" wording, since CRM data no longer depends on Formspree's uptime at all.
+- [x] Admin: CRM — view/manage customer & lead records (contact info, inquiry history, status, search/filter, audit trail) — Validated in Phase 03: lead-capture-crm-automation
+- [x] Automation: instant auto-reply email to customer when a new inquiry is received — Validated in Phase 03: lead-capture-crm-automation
+- [x] Automation: internal notification to admin/staff when a new inquiry arrives — Validated in Phase 03: lead-capture-crm-automation
 
 ### Active
 
-- [ ] Inquiry capture: keep existing Formspree form, webhook Formspree submissions into the CRM as new leads (Formspree-backed inquiry form shipped in Phase 01; CRM webhook still outstanding — Phase 3)
 - [ ] Admin panel: authentication with Admin and Staff roles
 - [ ] Admin: user management — Admin creates/edits/deactivates Admin and Staff accounts
 - [ ] Admin: per-staff permission toggles — can message customers, can manage packages, can edit CRM data (staff default: read-only CRM)
 - [ ] Admin: package management (CRUD) for tour packages, respecting the "can manage packages" permission
-- [ ] Admin: CRM — view/manage customer & lead records (contact info, inquiry history, status)
 - [ ] Admin: messaging — send email to customers individually or in bulk (segment/select contacts)
 - [ ] Admin: messaging — send SMS to customers individually or in bulk (pay-as-you-go provider)
-- [ ] Automation: instant auto-reply email to customer when a new inquiry is received
-- [ ] Automation: internal notification to admin/staff when a new inquiry arrives
 
 ### Out of Scope
 
@@ -63,11 +63,11 @@ A prospective customer can browse tour packages and reach out to inquire (via Wh
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
 | No checkout, WhatsApp/Facebook CTA only | Bookings are closed via conversation, not self-serve online | Confirmed in Phase 01 — WhatsApp/Facebook CTAs shipped on list and detail pages, no checkout anywhere |
-| Keep Formspree, webhook into CRM | Avoids migrating/rebuilding the existing inquiry form | Formspree-backed inquiry form shipped natively in Phase 01 (shared component, per-package + Contact Us); CRM webhook still pending Phase 3 |
+| Keep Formspree, webhook into CRM | Avoids migrating/rebuilding the existing inquiry form | Formspree-backed inquiry form shipped natively in Phase 01 (shared component, per-package + Contact Us). Phase 03 shipped a stronger version: inquiries route through our own `/api/inquiries` endpoint first (synchronous CRM write via `record_inquiry()`), with Formspree kept only as a best-effort backup forward — CRM data no longer depends on Formspree's uptime |
 | Fixed 3-toggle staff permissions (message/manage packages/edit CRM) | Enough granularity for v1 without building a full permission system | — Pending |
 | SMS included in v1 despite no free tier | Business wants SMS now; pay-as-you-go accepted | — Pending |
-| Supabase for database | Explicit user choice, has a usable free tier | — Pending |
-| Instant auto-reply + internal alert only (no drip automation yet) | Simplest automation that still prevents lost leads; drip sequences deferred | — Pending |
+| Supabase for database | Explicit user choice, has a usable free tier | Confirmed in Phase 03 — CRM schema (contacts/inquiries), RLS, and SECURITY DEFINER RPCs live on the linked Supabase project |
+| Instant auto-reply + internal alert only (no drip automation yet) | Simplest automation that still prevents lost leads; drip sequences deferred | Shipped in Phase 03 — both sends gated on the same idempotent `is_new` flag as the CRM write, so no duplicate sends on redelivery |
 | Try free Formspree dual-submit workaround before paying for webhooks | Research found Formspree's webhook plugin requires a paid plan; workaround keeps free-tier goal if current form supports JS submission | — Pending |
 | Stay on free hosting tiers as long as possible (Vercel Hobby, Supabase free) | User prioritizes free tier over strict ToS/reliability guarantees; will revisit if it becomes a real problem | — Pending |
 
@@ -89,4 +89,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-18 after Phase 01 (public-catalog-inquiry-entry-point) completion*
+*Last updated: 2026-07-24 after Phase 03 (lead-capture-crm-automation) completion*

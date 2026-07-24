@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 03
-current_phase_name: lead-capture-crm-automation
-status: verifying
-stopped_at: Completed 03-05-PLAN.md
-last_updated: "2026-07-20T12:52:49.296Z"
-last_activity: 2026-07-20
-last_activity_desc: Phase 03 execution started
+current_phase: 4
+current_phase_name: Email & SMS
+status: planning
+stopped_at: Phase 03 complete, ready to plan Phase 4
+last_updated: "2026-07-24T09:01:05.094Z"
+last_activity: 2026-07-24
+last_activity_desc: Phase 03 complete, transitioned to Phase 4
 progress:
   total_phases: 4
   completed_phases: 3
@@ -21,25 +21,25 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-07-18)
+See: .planning/PROJECT.md (updated 2026-07-24)
 
 **Core value:** A prospective customer can browse tour packages and reach out to inquire (via WhatsApp, Facebook, or the inquiry form) in under a minute, and that inquiry reliably lands in the business's CRM so no lead is lost.
-**Current focus:** Phase 03 — lead-capture-crm-automation
+**Current focus:** Phase 4 — customer-messaging-(email-&-sms)
 
 ## Current Position
 
-Phase: 03 (lead-capture-crm-automation) — EXECUTING
-Plan: 5 of 5
-Status: Phase complete — ready for verification
-Last activity: 2026-07-20 — Phase 03 execution started
+Phase: 4 — Customer Messaging (Email & SMS)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-24 — Phase 03 complete, transitioned to Phase 4
 
-Progress: [█████░░░░░] 50%
+Progress: [████████████████████] 32/32 plans (100%)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 12
 - Average duration: - min
 - Total execution time: 0 hours
 
@@ -48,6 +48,7 @@ Progress: [█████░░░░░] 50%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01 | 7 | - | - |
+| 03 | 5 | - | - |
 
 **Recent Trend:**
 
@@ -169,12 +170,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- Formspree's webhook plugin requires a paid plan (~$10+/mo) — Phase 1 must resolve this (try free client-side dual-submit workaround first; fall back to paid plan only if not viable) before Phase 3 automation is built on top of it.
 - Supabase free-tier projects auto-pause after 7 days idle — directly threatens "no lead lost"; needs a keep-alive or budget decision before go-live.
 - Vercel Hobby plan is licensed non-commercial only — plan the Pro upgrade at/before public launch.
-- Webhook automation (Phase 3) needs idempotency (dedup key, mark-processed-before-side-effects) to avoid duplicate leads/auto-replies on at-least-once delivery.
-- Bulk messaging (Phase 4) needs consent/opt-out modeled in the CRM schema from Phase 3, not retrofitted later — PH Data Privacy Act and provider suspension risk.
+- ⚠️ [Phase 3 → Phase 4] Bulk messaging needs consent/opt-out modeled in the CRM schema — Phase 3's `contacts` table shipped WITHOUT an opt-out/consent column (only email, name, phone, status, tags, audit columns). This did not get retrofitted as originally hoped; Phase 4 planning must add it to the schema before building bulk send, not after — PH Data Privacy Act and provider suspension risk.
 - Phase 02: two unresolved auth findings from 02-12 real-email verification need /gsd-debug -- (1) /admin/reset-password renders bare/unstyled HTML (persists after refresh, not FOUC; possible stale .next dev cache, unconfirmed); (2) a second freshly-requested password-reset link bounces to /admin/login instead of succeeding (possible session/cookie interference, unconfirmed).
+- [Phase 3] Two non-blocking code-review warnings remain open (tracked in 03-REVIEW.md, not re-litigated by 03-SECURITY.md's audit): WR-01 (`actions/crm.ts`'s `updateStatus`/`updateContact` have no server-side re-validation, client-zod only) and WR-03 (client-supplied `packageName` forwarded unverified into outbound emails).
 
 ## Deferred Items
 
@@ -189,6 +189,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-20T12:52:49.292Z
-Stopped at: Completed 03-05-PLAN.md
-Resume file: 
+Last session: 2026-07-24
+Stopped at: Phase 03 complete, ready to plan Phase 4
+Resume file: None
