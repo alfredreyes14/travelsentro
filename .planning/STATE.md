@@ -6,14 +6,14 @@ current_phase: 04
 current_phase_name: Customer Messaging (Email & SMS
 status: executing
 stopped_at: Paused 04-05-PLAN.md Task 2 (Semaphore credential provisioning) pending account approval
-last_updated: "2026-07-24T12:23:37.051Z"
+last_updated: "2026-07-24T12:37:30.173Z"
 last_activity: 2026-07-24
 last_activity_desc: Phase 04 execution started
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 37
-  completed_plans: 36
+  total_plans: 38
+  completed_plans: 37
   percent: 75
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 ## Current Position
 
 Phase: 04 (Customer Messaging (Email & SMS)) — EXECUTING
-Plan: 1 of 5
+Plan: 2 of 5
 Status: Ready to execute
 Last activity: 2026-07-24 — Phase 04 execution started
 
@@ -92,6 +92,7 @@ Progress: [████████████████████] 32/32 p
 | Phase 04 P02 | 3min | 2 tasks | 5 files |
 | Phase 04 P03 | 10min | 2 tasks | 9 files |
 | Phase 04 P04 | 6min | 3 tasks | 5 files |
+| Phase 04 P06 | 22min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -174,6 +175,8 @@ Recent decisions affecting current work:
 - [Phase 04-03]: Authenticated-session RLS INSERT permission differential (can_message_customers=true vs false) remains unexercised live -- no .env.local/Supabase credential access this session; carried forward from 04-01 coverage D2 as this plan's coverage D6, recommend closing during 04-04 or end-of-phase human verification
 - [Phase 04-04]: updateOptOut() gated on can_edit_crm (contact-record edit), not can_message_customers, mirroring updateStatus/updateContact
 - [Phase 04-04]: Authenticated-session RLS permission differential (can_message_customers/can_edit_crm) remains unexercised live across all of Phase 4 -- carried forward a third time (04-01 D2, 04-03 D6, 04-04 D5), flagged for end-of-phase human verification
+- [Phase ?]: [Phase 04-06]: getSecret() reads UNSUBSCRIBE_TOKEN_SECRET fresh on every call (not a cached module-level const) -- required for the fail-loud guard to actually respond to env-var state at call time
+- [Phase ?]: [Phase 04-06]: sendBatchEmails() requests permissive batch validation and returns a flat, position-aligned BatchEmailResult[]; sendBulkEmail() derives per-contact status/provider_message_id from it instead of a single call-wide flag
 
 ### Pending Todos
 
@@ -203,6 +206,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-24T12:00:27.598Z
+Last session: 2026-07-24T12:36:57.103Z
 Stopped at: Paused 04-05-PLAN.md Task 2 (Semaphore credential provisioning) pending account approval
 Resume file: None

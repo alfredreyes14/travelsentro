@@ -183,7 +183,7 @@ Plans:
   3. A contact who has opted out is excluded from all future bulk email/SMS sends
   4. Every sent message (individual and bulk) is logged and visible in the contact's history
 
-**Plans**: 4/6 plans complete
+**Plans**: 5/6 plans executed
 
 Plans:
 
@@ -206,7 +206,7 @@ Plans:
 
 **Gap Closure — Wave 5** *(closes 04-VERIFICATION.md's two remaining gaps / 04-REVIEW.md CR-01 (forgeable unsubscribe HMAC secret) and CR-02 (bulk email blanket-marks every recipient "sent" regardless of per-recipient result); depends on 04-05 for actions/messages.ts file-overlap sequencing only, not functionally related to the Semaphore SMS gap)*
 
-- [ ] 04-06-PLAN.md — Fail-loud unsubscribe HMAC secret + accurate per-recipient bulk email status
+- [x] 04-06-PLAN.md — Fail-loud unsubscribe HMAC secret + accurate per-recipient bulk email status
 
 **UI hint**: yes
 
@@ -220,4 +220,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
 | 2. Admin Access & Package Management | 20/20 | Complete   | 2026-07-19 |
 | 3. Lead Capture, CRM & Automation | 5/5 | Complete    | 2026-07-20 |
-| 4. Customer Messaging (Email & SMS) | 4/6 | Gaps Found | — |
+| 4. Customer Messaging (Email & SMS) | 5/6 | In Progress|  |
