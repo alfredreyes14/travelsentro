@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 4
 current_phase_name: Email & SMS
 status: executing
-stopped_at: Phase 4 UI-SPEC approved
-last_updated: "2026-07-24T10:15:38.393Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-07-24T10:27:09.980Z"
 last_activity: 2026-07-24
 last_activity_desc: Phase 03 complete, transitioned to Phase 4
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 36
-  completed_plans: 34
+  completed_plans: 35
   percent: 75
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 ## Current Position
 
 Phase: 4 — Customer Messaging (Email & SMS)
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-07-24 — Phase 03 complete, transitioned to Phase 4
 
@@ -90,6 +90,7 @@ Progress: [████████████████████] 32/32 p
 | Phase 03 P05 | 18min | 3 tasks | 6 files |
 | Phase 04 P01 | 6min | 2 tasks | 2 files |
 | Phase 04 P02 | 3min | 2 tasks | 5 files |
+| Phase 04 P03 | 10min | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -167,6 +168,9 @@ Recent decisions affecting current work:
 - [Phase ?]: Live-verified RLS/RPC via direct anon/service-role PostgREST calls (keys fetched via supabase projects api-keys) instead of reading .env.local
 - [Phase ?]: [Phase 04-02]: sendBatchEmails() types the react field via import type { ReactElement } from "react" rather than React.ReactElement, matching the codebase's existing named-import convention
 - [Phase ?]: [Phase 04-02]: Semaphore sender-name/endpoint live confirmation deferred to end-of-phase human verification (workflow.human_verify_mode=end-of-phase), matching 03-03's RESEND_API_KEY precedent
+- [Phase 04-03]: base-ui's Checkbox.Root uses a separate indeterminate boolean prop (not Radix's checked="indeterminate" overload) -- confirmed via node_modules/@base-ui/react type declarations before wiring the select-all header checkbox
+- [Phase 04-03]: sendBulkEmail inlines its own rolling-24h quota query rather than calling getRemainingEmailQuota() directly, avoiding a second requirePermission() round-trip within the same action
+- [Phase 04-03]: Authenticated-session RLS INSERT permission differential (can_message_customers=true vs false) remains unexercised live -- no .env.local/Supabase credential access this session; carried forward from 04-01 coverage D2 as this plan's coverage D6, recommend closing during 04-04 or end-of-phase human verification
 
 ### Pending Todos
 
@@ -195,6 +199,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-24T10:14:51.957Z
-Stopped at: Phase 4 UI-SPEC approved
-Resume file: .planning/phases/04-customer-messaging-email-sms/04-UI-SPEC.md
+Last session: 2026-07-24T10:27:09.976Z
+Stopped at: Completed 04-03-PLAN.md
+Resume file: None

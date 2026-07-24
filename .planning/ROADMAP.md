@@ -183,7 +183,7 @@ Plans:
   3. A contact who has opted out is excluded from all future bulk email/SMS sends
   4. Every sent message (individual and bulk) is logged and visible in the contact's history
 
-**Plans**: 2/4 plans executed
+**Plans**: 3/4 plans executed
 
 Plans:
 
@@ -194,7 +194,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 04-03-PLAN.md — Compose & Send: individual/bulk email+SMS actions (D-03 filter, D-07 quota gate), compose dialog, crm-table/crm-detail entry points
+- [x] 04-03-PLAN.md — Compose & Send: individual/bulk email+SMS actions (D-03 filter, D-07 quota gate), compose dialog, crm-table/crm-detail entry points
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -212,4 +212,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
 | 2. Admin Access & Package Management | 20/20 | Complete   | 2026-07-19 |
 | 3. Lead Capture, CRM & Automation | 5/5 | Complete    | 2026-07-20 |
-| 4. Customer Messaging (Email & SMS) | 2/4 | In Progress|  |
+| 4. Customer Messaging (Email & SMS) | 3/4 | In Progress|  |
