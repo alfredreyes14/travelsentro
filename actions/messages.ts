@@ -136,7 +136,8 @@ export async function sendIndividualSms(
         ? "failed"
         : "sent";
     providerMessageId = result.message_id ?? null;
-  } catch {
+  } catch (error) {
+    console.error("sendIndividualSms: Semaphore send failed", error);
     status = "failed";
     providerMessageId = null;
   }
@@ -317,7 +318,8 @@ export async function sendBulkSms(
           : "sent"
       );
     }
-  } catch {
+  } catch (error) {
+    console.error("sendBulkSms: Semaphore send failed", error);
     for (const contact of contacts) {
       statusByPhone.set(contact.phone!, "failed");
     }
