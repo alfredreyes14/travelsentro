@@ -235,7 +235,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
   4. The admin sidebar drawer opens/closes on mobile with adequately sized tap targets, using the existing shadcn Sidebar/Sheet pattern
   5. Admin packages/users pages show skeleton loading states instead of a blank flash; cards/dialogs/dropdowns show a consistent shadow/elevation hierarchy, all within the locked #021F4A/#F49314/#FAF7F2 + Inter/Plus Jakarta Sans brand system
 
-**Plans:** 2/5 plans executed
+**Plans:** 3/5 plans executed
 
 Plans:
 
@@ -243,7 +243,7 @@ Plans:
 
 - [x] 05-01-PLAN.md — Public site zoom-reflow fix (gallery lightbox) + live 200%/400% audit across 5 routes
 - [x] 05-02-PLAN.md — CRM table → mobile card retrofit, bulk-select/opt-out guard preserved
-- [ ] 05-03-PLAN.md — Packages list → mobile card retrofit (dnd-kit) + packages/loading.tsx
+- [x] 05-03-PLAN.md — Packages list → mobile card retrofit (dnd-kit) + packages/loading.tsx
 - [ ] 05-04-PLAN.md — Users table → mobile card retrofit + users/loading.tsx
 - [ ] 05-05-PLAN.md — Dashboard chrome polish: sidebar tap targets + Card elevation
 
