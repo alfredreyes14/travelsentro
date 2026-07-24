@@ -25,6 +25,8 @@ import type { ActionResult } from "@/lib/action-result";
 const SEND_ERROR_MESSAGE = "Couldn't send the message. Please try again.";
 const NO_ELIGIBLE_RECIPIENTS_MESSAGE =
   "No eligible contacts to message — all selected contacts are opted out or missing the required contact info.";
+const OPT_OUT_ERROR_MESSAGE =
+  "Something went wrong updating this contact's opt-out status. Please try again.";
 
 export type BulkSendResult =
   | { ok: true; sent: number; failed: number; total: number }
@@ -340,4 +342,37 @@ export async function sendBulkSms(
   const failed = rows.filter((r) => r.status === "failed").length;
 
   return { ok: true, sent, failed, total: contacts.length };
+}
+
+/**
+ * MSG-05 -- staff-manual opt-out toggle (the second of D-02's two opt-out
+ * paths, alongside the self-service unsubscribe link in
+ * app/unsubscribe/page.tsx). Gated on can_edit_crm (NOT
+ * can_message_customers) since this is a contact-record edit, not a message
+ * send, per 04-CONTEXT.md's explicit Claude's-Discretion note -- mirrors
+ * updateStatus/updateContact in actions/crm.ts. Reuses the existing
+ * "can_edit_crm can update contacts" RLS policy from 03-01; opted_out is
+ * just another column on contacts, no new policy needed.
+ */
+export async function updateOptOut(
+  contactId: string,
+  optedOut: boolean
+): Promise<ActionResult> {
+  await requirePermission("can_edit_crm");
+
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from("contacts")
+    .update({ opted_out: optedOut })
+    .eq("id", contactId);
+
+  if (error) {
+    return { ok: false, error: OPT_OUT_ERROR_MESSAGE };
+  }
+
+  revalidatePath("/admin/crm");
+  revalidatePath(`/admin/crm/${contactId}`);
+
+  return { ok: true };
 }

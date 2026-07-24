@@ -136,6 +136,9 @@ const columns: ColumnDef<AdminContactListItem>[] = [
             {tag}
           </Badge>
         ))}
+        {row.original.opted_out ? (
+          <Badge variant="outline">Opted out</Badge>
+        ) : null}
       </div>
     ),
   },

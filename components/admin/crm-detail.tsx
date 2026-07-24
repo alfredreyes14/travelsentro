@@ -8,6 +8,7 @@ import { SendIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateStatus } from "@/actions/crm";
+import { updateOptOut } from "@/actions/messages";
 import { ContactEditForm } from "./contact-edit-form";
 import { MessageComposeDialog } from "./message-compose-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
@@ -42,6 +44,8 @@ import {
 
 const STATUS_ERROR_MESSAGE =
   "Something went wrong updating the status. Please try again.";
+const OPT_OUT_ERROR_MESSAGE =
+  "Something went wrong updating this contact's opt-out status. Please try again.";
 
 export type CrmDetailContact = {
   id: string;
@@ -78,6 +82,7 @@ export function CrmDetail({
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<ContactStatus>(contact.status);
+  const [optedOut, setOptedOut] = useState(contact.opted_out);
   const [isPending, startTransition] = useTransition();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
@@ -95,6 +100,23 @@ export function CrmDetail({
       } catch {
         toast.error(STATUS_ERROR_MESSAGE);
         setStatus(previous);
+      }
+    });
+  }
+
+  function handleOptOutChange(checked: boolean) {
+    const previous = optedOut;
+    setOptedOut(checked);
+    startTransition(async () => {
+      try {
+        const result = await updateOptOut(contact.id, checked);
+        if (!result.ok) {
+          toast.error(result.error);
+          setOptedOut(previous);
+        }
+      } catch {
+        toast.error(OPT_OUT_ERROR_MESSAGE);
+        setOptedOut(previous);
       }
     });
   }
@@ -202,6 +224,28 @@ export function CrmDetail({
               ))}
             </div>
           ) : null}
+          {canEdit ? (
+            <div className="flex items-center gap-2 pt-2">
+              <Switch
+                checked={optedOut}
+                onCheckedChange={handleOptOutChange}
+                disabled={isPending}
+              />
+              <div className="flex flex-col">
+                <span className="text-sm font-semibold">
+                  Opted out of bulk messages
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  This contact won&apos;t receive bulk email or SMS sends.
+                  Individual messages are still allowed.
+                </span>
+              </div>
+            </div>
+          ) : optedOut ? (
+            <Badge variant="outline" className="w-fit">
+              Opted out
+            </Badge>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -263,7 +307,7 @@ export function CrmDetail({
             name: contact.name,
             email: contact.email,
             phone: contact.phone,
-            opted_out: contact.opted_out,
+            opted_out: optedOut,
           },
         ]}
         mode="individual"
