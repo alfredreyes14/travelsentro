@@ -20,6 +20,7 @@ import {
 } from "@dnd-kit/sortable";
 
 import { reorderPackages } from "@/actions/packages";
+import { PackageListCard } from "@/components/admin/package-list-card";
 import { PackageListRow } from "@/components/admin/package-list-row";
 import {
   Table,
@@ -91,24 +92,50 @@ export function SortablePackageList({
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-11">
-              <span className="sr-only">Reorder</span>
-            </TableHead>
-            <TableHead className="w-16">
-              <span className="sr-only">Photo</span>
-            </TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead>Published</TableHead>
-            <TableHead>Featured</TableHead>
-            <TableHead className="w-10">
-              <span className="sr-only">Actions</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
+    <>
+      <div className="hidden overflow-hidden rounded-xl border border-border md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-11">
+                <span className="sr-only">Reorder</span>
+              </TableHead>
+              <TableHead className="w-16">
+                <span className="sr-only">Photo</span>
+              </TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead>Published</TableHead>
+              <TableHead>Featured</TableHead>
+              <TableHead className="w-10">
+                <span className="sr-only">Actions</span>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={items.map((item) => item.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <TableBody>
+                {items.map((item) => (
+                  <PackageListRow
+                    key={item.id}
+                    item={item}
+                    onMutated={handleMutated}
+                    onDeleted={handleDeleted}
+                  />
+                ))}
+              </TableBody>
+            </SortableContext>
+          </DndContext>
+        </Table>
+      </div>
+
+      <div className="md:hidden">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -118,19 +145,19 @@ export function SortablePackageList({
             items={items.map((item) => item.id)}
             strategy={verticalListSortingStrategy}
           >
-            <TableBody>
+            <div className="flex flex-col gap-3">
               {items.map((item) => (
-                <PackageListRow
+                <PackageListCard
                   key={item.id}
                   item={item}
                   onMutated={handleMutated}
                   onDeleted={handleDeleted}
                 />
               ))}
-            </TableBody>
+            </div>
           </SortableContext>
         </DndContext>
-      </Table>
-    </div>
+      </div>
+    </>
   );
 }
