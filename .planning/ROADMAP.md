@@ -183,7 +183,7 @@ Plans:
   3. A contact who has opted out is excluded from all future bulk email/SMS sends
   4. Every sent message (individual and bulk) is logged and visible in the contact's history
 
-**Plans**: 4/5 plans complete
+**Plans**: 4/6 plans complete
 
 Plans:
 
@@ -203,6 +203,10 @@ Plans:
 **Gap Closure — Wave 4** *(closes 04-UAT.md Test 3's blocker — individual SMS send failure root-caused in .planning/debug/sms-send-fails.md to unset Semaphore credentials plus an incidental/fragile error-detection path in lib/sms/semaphore.ts)*
 
 - [ ] 04-05-PLAN.md — Harden Semaphore response-shape validation + diagnostic logging + provision real SMS credentials
+
+**Gap Closure — Wave 5** *(closes 04-VERIFICATION.md's two remaining gaps / 04-REVIEW.md CR-01 (forgeable unsubscribe HMAC secret) and CR-02 (bulk email blanket-marks every recipient "sent" regardless of per-recipient result); depends on 04-05 for actions/messages.ts file-overlap sequencing only, not functionally related to the Semaphore SMS gap)*
+
+- [ ] 04-06-PLAN.md — Fail-loud unsubscribe HMAC secret + accurate per-recipient bulk email status
 
 **UI hint**: yes
 
