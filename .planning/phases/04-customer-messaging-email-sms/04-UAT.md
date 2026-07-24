@@ -1,5 +1,5 @@
 ---
-status: partial
+status: diagnosed
 phase: 04-customer-messaging-email-sms
 source: [04-01-SUMMARY.md, 04-02-SUMMARY.md, 04-03-SUMMARY.md, 04-04-SUMMARY.md]
 started: 2026-07-24T11:26:51Z
@@ -187,7 +187,15 @@ blocked: 0
   reason: "User reported: Failed, saw an error toast and no SMS message was sent"
   severity: blocker
   test: 3
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "SEMAPHORE_API_KEY and SEMAPHORE_SENDER_NAME are unset in .env.local (the file npm run dev actually loads). Semaphore returns its 'invalid apikey' validation error as HTTP 200 (not 4xx/5xx), so lib/sms/semaphore.ts's `if (!res.ok) throw` never fires. sendSingleSms() then array-destructures the plain error object as if it were SemaphoreMessage[], throwing a TypeError that actions/messages.ts's bare catch converts into a generic 'failed' status/error toast. This is the exact Semaphore production-config gap this phase's own PLAN/SUMMARY/VERIFICATION artifacts repeatedly deferred to end-of-phase human verification -- now confirmed failing on first real exercise."
+  artifacts:
+    - path: ".env.local"
+      issue: "SEMAPHORE_API_KEY and SEMAPHORE_SENDER_NAME both unset (config gap, not a code file)"
+    - path: "lib/sms/semaphore.ts"
+      issue: "callSemaphore()'s `if (!res.ok) throw` doesn't explicitly detect Semaphore's HTTP-200-with-validation-error response shape; failure detection is incidental (relies on a destructure throwing on a non-array response)"
+    - path: "actions/messages.ts"
+      issue: "sendIndividualSms/sendBulkSms bare catch blocks correctly mark status failed, but surface only a generic error message rather than distinguishing 'provider misconfigured' from other failure classes"
+  missing:
+    - "Provision valid SEMAPHORE_API_KEY and an approved SEMAPHORE_SENDER_NAME in .env.local (local) and the production/Vercel environment"
+    - "Harden lib/sms/semaphore.ts's callSemaphore() to explicitly validate the response shape (array of SemaphoreMessage vs. an error object with field-keyed arrays) instead of relying only on res.ok and an incidental destructure throw"
+  debug_session: ".planning/debug/sms-send-fails.md"
