@@ -49,7 +49,7 @@ export default async function AdminDashboardLayout({
                     via requirePermission()/requireAdmin() (AUTH-05). */}
                 {canManagePackages && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton render={<Link href="/admin/packages" />}>
+                    <SidebarMenuButton size="lg" render={<Link href="/admin/packages" />}>
                       <PackageIcon />
                       <span>Packages</span>
                     </SidebarMenuButton>
@@ -59,14 +59,14 @@ export default async function AdminDashboardLayout({
                     sees "Contacts" regardless of can_edit_crm, deliberately
                     NOT permission-gated (unlike Packages/Users above). */}
                 <SidebarMenuItem>
-                  <SidebarMenuButton render={<Link href="/admin/crm" />}>
+                  <SidebarMenuButton size="lg" render={<Link href="/admin/crm" />}>
                     <ContactIcon />
                     <span>Contacts</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
                 {canManageUsers && (
                   <SidebarMenuItem>
-                    <SidebarMenuButton render={<Link href="/admin/users" />}>
+                    <SidebarMenuButton size="lg" render={<Link href="/admin/users" />}>
                       <UsersIcon />
                       <span>Users</span>
                     </SidebarMenuButton>
@@ -101,8 +101,8 @@ export default async function AdminDashboardLayout({
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <SidebarTrigger />
+        <header className="flex items-center gap-2 border-b border-border px-4 py-3 shadow-sm bg-background">
+          <SidebarTrigger className="size-11" />
         </header>
         <div className="flex-1 p-6">{children}</div>
       </SidebarInset>
