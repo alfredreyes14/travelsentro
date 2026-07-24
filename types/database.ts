@@ -22,6 +22,7 @@ export type Database = {
           email: string
           id: string
           name: string
+          opted_out: boolean
           phone: string | null
           status: string
           tags: string[]
@@ -36,6 +37,7 @@ export type Database = {
           email: string
           id?: string
           name: string
+          opted_out?: boolean
           phone?: string | null
           status?: string
           tags?: string[]
@@ -50,6 +52,7 @@ export type Database = {
           email?: string
           id?: string
           name?: string
+          opted_out?: boolean
           phone?: string | null
           status?: string
           tags?: string[]
@@ -173,6 +176,63 @@ export type Database = {
             columns: ["package_id"]
             isOneToOne: false
             referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          batch_id: string | null
+          body: string
+          channel: string
+          contact_id: string
+          created_at: string
+          id: string
+          provider_message_id: string | null
+          sent_by: string | null
+          sent_by_name: string | null
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          body: string
+          channel: string
+          contact_id: string
+          created_at?: string
+          id?: string
+          provider_message_id?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          body?: string
+          channel?: string
+          contact_id?: string
+          created_at?: string
+          id?: string
+          provider_message_id?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -345,6 +405,10 @@ export type Database = {
           inquiry_id: string
           is_new: boolean
         }[]
+      }
+      set_contact_opted_out: {
+        Args: { p_contact_id: string }
+        Returns: undefined
       }
       write_package_children: {
         Args: {
