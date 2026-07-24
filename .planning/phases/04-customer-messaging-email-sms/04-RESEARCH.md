@@ -472,22 +472,25 @@ grant execute on function public.set_contact_opted_out(uuid) to anon, authentica
 
 **If this table is empty:** N/A — see rows above.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Does individual (non-bulk) send to an opted-out contact need to be blocked, or only bulk sends?**
+1. **RESOLVED: Does individual (non-bulk) send to an opted-out contact need to be blocked, or only bulk sends?**
    - What we know: MSG-05's wording is "opt out of bulk email/SMS...excluded from future bulk sends" — the requirement explicitly scopes exclusion to bulk sends.
    - What's unclear: 04-CONTEXT.md doesn't explicitly re-confirm this for individual sends; a staff member might reasonably want to reply individually to an opted-out contact (e.g., answering a direct question), which is standard practice (marketing opt-out ≠ blocking all 1:1 communication) but worth an explicit planner decision, not an implicit one.
    - Recommendation: Individual sends (MSG-01/MSG-02) are NOT blocked by `opted_out = true`; only bulk sends (MSG-03/MSG-04, D-03) are filtered. Surface the contact's opted-out status in the compose UI so staff make an informed choice, but don't hard-block individual sends.
+   - Resolution: Adopted as planned in 04-03-PLAN.md — individual sends are never opted-out-blocked; only bulk sends filter server-side.
 
-2. **What is the exact per-item error/success shape of Resend's Batch Emails API response?**
+2. **RESOLVED: What is the exact per-item error/success shape of Resend's Batch Emails API response?**
    - What we know: The endpoint exists, accepts ≤100 items, each corresponding to the same-index entry in the response `data` array on success.
    - What's unclear: Whether a partial failure (one bad recipient among 100) fails the whole batch, returns per-item error objects, or something else — not stated in the fetched documentation.
    - Recommendation: Treat this as a LOW-confidence gap; plan a small staging-environment test send (one valid + one deliberately invalid recipient) as part of the implementation task, before finalizing how `messages.status` gets set per-recipient in a bulk batch.
+   - Resolution: 04-03-PLAN.md Task 1 treats the batch as succeed-or-fail-together and verifies actual behavior via a staging test send before finalizing per-recipient status handling.
 
-3. **Does the TravelSentro Semaphore account already have an approved sender name?**
+3. **RESOLVED: Does the TravelSentro Semaphore account already have an approved sender name?**
    - What we know: Semaphore requires one; sending without it throws an API error (Pitfall 3).
    - What's unclear: Whether this is already configured (this is an existing PH travel business, so a sender name may already exist from prior SMS use, or may need first-time registration).
    - Recommendation: `checkpoint:human-verify` task early in the phase's plan, before any SMS send-path code is written against a real key.
+   - Resolution: 04-02-PLAN.md Task 2 is `autonomous: false` and defers Semaphore sender-name confirmation to end-of-phase human verification, per this project's `workflow.human_verify_mode=end-of-phase` convention.
 
 ## Environment Availability
 
