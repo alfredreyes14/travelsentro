@@ -1,3 +1,5 @@
+import type { ReactElement } from "react";
+
 import { Resend } from "resend";
 
 /**
@@ -28,3 +30,43 @@ export const resend = new Resend(
 // -- see this plan's user_setup for the go-live blocker.
 export const FROM_EMAIL =
   process.env.RESEND_FROM_EMAIL || "TravelSentro <onboarding@resend.dev>";
+
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
+/**
+ * Sends a set of personalized emails via Resend's Batch API
+ * (resend.com/docs/api-reference/emails/send-batch-emails), chunked to
+ * Resend's documented 100-item-per-call limit (04-RESEARCH.md Pattern 3).
+ *
+ * Returns the flat array of each chunk's raw batch-send result (ordering
+ * matches Resend's own response shape) -- the per-item error
+ * field is undocumented (04-RESEARCH.md Open Question 2), so this
+ * deliberately does not invent a normalized success/failure shape; the
+ * caller (actions/messages.ts) interprets the raw response itself.
+ *
+ * Re-throws on failure rather than swallowing -- the caller needs to know
+ * if the entire batch call failed, distinct from a per-item failure inside
+ * a successful call (Pitfall 4).
+ */
+export async function sendBatchEmails(
+  items: { to: string; subject: string; react: ReactElement }[]
+) {
+  try {
+    const results = [];
+    for (const chunk of chunkArray(items, 100)) {
+      const result = await resend.batch.send(
+        chunk.map((item) => ({ from: FROM_EMAIL, ...item }))
+      );
+      results.push(result);
+    }
+    return results;
+  } catch (err) {
+    throw err;
+  }
+}
