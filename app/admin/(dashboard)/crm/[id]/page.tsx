@@ -59,6 +59,7 @@ export default async function CrmContactPage({
     phone: contact.phone,
     status: contact.status as ContactStatus,
     tags: contact.tags,
+    opted_out: contact.opted_out,
     created_at: contact.created_at,
     created_by: contact.created_by,
     created_by_name: contact.created_by_name,

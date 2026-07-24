@@ -4,10 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
+import { SendIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateStatus } from "@/actions/crm";
 import { ContactEditForm } from "./contact-edit-form";
+import { MessageComposeDialog } from "./message-compose-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +50,7 @@ export type CrmDetailContact = {
   phone: string | null;
   status: ContactStatus;
   tags: string[];
+  opted_out: boolean;
   created_at: string;
   created_by: string | null;
   created_by_name: string | null;
@@ -77,6 +80,7 @@ export function CrmDetail({
   const [status, setStatus] = useState<ContactStatus>(contact.status);
   const [isPending, startTransition] = useTransition();
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isMessageOpen, setIsMessageOpen] = useState(false);
 
   function handleStatusChange(newStatus: ContactStatus) {
     const previous = status;
@@ -129,6 +133,10 @@ export function CrmDetail({
               {STATUS_LABELS[status]}
             </Badge>
           )}
+          <Button onClick={() => setIsMessageOpen(true)}>
+            <SendIcon className="size-4" />
+            Message
+          </Button>
         </div>
 
         <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
@@ -247,6 +255,25 @@ export function CrmDetail({
           </ol>
         )}
       </div>
+
+      <MessageComposeDialog
+        contacts={[
+          {
+            id: contact.id,
+            name: contact.name,
+            email: contact.email,
+            phone: contact.phone,
+            opted_out: contact.opted_out,
+          },
+        ]}
+        mode="individual"
+        open={isMessageOpen}
+        onOpenChange={setIsMessageOpen}
+        onSuccess={() => {
+          setIsMessageOpen(false);
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

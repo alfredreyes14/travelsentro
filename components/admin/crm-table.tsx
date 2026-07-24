@@ -11,10 +11,13 @@ import {
   flexRender,
   type ColumnDef,
   type ColumnFiltersState,
+  type RowSelectionState,
 } from "@tanstack/react-table";
 
+import { MessageComposeDialog } from "./message-compose-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -32,6 +35,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   CONTACT_STATUSES,
   STATUS_BADGE_CLASSNAME,
   STATUS_BADGE_VARIANT,
@@ -46,12 +54,49 @@ export type AdminContactListItem = {
   phone: string | null;
   status: ContactStatus;
   tags: string[];
+  opted_out: boolean;
   createdAt: string;
 };
 
 const STATUS_FILTER_ALL = "all";
 
 const columns: ColumnDef<AdminContactListItem>[] = [
+  {
+    id: "select",
+    header: ({ table }) => (
+      <Checkbox
+        checked={table.getIsAllPageRowsSelected()}
+        indeterminate={
+          !table.getIsAllPageRowsSelected() &&
+          table.getIsSomePageRowsSelected()
+        }
+        onCheckedChange={(checked) =>
+          table.toggleAllPageRowsSelected(!!checked)
+        }
+        aria-label="Select all"
+      />
+    ),
+    cell: ({ row }) => (
+      <div onClick={(e) => e.stopPropagation()} className="inline-flex">
+        {row.original.opted_out ? (
+          <Tooltip>
+            <TooltipTrigger render={<span className="inline-flex" />}>
+              <Checkbox checked={false} disabled aria-label="Opted out" />
+            </TooltipTrigger>
+            <TooltipContent>
+              Opted out — excluded from bulk sends
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Checkbox
+            checked={row.getIsSelected()}
+            onCheckedChange={(checked) => row.toggleSelected(!!checked)}
+            aria-label="Select row"
+          />
+        )}
+      </div>
+    ),
+  },
   {
     accessorKey: "name",
     header: "Name",
@@ -111,13 +156,18 @@ export function CrmTable({ contacts }: { contacts: AdminContactListItem[] }) {
   const router = useRouter();
   const [globalFilter, setGlobalFilter] = useState("");
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
 
   const table = useReactTable({
     data: contacts,
     columns,
-    state: { globalFilter, columnFilters },
+    state: { globalFilter, columnFilters, rowSelection },
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
+    onRowSelectionChange: setRowSelection,
+    getRowId: (row) => row.id,
+    enableRowSelection: (row) => !row.original.opted_out,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     globalFilterFn: (row, _columnId, filterValue) => {
@@ -128,6 +178,8 @@ export function CrmTable({ contacts }: { contacts: AdminContactListItem[] }) {
       );
     },
   });
+
+  const selectedRows = table.getSelectedRowModel().rows;
 
   const statusFilterValue =
     (table.getColumn("status")?.getFilterValue() as string | undefined) ??
@@ -175,6 +227,21 @@ export function CrmTable({ contacts }: { contacts: AdminContactListItem[] }) {
           </SelectContent>
         </Select>
       </div>
+
+      {selectedRows.length > 0 ? (
+        <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+          <span className="text-sm font-medium">
+            {selectedRows.length} selected
+          </span>
+          <div className="flex-1" />
+          <Button variant="ghost" onClick={() => setRowSelection({})}>
+            Clear
+          </Button>
+          <Button onClick={() => setIsComposeOpen(true)}>
+            Message Selected
+          </Button>
+        </div>
+      ) : null}
 
       {hasNoMatches ? (
         <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-8 ring-1 ring-foreground/10">
@@ -225,6 +292,18 @@ export function CrmTable({ contacts }: { contacts: AdminContactListItem[] }) {
           </Table>
         </div>
       )}
+
+      <MessageComposeDialog
+        contacts={selectedRows.map((r) => r.original)}
+        mode="bulk"
+        open={isComposeOpen}
+        onOpenChange={setIsComposeOpen}
+        onSuccess={() => {
+          setRowSelection({});
+          setIsComposeOpen(false);
+          router.refresh();
+        }}
+      />
     </div>
   );
 }

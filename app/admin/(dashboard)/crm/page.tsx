@@ -19,7 +19,7 @@ export default async function AdminCrmPage() {
 
   const { data: contacts, error } = await supabase
     .from("contacts")
-    .select("id, name, email, phone, status, tags, created_at")
+    .select("id, name, email, phone, status, tags, opted_out, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -33,6 +33,7 @@ export default async function AdminCrmPage() {
     phone: contact.phone,
     status: contact.status as ContactStatus,
     tags: contact.tags,
+    opted_out: contact.opted_out,
     createdAt: contact.created_at,
   }));
 
