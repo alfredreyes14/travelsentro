@@ -9,6 +9,7 @@ import { deactivateAccount } from "@/actions/users";
 import { AccountForm } from "@/components/admin/account-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -95,59 +96,114 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
         </Dialog>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Permissions</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="w-10">
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {profiles.length === 0 ? (
+        <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-8 ring-1 ring-foreground/10">
+          <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
+            No accounts yet
+          </h2>
+          <p className="text-base leading-[1.5] text-muted-foreground">
+            Add a Staff or Admin account to get started.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="hidden md:block overflow-hidden rounded-xl border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Permissions</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-10">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {profiles.map((profile) => (
+                  <TableRow key={profile.id}>
+                    <TableCell>{profile.name ?? "—"}</TableCell>
+                    <TableCell>{profile.email}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          profile.role === "admin" ? "default" : "secondary"
+                        }
+                      >
+                        {profile.role === "admin" ? "Admin" : "Staff"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {profile.role === "admin" ? (
+                          <Badge variant="outline">All</Badge>
+                        ) : (
+                          <>
+                            {profile.can_manage_packages && (
+                              <Badge variant="outline">Packages</Badge>
+                            )}
+                            {profile.can_message_customers && (
+                              <Badge variant="outline">Messages</Badge>
+                            )}
+                            {profile.can_edit_crm && (
+                              <Badge variant="outline">CRM</Badge>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          profile.is_active ? "secondary" : "destructive"
+                        }
+                      >
+                        {profile.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={<Button variant="ghost" size="icon-sm" />}
+                        >
+                          <MoreHorizontalIcon />
+                          <span className="sr-only">Open actions</span>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => setEditingAccount(profile)}
+                          >
+                            Edit
+                          </DropdownMenuItem>
+                          {profile.is_active && (
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onClick={() => setDeactivatingAccount(profile)}
+                            >
+                              Deactivate
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex flex-col gap-3 md:hidden">
             {profiles.map((profile) => (
-              <TableRow key={profile.id}>
-                <TableCell>{profile.name ?? "—"}</TableCell>
-                <TableCell>{profile.email}</TableCell>
-                <TableCell>
-                  <Badge
-                    variant={profile.role === "admin" ? "default" : "secondary"}
-                  >
-                    {profile.role === "admin" ? "Admin" : "Staff"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {profile.role === "admin" ? (
-                      <Badge variant="outline">All</Badge>
-                    ) : (
-                      <>
-                        {profile.can_manage_packages && (
-                          <Badge variant="outline">Packages</Badge>
-                        )}
-                        {profile.can_message_customers && (
-                          <Badge variant="outline">Messages</Badge>
-                        )}
-                        {profile.can_edit_crm && (
-                          <Badge variant="outline">CRM</Badge>
-                        )}
-                      </>
-                    )}
+              <Card key={profile.id} className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-medium">{profile.name ?? "—"}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {profile.email}
+                    </p>
                   </div>
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={profile.is_active ? "secondary" : "destructive"}
-                  >
-                    {profile.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       render={<Button variant="ghost" size="icon-sm" />}
@@ -171,12 +227,39 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
                       )}
                     </DropdownMenuContent>
                   </DropdownMenu>
-                </TableCell>
-              </TableRow>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant={profile.role === "admin" ? "default" : "secondary"}
+                  >
+                    {profile.role === "admin" ? "Admin" : "Staff"}
+                  </Badge>
+                  {profile.role === "admin" ? (
+                    <Badge variant="outline">All</Badge>
+                  ) : (
+                    <>
+                      {profile.can_manage_packages && (
+                        <Badge variant="outline">Packages</Badge>
+                      )}
+                      {profile.can_message_customers && (
+                        <Badge variant="outline">Messages</Badge>
+                      )}
+                      {profile.can_edit_crm && (
+                        <Badge variant="outline">CRM</Badge>
+                      )}
+                    </>
+                  )}
+                  <Badge
+                    variant={profile.is_active ? "secondary" : "destructive"}
+                  >
+                    {profile.is_active ? "Active" : "Inactive"}
+                  </Badge>
+                </div>
+              </Card>
             ))}
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+        </>
+      )}
 
       <Dialog
         open={editingAccount !== null}
