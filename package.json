@@ -13,7 +13,8 @@
     "verify:auth-confirm": "tsx --env-file=.env.local scripts/verify-auth-confirm-reachable.ts",
     "verify:password-reset-redirect": "tsx --env-file=.env.local scripts/verify-password-reset-redirect.ts",
     "verify:semaphore-error-handling": "tsx scripts/verify-semaphore-error-handling.ts",
-    "verify:unsubscribe-token-secret": "tsx scripts/verify-unsubscribe-token-secret.ts"
+    "verify:unsubscribe-token-secret": "tsx scripts/verify-unsubscribe-token-secret.ts",
+    "verify:bulk-email-status": "tsx scripts/verify-bulk-email-status-accuracy.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

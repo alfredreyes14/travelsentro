@@ -6,7 +6,12 @@ import { createElement } from "react";
 
 import { requirePermission } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
-import { FROM_EMAIL, resend, sendBatchEmails } from "@/lib/resend";
+import {
+  FROM_EMAIL,
+  resend,
+  sendBatchEmails,
+  type BatchEmailResult,
+} from "@/lib/resend";
 import {
   sendSingleSms,
   sendBulkSms as sendBulkSmsProvider,
@@ -239,33 +244,39 @@ export async function sendBulkEmail(
     }),
   }));
 
-  let markAllStatus: "sent" | "failed";
+  let results: BatchEmailResult[];
   try {
-    await sendBatchEmails(items);
-    markAllStatus = "sent";
+    results = await sendBatchEmails(items);
   } catch {
-    markAllStatus = "failed";
+    results = contacts.map(() => ({
+      id: null,
+      error: "sendBatchEmails threw",
+    }));
   }
 
-  await supabase.from("messages").insert(
-    contacts.map((contact) => ({
+  const rows = contacts.map((contact, i) => {
+    const result = results[i];
+    return {
       contact_id: contact.id,
       channel: "email",
       subject: parsedValues.data.subject,
       body: parsedValues.data.body,
-      status: markAllStatus,
+      status: result?.error ? "failed" : "sent",
+      provider_message_id: result?.id ?? null,
       batch_id: batchId,
       sent_by: profile.id,
       sent_by_name: profile.name,
-    }))
-  );
+    };
+  });
+
+  await supabase.from("messages").insert(rows);
 
   revalidatePath("/admin/crm");
 
   return {
     ok: true,
-    sent: markAllStatus === "sent" ? contacts.length : 0,
-    failed: markAllStatus === "failed" ? contacts.length : 0,
+    sent: rows.filter((r) => r.status === "sent").length,
+    failed: rows.filter((r) => r.status === "failed").length,
     total: contacts.length,
   };
 }

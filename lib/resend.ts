@@ -40,33 +40,64 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 }
 
 /**
+ * One email's outcome from sendBatchEmails(), aligned 1:1 by array index
+ * with the `items` argument passed in -- never a single call-wide flag
+ * (04-REVIEW.md CR-02).
+ */
+export type BatchEmailResult = { id: string | null; error: string | null };
+
+/**
  * Sends a set of personalized emails via Resend's Batch API
  * (resend.com/docs/api-reference/emails/send-batch-emails), chunked to
  * Resend's documented 100-item-per-call limit (04-RESEARCH.md Pattern 3).
  *
- * Returns the flat array of each chunk's raw batch-send result (ordering
- * matches Resend's own response shape) -- the per-item error
- * field is undocumented (04-RESEARCH.md Open Question 2), so this
- * deliberately does not invent a normalized success/failure shape; the
- * caller (actions/messages.ts) interprets the raw response itself.
+ * Requests permissive batch validation so a per-recipient rejection (e.g. a
+ * suppressed/invalid address) is reported back as an `errors` entry instead
+ * of being silently indistinguishable from a fully successful call under
+ * Resend's default "strict" mode (04-REVIEW.md CR-02). Returns a flat
+ * per-item result array aligned by position with `items`, so the caller
+ * (actions/messages.ts) can attribute status/provider_message_id per
+ * contact instead of applying one status to the whole batch.
  *
- * Re-throws on failure rather than swallowing -- the caller needs to know
- * if the entire batch call failed, distinct from a per-item failure inside
- * a successful call (Pitfall 4).
+ * A genuine whole-call exception (e.g. a React-Email render failure) is
+ * allowed to propagate naturally to the caller, which already wraps its own
+ * call to this function in try/catch.
  */
 export async function sendBatchEmails(
   items: { to: string; subject: string; react: ReactElement }[]
-) {
-  try {
-    const results = [];
-    for (const chunk of chunkArray(items, 100)) {
-      const result = await resend.batch.send(
-        chunk.map((item) => ({ from: FROM_EMAIL, ...item }))
-      );
-      results.push(result);
+): Promise<BatchEmailResult[]> {
+  const results: { id: string | null; error: string | null }[] = [];
+
+  for (const chunk of chunkArray(items, 100)) {
+    const response = await resend.batch.send(
+      chunk.map((item) => ({ from: FROM_EMAIL, ...item })),
+      { batchValidation: "permissive" }
+    );
+
+    if (response.error) {
+      for (let i = 0; i < chunk.length; i++) {
+        results.push({ id: null, error: response.error.message });
+      }
+      continue;
     }
-    return results;
-  } catch (err) {
-    throw err;
+
+    const rejectedByIndex = new Map(
+      (response.data.errors ?? []).map((e) => [e.index, e.message])
+    );
+    let dataIndex = 0;
+
+    for (let i = 0; i < chunk.length; i++) {
+      const rejectionMessage = rejectedByIndex.get(i);
+      if (rejectionMessage !== undefined) {
+        results.push({ id: null, error: rejectionMessage });
+        continue;
+      }
+
+      const queued = response.data.data[dataIndex];
+      dataIndex++;
+      results.push({ id: queued?.id ?? null, error: null });
+    }
   }
+
+  return results;
 }
