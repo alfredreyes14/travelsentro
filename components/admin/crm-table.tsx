@@ -17,6 +17,7 @@ import {
 import { MessageComposeDialog } from "./message-compose-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
@@ -259,41 +260,94 @@ export function CrmTable({ contacts }: { contacts: AdminContactListItem[] }) {
           </Button>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border">
-          <Table>
-            <TableHeader>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow key={headerGroup.id}>
-                  {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {rows.map((row) => (
-                <TableRow
+        <>
+          <div className="hidden md:block overflow-hidden rounded-xl border border-border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() =>
+                      router.push(`/admin/crm/${row.original.id}`)
+                    }
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex flex-col gap-3 md:hidden">
+            {rows.map((row) => {
+              const selectCell = row
+                .getVisibleCells()
+                .find((cell) => cell.column.id === "select")!;
+              return (
+                <Card
                   key={row.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => router.push(`/admin/crm/${row.original.id}`)}
+                  className="cursor-pointer p-4 transition-colors hover:bg-muted/50 active:bg-muted"
+                  onClick={() =>
+                    router.push(`/admin/crm/${row.original.id}`)
+                  }
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                  <div className="flex items-start justify-between gap-3">
+                    {flexRender(
+                      selectCell.column.columnDef.cell,
+                      selectCell.getContext()
+                    )}
+                    <div className="flex-1">
+                      <p className="font-medium">{row.original.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {row.original.email}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={STATUS_BADGE_VARIANT[row.original.status]}
+                      className={STATUS_BADGE_CLASSNAME[row.original.status]}
+                    >
+                      {STATUS_LABELS[row.original.status]}
+                    </Badge>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {row.original.tags.map((tag) => (
+                      <Badge key={tag} variant="outline">
+                        {tag}
+                      </Badge>
+                    ))}
+                    {row.original.opted_out ? (
+                      <Badge variant="outline">Opted out</Badge>
+                    ) : null}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </>
       )}
 
       <MessageComposeDialog
