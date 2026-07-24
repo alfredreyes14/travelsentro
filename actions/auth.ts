@@ -11,7 +11,7 @@ import type { ActionResult } from "@/lib/action-result";
  * NEXT_PUBLIC_SITE_URL if set, else the incoming request's own host, else a
  * http://localhost:3000 fallback for local dev.
  */
-async function getSiteOrigin(): Promise<string> {
+export async function getSiteOrigin(): Promise<string> {
   if (process.env.NEXT_PUBLIC_SITE_URL) {
     return process.env.NEXT_PUBLIC_SITE_URL;
   }
