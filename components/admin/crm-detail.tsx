@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
-import { SendIcon } from "lucide-react";
+import { MailIcon, MessageSquareIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateStatus } from "@/actions/crm";
@@ -41,6 +41,11 @@ import {
   STATUS_LABELS,
   type ContactStatus,
 } from "@/lib/crm/status";
+import {
+  CHANNEL_LABELS,
+  type MessageChannel,
+  type MessageStatus,
+} from "@/lib/crm/messages";
 
 const STATUS_ERROR_MESSAGE =
   "Something went wrong updating the status. Please try again.";
@@ -71,13 +76,29 @@ export type CrmDetailInquiry = {
   packages: { id: string; name: string; slug: string } | null;
 };
 
+export type CrmDetailMessage = {
+  id: string;
+  channel: MessageChannel;
+  subject: string | null;
+  body: string;
+  status: MessageStatus;
+  created_at: string;
+  sent_by_name: string | null;
+};
+
+type ActivityItem =
+  | ({ kind: "inquiry" } & CrmDetailInquiry)
+  | ({ kind: "message" } & CrmDetailMessage);
+
 export function CrmDetail({
   contact,
   inquiries,
+  messages,
   canEdit,
 }: {
   contact: CrmDetailContact;
   inquiries: CrmDetailInquiry[];
+  messages: CrmDetailMessage[];
   canEdit: boolean;
 }) {
   const router = useRouter();
@@ -120,6 +141,13 @@ export function CrmDetail({
       }
     });
   }
+
+  const activity: ActivityItem[] = [
+    ...inquiries.map((i) => ({ kind: "inquiry" as const, ...i })),
+    ...messages.map((m) => ({ kind: "message" as const, ...m })),
+  ].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -251,15 +279,17 @@ export function CrmDetail({
 
       <div className="flex flex-col gap-4">
         <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
-          Inquiry History
+          Activity
         </h2>
 
-        {inquiries.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No inquiries yet.</p>
+        {activity.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No inquiries or messages yet.
+          </p>
         ) : (
           <ol className="flex flex-col gap-6">
-            {inquiries.map((inquiry) => (
-              <li key={inquiry.id} className="border-l-2 border-border pl-4">
+            {activity.map((item) => (
+              <li key={item.id} className="border-l-2 border-border pl-4">
                 <div className="flex flex-col gap-1">
                   <Tooltip>
                     <TooltipTrigger
@@ -267,31 +297,64 @@ export function CrmDetail({
                         <span className="w-fit text-sm font-semibold text-muted-foreground" />
                       }
                     >
-                      {formatDistanceToNow(new Date(inquiry.created_at), {
+                      {formatDistanceToNow(new Date(item.created_at), {
                         addSuffix: true,
                       })}
                     </TooltipTrigger>
                     <TooltipContent>
                       {format(
-                        new Date(inquiry.created_at),
+                        new Date(item.created_at),
                         "MMM d, yyyy h:mm a"
                       )}
                     </TooltipContent>
                   </Tooltip>
-                  <p className="text-base leading-[1.5]">{inquiry.message}</p>
-                  {inquiry.package_id && inquiry.packages ? (
-                    <Link
-                      href={`/admin/packages/${inquiry.packages.id}`}
-                      className="w-fit"
-                    >
-                      <Badge variant="secondary">
-                        {inquiry.packages.name}
-                      </Badge>
-                    </Link>
+                  {item.kind === "inquiry" ? (
+                    <>
+                      <p className="text-base leading-[1.5]">
+                        {item.message}
+                      </p>
+                      {item.package_id && item.packages ? (
+                        <Link
+                          href={`/admin/packages/${item.packages.id}`}
+                          className="w-fit"
+                        >
+                          <Badge variant="secondary">
+                            {item.packages.name}
+                          </Badge>
+                        </Link>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">
+                          General inquiry
+                        </span>
+                      )}
+                    </>
                   ) : (
-                    <span className="text-sm text-muted-foreground">
-                      General inquiry
-                    </span>
+                    <>
+                      <div className="flex items-center gap-2">
+                        {item.channel === "email" ? (
+                          <MailIcon className="size-4 text-muted-foreground" />
+                        ) : (
+                          <MessageSquareIcon className="size-4 text-muted-foreground" />
+                        )}
+                        <span className="text-sm text-muted-foreground">
+                          {CHANNEL_LABELS[item.channel]}
+                        </span>
+                      </div>
+                      {item.channel === "email" && item.subject ? (
+                        <p className="text-base leading-[1.5] font-semibold">
+                          {item.subject}
+                        </p>
+                      ) : null}
+                      <p className="text-base leading-[1.5]">{item.body}</p>
+                      {item.status === "failed" ? (
+                        <Badge variant="destructive" className="w-fit">
+                          Failed to send
+                        </Badge>
+                      ) : null}
+                      <p className="text-sm text-muted-foreground">
+                        Sent by {item.sent_by_name ?? "a staff member"}
+                      </p>
+                    </>
                   )}
                 </div>
               </li>

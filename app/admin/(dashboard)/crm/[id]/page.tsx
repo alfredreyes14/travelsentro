@@ -3,8 +3,14 @@ import { notFound } from "next/navigation";
 
 import { getProfile } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
-import { CrmDetail, type CrmDetailContact, type CrmDetailInquiry } from "@/components/admin/crm-detail";
+import {
+  CrmDetail,
+  type CrmDetailContact,
+  type CrmDetailInquiry,
+  type CrmDetailMessage,
+} from "@/components/admin/crm-detail";
 import type { ContactStatus } from "@/lib/crm/status";
+import type { MessageChannel, MessageStatus } from "@/lib/crm/messages";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -14,11 +20,16 @@ export const metadata: Metadata = {
 type ContactRow = Database["public"]["Tables"]["contacts"]["Row"];
 type InquiryRow = Database["public"]["Tables"]["inquiries"]["Row"];
 type PackageRow = Database["public"]["Tables"]["packages"]["Row"];
+type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
 
 type ContactDetail = ContactRow & {
   inquiries: (InquiryRow & {
     packages: Pick<PackageRow, "id" | "name" | "slug"> | null;
   })[];
+  messages: Pick<
+    MessageRow,
+    "id" | "channel" | "subject" | "body" | "status" | "created_at" | "sent_by_name"
+  >[];
 };
 
 /**
@@ -41,10 +52,11 @@ export default async function CrmContactPage({
   const { data, error } = await supabase
     .from("contacts")
     .select(
-      "*, inquiries(id, contact_id, request_id, message, created_at, package_id, packages(id, name, slug))"
+      "*, inquiries(id, contact_id, request_id, message, created_at, package_id, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name)"
     )
     .eq("id", id)
     .order("created_at", { referencedTable: "inquiries", ascending: false })
+    .order("created_at", { referencedTable: "messages", ascending: false })
     .single();
 
   if (error || !data) notFound();
@@ -78,10 +90,21 @@ export default async function CrmContactPage({
     })
   );
 
+  const detailMessages: CrmDetailMessage[] = contact.messages.map((m) => ({
+    id: m.id,
+    channel: m.channel as MessageChannel,
+    subject: m.subject,
+    body: m.body,
+    status: m.status as MessageStatus,
+    created_at: m.created_at,
+    sent_by_name: m.sent_by_name,
+  }));
+
   return (
     <CrmDetail
       contact={detailContact}
       inquiries={detailInquiries}
+      messages={detailMessages}
       canEdit={canEdit}
     />
   );
