@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Public Catalog & Inquiry Entry Point** - Customers browse tour packages and reach out via WhatsApp, Facebook, or the inquiry form (completed 2026-07-18)
 - [x] **Phase 2: Admin Access & Package Management** - Admin/Staff log in and manage the package catalog under a role/permission model (gaps found 2026-07-18 — see 02-VERIFICATION.md) (completed 2026-07-18)
 - [x] **Phase 3: Lead Capture, CRM & Automation** - Every inquiry becomes a tracked CRM lead with auto-reply and internal alert (completed 2026-07-20)
-- [ ] **Phase 4: Customer Messaging (Email & SMS)** - Admin/Staff message customers individually or in bulk, with opt-out enforcement
+- [x] **Phase 4: Customer Messaging (Email & SMS)** - Admin/Staff message customers individually or in bulk, with opt-out enforcement (completed 2026-07-24)
 
 ## Phase Details
 
@@ -183,7 +183,7 @@ Plans:
   3. A contact who has opted out is excluded from all future bulk email/SMS sends
   4. Every sent message (individual and bulk) is logged and visible in the contact's history
 
-**Plans**: 3/4 plans executed
+**Plans**: 4/4 plans complete
 
 Plans:
 
@@ -198,7 +198,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 04-04-PLAN.md — Opt-out & Activity: manual opt-out toggle, public unsubscribe page, merged Activity timeline
+- [x] 04-04-PLAN.md — Opt-out & Activity: manual opt-out toggle, public unsubscribe page, merged Activity timeline
 
 **UI hint**: yes
 
@@ -212,4 +212,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
 | 2. Admin Access & Package Management | 20/20 | Complete   | 2026-07-19 |
 | 3. Lead Capture, CRM & Automation | 5/5 | Complete    | 2026-07-20 |
-| 4. Customer Messaging (Email & SMS) | 3/4 | In Progress|  |
+| 4. Customer Messaging (Email & SMS) | 4/4 | Complete   | 2026-07-24 |

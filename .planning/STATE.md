@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 4
 current_phase_name: Email & SMS
-status: executing
-stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-07-24T10:27:09.980Z"
+status: verifying
+stopped_at: Completed 04-04-PLAN.md (final plan of Phase 4)
+last_updated: "2026-07-24T10:35:19.145Z"
 last_activity: 2026-07-24
 last_activity_desc: Phase 03 complete, transitioned to Phase 4
 progress:
   total_phases: 4
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 36
-  completed_plans: 35
-  percent: 75
+  completed_plans: 36
+  percent: 100
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-24)
 
 Phase: 4 — Customer Messaging (Email & SMS)
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-24 — Phase 03 complete, transitioned to Phase 4
 
 Progress: [████████████████████] 32/32 plans (100%)
@@ -91,6 +91,7 @@ Progress: [████████████████████] 32/32 p
 | Phase 04 P01 | 6min | 2 tasks | 2 files |
 | Phase 04 P02 | 3min | 2 tasks | 5 files |
 | Phase 04 P03 | 10min | 2 tasks | 9 files |
+| Phase 04 P04 | 6min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -171,6 +172,8 @@ Recent decisions affecting current work:
 - [Phase 04-03]: base-ui's Checkbox.Root uses a separate indeterminate boolean prop (not Radix's checked="indeterminate" overload) -- confirmed via node_modules/@base-ui/react type declarations before wiring the select-all header checkbox
 - [Phase 04-03]: sendBulkEmail inlines its own rolling-24h quota query rather than calling getRemainingEmailQuota() directly, avoiding a second requirePermission() round-trip within the same action
 - [Phase 04-03]: Authenticated-session RLS INSERT permission differential (can_message_customers=true vs false) remains unexercised live -- no .env.local/Supabase credential access this session; carried forward from 04-01 coverage D2 as this plan's coverage D6, recommend closing during 04-04 or end-of-phase human verification
+- [Phase 04-04]: updateOptOut() gated on can_edit_crm (contact-record edit), not can_message_customers, mirroring updateStatus/updateContact
+- [Phase 04-04]: Authenticated-session RLS permission differential (can_message_customers/can_edit_crm) remains unexercised live across all of Phase 4 -- carried forward a third time (04-01 D2, 04-03 D6, 04-04 D5), flagged for end-of-phase human verification
 
 ### Pending Todos
 
@@ -199,6 +202,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-24T10:27:09.976Z
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-07-24T10:35:19.141Z
+Stopped at: Completed 04-04-PLAN.md (final plan of Phase 4)
 Resume file: None
