@@ -183,7 +183,23 @@ Plans:
   3. A contact who has opted out is excluded from all future bulk email/SMS sends
   4. Every sent message (individual and bulk) is logged and visible in the contact's history
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+
+**Wave 1**
+
+- [ ] 04-01-PLAN.md — Schema: contacts.opted_out, messages table, set_contact_opted_out() RPC, RLS, [BLOCKING] push
+- [ ] 04-02-PLAN.md — Service layer: Semaphore SMS wrapper, HMAC unsubscribe token, Resend batch-email helper, shared message constants, customer email template
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 04-03-PLAN.md — Compose & Send: individual/bulk email+SMS actions (D-03 filter, D-07 quota gate), compose dialog, crm-table/crm-detail entry points
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 04-04-PLAN.md — Opt-out & Activity: manual opt-out toggle, public unsubscribe page, merged Activity timeline
+
 **UI hint**: yes
 
 ## Progress
@@ -196,4 +212,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
 | 2. Admin Access & Package Management | 20/20 | Complete   | 2026-07-19 |
 | 3. Lead Capture, CRM & Automation | 5/5 | Complete    | 2026-07-20 |
-| 4. Customer Messaging (Email & SMS) | 0/TBD | Not started | - |
+| 4. Customer Messaging (Email & SMS) | 0/4 | Not started | - |
