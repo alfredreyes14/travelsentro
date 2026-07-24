@@ -183,7 +183,7 @@ Plans:
   3. A contact who has opted out is excluded from all future bulk email/SMS sends
   4. Every sent message (individual and bulk) is logged and visible in the contact's history
 
-**Plans**: 4/4 plans complete
+**Plans**: 4/5 plans complete
 
 Plans:
 
@@ -200,6 +200,10 @@ Plans:
 
 - [x] 04-04-PLAN.md — Opt-out & Activity: manual opt-out toggle, public unsubscribe page, merged Activity timeline
 
+**Gap Closure — Wave 4** *(closes 04-UAT.md Test 3's blocker — individual SMS send failure root-caused in .planning/debug/sms-send-fails.md to unset Semaphore credentials plus an incidental/fragile error-detection path in lib/sms/semaphore.ts)*
+
+- [ ] 04-05-PLAN.md — Harden Semaphore response-shape validation + diagnostic logging + provision real SMS credentials
+
 **UI hint**: yes
 
 ## Progress
@@ -212,4 +216,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Public Catalog & Inquiry Entry Point | 7/7 | Complete    | 2026-07-18 |
 | 2. Admin Access & Package Management | 20/20 | Complete   | 2026-07-19 |
 | 3. Lead Capture, CRM & Automation | 5/5 | Complete    | 2026-07-20 |
-| 4. Customer Messaging (Email & SMS) | 4/4 | Complete   | 2026-07-24 |
+| 4. Customer Messaging (Email & SMS) | 4/5 | Complete   | 2026-07-24 |
