@@ -70,6 +70,7 @@ A prospective customer can browse tour packages and reach out to inquire (via Wh
 | Instant auto-reply + internal alert only (no drip automation yet) | Simplest automation that still prevents lost leads; drip sequences deferred | Shipped in Phase 03 — both sends gated on the same idempotent `is_new` flag as the CRM write, so no duplicate sends on redelivery |
 | Try free Formspree dual-submit workaround before paying for webhooks | Research found Formspree's webhook plugin requires a paid plan; workaround keeps free-tier goal if current form supports JS submission | — Pending |
 | Stay on free hosting tiers as long as possible (Vercel Hobby, Supabase free) | User prioritizes free tier over strict ToS/reliability guarantees; will revisit if it becomes a real problem | — Pending |
+| Mobile-responsive stacked-card retrofit + shadow/elevation polish (05-CONTEXT.md D-01–D-07), no REQUIREMENTS.md items — retrofit/polish phase | Admin CRM/packages/users tables were desktop-only pre-Phase-05; public site had a WCAG 1.4.10 zoom-reflow gap; shadow/elevation hierarchy was inconsistent across Card/Dialog/dropdowns | Shipped in Phase 05 — CRM/packages/users tables render as touch-friendly stacked cards below 768px with bulk actions and the opted-out consent guard preserved; public site reflows cleanly at 200%/400% zoom; skeleton loading states replace blank flashes; consistent shadow/elevation hierarchy (Card shadow-sm < Dialog/AlertDialog/DropdownMenu/Select shadow-md/shadow-lg) — all within the existing locked brand system. 6/6 UAT tests passed live; threats_open: 0 (05-SECURITY.md) |
 
 ## Evolution
 
@@ -89,4 +90,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-24 after Phase 03 (lead-capture-crm-automation) completion*
+*Last updated: 2026-07-27 after Phase 05 (mobile-responsive-visual-polish) completion*
