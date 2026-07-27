@@ -3,15 +3,15 @@ status: testing
 phase: 05-mobile-responsive-visual-polish
 source: [05-VERIFICATION.md]
 started: 2026-07-25T01:58:48.000Z
-updated: 2026-07-27T00:00:00.000Z
+updated: 2026-07-27T00:05:00.000Z
 ---
 
 ## Current Test
 
-number: 2
-name: CRM mobile card-mode live interaction
+number: 5
+name: Users admin list live interaction (mobile)
 expected: |
-  At a <768px viewport on /admin/crm, select 2+ non-opted-out contacts, click "Message Selected", confirm the dialog opens in bulk mode with exactly the selected contacts; confirm the opted-out contact's checkbox renders disabled with its tooltip; confirm tapping a card outside the checkbox navigates to the contact detail page while tapping the checkbox does not; confirm the empty-match state renders correctly. All 5 behaviors should match desktop's row-mode equivalents with no console errors.
+  At a <768px viewport on /admin/users, confirm accounts render as Cards with working Edit/Deactivate actions.
 awaiting: user response
 
 ## Tests
@@ -22,15 +22,15 @@ result: pass
 
 ### 2. CRM mobile card-mode live interaction
 expected: At a <768px viewport on /admin/crm, select 2+ non-opted-out contacts, click "Message Selected", confirm the dialog opens in bulk mode with exactly the selected contacts; confirm the opted-out contact's checkbox renders disabled with its tooltip; confirm tapping a card outside the checkbox navigates to the contact detail page while tapping the checkbox does not; confirm the empty-match state renders correctly. All 5 behaviors should match desktop's row-mode equivalents with no console errors.
-result: [pending]
+result: pass
 
 ### 3. Packages admin list live interaction (mobile)
 expected: At a <768px viewport on /admin/packages, packages render as draggable Cards, drag-reorder a card and confirm the new order persists after refresh, and toggle a Published/Featured switch. Watch for a possible touch-drag issue flagged in 05-REVIEW.md (WR-04, missing touch-action: none on the drag handle).
-result: [pending]
+result: pass
 
 ### 4. Loading-skeleton-vs-blank-flash on admin packages/users
 expected: Navigate to /admin/packages and /admin/users on a throttled connection (or via React DevTools Suspense simulation) and confirm a skeleton renders instead of a blank white flash before data loads.
-result: [pending]
+result: pass
 
 ### 5. Users admin list live interaction (mobile)
 expected: At a <768px viewport on /admin/users, accounts render as Cards with working Edit/Deactivate actions, matching desktop's row-mode equivalents.
@@ -43,9 +43,9 @@ result: [pending]
 ## Summary
 
 total: 6
-passed: 1
+passed: 4
 issues: 0
-pending: 5
+pending: 2
 skipped: 0
 blocked: 0
 
