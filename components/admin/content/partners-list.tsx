@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { deletePartner } from "@/actions/partners";
@@ -96,16 +97,28 @@ function PartnerSubSection({
   initialItems: PartnerListItem[];
 }) {
   const [items, setItems] = useState(initialItems);
+  // Adjusts `items` when fresh props arrive after router.refresh() (Next.js
+  // preserves client state across refresh, so without this the list never
+  // reflects a create/edit until a hard page reload). Calling setState
+  // directly during render -- not in an Effect -- per React's documented
+  // "adjusting state when a prop changes" pattern.
+  const [prevInitialItems, setPrevInitialItems] = useState(initialItems);
+  if (initialItems !== prevInitialItems) {
+    setPrevInitialItems(initialItems);
+    setItems(initialItems);
+  }
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PartnerListItem | null>(null);
   const [deletingItem, setDeletingItem] = useState<PartnerListItem | null>(
     null
   );
   const [isDeleting, startDeleting] = useTransition();
+  const router = useRouter();
 
   function handleMutationSuccess() {
     setIsCreateOpen(false);
     setEditingItem(null);
+    router.refresh();
   }
 
   function handleDelete() {

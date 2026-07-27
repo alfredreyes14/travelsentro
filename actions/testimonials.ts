@@ -41,7 +41,7 @@ export async function createTestimonial(
       customer_name: values.customerName,
       quote: values.quote,
       rating: values.rating,
-      photo_storage_path: values.photoStoragePath ?? null,
+      photo_storage_path: values.photoStoragePath || null,
       sort_order: count ?? 0,
     })
     .select("id")
@@ -70,7 +70,7 @@ export async function updateTestimonial(
       customer_name: values.customerName,
       quote: values.quote,
       rating: values.rating,
-      photo_storage_path: values.photoStoragePath ?? null,
+      photo_storage_path: values.photoStoragePath || null,
     })
     .eq("id", id)
     .select("id")

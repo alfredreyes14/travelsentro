@@ -81,6 +81,16 @@ export function HeroSlidesList({
 }) {
   const router = useRouter();
   const [items, setItems] = useState(initialSlides);
+  // Adjusts `items` when fresh props arrive after router.refresh() (Next.js
+  // preserves client state across refresh, so without this the list never
+  // reflects a create/edit until a hard page reload). Calling setState
+  // directly during render -- not in an Effect -- per React's documented
+  // "adjusting state when a prop changes" pattern.
+  const [prevInitialSlides, setPrevInitialSlides] = useState(initialSlides);
+  if (initialSlides !== prevInitialSlides) {
+    setPrevInitialSlides(initialSlides);
+    setItems(initialSlides);
+  }
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingSlide, setEditingSlide] = useState<HeroSlideListItem | null>(
     null

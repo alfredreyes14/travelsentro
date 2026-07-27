@@ -38,7 +38,7 @@ export async function createPartner(
     .insert({
       partner_type: values.partnerType,
       logo_storage_path: values.logoStoragePath,
-      link_url: values.linkUrl ?? null,
+      link_url: values.linkUrl || null,
       sort_order: count ?? 0,
     })
     .select("id")
@@ -70,7 +70,7 @@ export async function updatePartner(
     .from("partners")
     .update({
       logo_storage_path: values.logoStoragePath,
-      link_url: values.linkUrl ?? null,
+      link_url: values.linkUrl || null,
     })
     .eq("id", id)
     .select("id")

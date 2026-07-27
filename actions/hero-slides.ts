@@ -40,7 +40,7 @@ export async function createSlide(
     .from("hero_slides")
     .insert({
       slide_type: values.slideType,
-      package_id: values.packageId ?? null,
+      package_id: values.packageId || null,
       image_storage_path: values.imageStoragePath ?? null,
       headline: values.headline ?? null,
       subheading: values.subheading ?? null,
@@ -77,7 +77,7 @@ export async function updateSlide(
     .from("hero_slides")
     .update({
       slide_type: values.slideType,
-      package_id: values.packageId ?? null,
+      package_id: values.packageId || null,
       image_storage_path: values.imageStoragePath ?? null,
       headline: values.headline ?? null,
       subheading: values.subheading ?? null,

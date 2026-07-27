@@ -51,6 +51,16 @@ export function ValuePropsList({
 }) {
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
+  // Adjusts `items` when fresh props arrive after router.refresh() (Next.js
+  // preserves client state across refresh, so without this the list never
+  // reflects a create/edit until a hard page reload). Calling setState
+  // directly during render -- not in an Effect -- per React's documented
+  // "adjusting state when a prop changes" pattern.
+  const [prevInitialItems, setPrevInitialItems] = useState(initialItems);
+  if (initialItems !== prevInitialItems) {
+    setPrevInitialItems(initialItems);
+    setItems(initialItems);
+  }
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ValuePropRecord | null>(
     null
