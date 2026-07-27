@@ -6,14 +6,14 @@ current_phase: 06
 current_phase_name: public-site-content-sections-hero-carousel
 status: executing
 stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-07-27T14:10:20.971Z"
+last_updated: "2026-07-27T14:14:58.529Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 06 execution started
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 52
-  completed_plans: 46
+  completed_plans: 47
   percent: 67
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 06 (public-site-content-sections-hero-carousel) — EXECUTING
-Plan: 4 of 8
+Plan: 5 of 8
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 06 execution started
 
@@ -103,6 +103,7 @@ Progress: [█████████████████░░░] 44/52 p
 | Phase 06 P01 | 5min | 3 tasks | 5 files |
 | Phase 06 P02 | 8min | 3 tasks | 6 files |
 | Phase 06 P03 | 9min | 2 tasks | 3 files |
+| Phase 06 P04 | 8 min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -202,6 +203,8 @@ Recent decisions affecting current work:
 - [Phase 06]: [Phase 06-02]: deleteSiteContentImage is a standalone Storage-only utility, not chained from deleteSlide/deleteTestimonial/deletePartner -- accepted orphaned-object scope limit
 - [Phase 06]: [Phase 06-02]: partners.ts scopes its sort_order count query with .eq('partner_type', values.partnerType) so Brand Partners and Corporate Clients maintain fully independent ordering
 - [Phase ?]: [Phase 06-03]: Adjusted FeaturedPackagesGrid's doc comment to reference PackageCard (not <PackageCard>) so the plan's acceptance-criteria grep for exactly 1 occurrence of '<PackageCard' matches only the real JSX usage, not a second hit from the comment
+- [Phase ?]: [Phase 06-04]: Followed why-choose-us.tsx's precedent of exporting a named *Display prop type (TestimonialDisplay/PartnerDisplay/ClientDisplay) rather than an inline object-literal prop type, for consistency with 06-03's sibling components
+- [Phase ?]: [Phase 06-04]: Logo <Image> alt text left empty (decorative) since partners/clients table schema has no name/description field beyond the logo artwork itself
 
 ### Pending Todos
 
@@ -231,6 +234,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-27T14:10:20.966Z
+Last session: 2026-07-27T14:13:50.174Z
 Stopped at: Completed 06-03-PLAN.md
 Resume file: None
