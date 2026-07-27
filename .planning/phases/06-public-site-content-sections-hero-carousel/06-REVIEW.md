@@ -36,12 +36,16 @@ files_reviewed_list:
   - supabase/migrations/20260727075208_create_homepage_content_schema.sql
   - types/database.ts
 findings:
-  critical: 2
+  critical: 0
+  critical_fixed: 2
   warning: 5
-  info: 4
+  info: 3
+  info_fixed: 1
   total: 11
-status: issues_found
+status: fixed
 ---
+
+> **Post-review fix (2026-07-27, commit `1a7b70e`):** CR-01 and CR-02 (both BLOCKER) and IN-04 were fixed directly by the orchestrator before phase verification, since they broke core admin functionality (promo hero slides could never save; all 4 admin content lists silently failed to show new/edited items without a hard reload). See "Fixed" notes inline below. WR-01 through WR-05, IN-01, IN-02, IN-03 remain open as non-blocking advisories.
 
 # Phase 6: Code Review Report
 
@@ -61,6 +65,8 @@ However, two BLOCKER-level defects were found that break core admin functionalit
 ## Critical Issues
 
 ### CR-01: Promo-type hero slides can never be created or edited — `packageId` empty string violates the `uuid` column's shape constraint
+
+**FIXED** (commit `1a7b70e`): `createSlide`/`updateSlide` now use `values.packageId || null` instead of `?? null`.
 
 **File:** `actions/hero-slides.ts:39-52` (createSlide), `actions/hero-slides.ts:76-89` (updateSlide)
 **Issue:**
@@ -84,6 +90,8 @@ package_id: values.packageId ? values.packageId : null,
 Apply the same fix to both `createSlide` and `updateSlide`.
 
 ### CR-02: Admin content lists don't reflect newly created/edited items without a hard page reload
+
+**FIXED** (commit `1a7b70e`): All 4 lists now adjust `items` state during render when `initialItems`/`initialSlides` changes (React's documented "adjusting state when a prop changes" pattern — a `useEffect`-based sync was tried first but rejected by this project's `react-hooks/set-state-in-effect` lint rule). `partners-list.tsx` also gained the missing `router.refresh()` call in `handleMutationSuccess`.
 
 **File:**
 `components/admin/content/hero-slides-list.tsx:83,101-105`,
@@ -171,6 +179,8 @@ function handleMutationSuccess() {
 **Fix:** Map to an explicit extension table (`{"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}`) rather than deriving from the raw MIME subtype.
 
 ### IN-04: Optional `text` fields stored as empty string rather than `NULL`
+
+**FIXED** (commit `1a7b70e`): both files now use `|| null` instead of `?? null`.
 
 **File:** `actions/partners.ts:41,73`, `actions/testimonials.ts:44,73`
 **Issue:** `link_url: values.linkUrl ?? null` and `photo_storage_path: values.photoStoragePath ?? null` have the same `??`-vs-empty-string gap as CR-01, but since these are nullable `text` columns (no `CHECK`/type constraint forcing `NULL`), the practical effect is just storing `""` instead of `NULL` when the field is left blank — a minor data-quality inconsistency, not a functional break.
