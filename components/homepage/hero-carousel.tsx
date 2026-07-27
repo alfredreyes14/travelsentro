@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Autoplay from "embla-carousel-autoplay";
@@ -39,7 +39,10 @@ export function HeroCarousel({ slides }: { slides: HeroSlideDisplay[] }) {
   // never starts moving for reduced-motion users, while manual prev/next
   // via CarouselPrevious/CarouselNext (already keyboard-accessible) still
   // works either way (Pitfall 7 / WCAG 2.2.2).
-  const plugin = useRef(
+  // useState (not useRef) because the plugin instance is read during render
+  // (`plugins={[plugin]}`) — React's ref rules disallow reading `.current`
+  // in the render body, but state reads are fine.
+  const [plugin] = useState(() =>
     Autoplay({ delay: 5000, stopOnInteraction: true, playOnInit: !prefersReducedMotion })
   );
 
@@ -47,10 +50,10 @@ export function HeroCarousel({ slides }: { slides: HeroSlideDisplay[] }) {
 
   return (
     <Carousel
-      plugins={[plugin.current]}
+      plugins={[plugin]}
       opts={{ loop: true }}
-      onMouseEnter={plugin.current.stop}
-      onMouseLeave={plugin.current.reset}
+      onMouseEnter={() => plugin.stop()}
+      onMouseLeave={() => plugin.reset()}
       className="w-full"
     >
       <CarouselContent>
