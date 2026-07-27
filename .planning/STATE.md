@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 06
-current_phase_name: Public Site Content Sections & Hero Carousel
+current_phase_name: public-site-content-sections-hero-carousel
 status: executing
-stopped_at: Phase 06 UI-SPEC approved
-last_updated: "2026-07-27T07:19:21.139Z"
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-07-27T07:59:34.116Z"
 last_activity: 2026-07-27
-last_activity_desc: Phase 05 complete, transitioned to Phase 06
+last_activity_desc: Phase 06 execution started
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 44
-  completed_plans: 43
+  total_plans: 52
+  completed_plans: 44
   percent: 67
 ---
 
@@ -28,12 +28,12 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 
 ## Current Position
 
-Phase: 06 — Public Site Content Sections & Hero Carousel
-Plan: Not started
+Phase: 06 (public-site-content-sections-hero-carousel) — EXECUTING
+Plan: 2 of 8
 Status: Ready to execute
-Last activity: 2026-07-27 — Phase 05 complete, transitioned to Phase 06
+Last activity: 2026-07-27 — Phase 06 execution started
 
-Progress: [████████████████████] 43/44 plans (98%)
+Progress: [█████████████████░░░] 44/52 plans (85%)
 
 ## Performance Metrics
 
@@ -100,6 +100,7 @@ Progress: [████████████████████] 43/44 p
 | Phase 05 P04 | 15min | 2 tasks | 2 files |
 | Phase 05 P05 | 3min | 3 tasks | 2 files |
 | Phase 05 P06 | 5min | 2 tasks | 2 files |
+| Phase 06 P01 | 5min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -194,6 +195,7 @@ Recent decisions affecting current work:
 - [Phase ?]: Card's shadow-sm appended alongside (not replacing) the existing ring-1 ring-foreground/10, preserving the intentional ring-vs-shadow distinction
 - [Phase ?]: [Phase 05-05]: Task 3 required no code changes -- D-07's hover/focus/active-state requirement for sidebar chrome and table rows confirmed already satisfied by existing shadcn defaults, documented in SUMMARY.md rather than silently assumed
 - [Phase 05-06]: Used exactly shadow-md (identical value already used by dropdown-menu.tsx/select.tsx) for DialogContent/AlertDialogContent rather than inventing a new elevation value — Matches existing floating-surface elevation convention, restores Card (shadow-sm) < Dialog/AlertDialog/DropdownMenu/Select (shadow-md/shadow-lg) hierarchy, closes 05-VERIFICATION.md failed truth #5
+- [Phase ?]: [Phase 06-01]: shadcn CLI's base-nova preset generates multi-line named exports for avatar.tsx (not the plan's single-line grep pattern) -- same precedent as Phase 01, functionally correct, confirmed via npm run build
 
 ### Pending Todos
 
@@ -223,6 +225,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-27T07:19:21.134Z
-Stopped at: Phase 06 UI-SPEC approved
-Resume file: .planning/phases/06-public-site-content-sections-hero-carousel/06-UI-SPEC.md
+Last session: 2026-07-27T07:58:56.503Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None

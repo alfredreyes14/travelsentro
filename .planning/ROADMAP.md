@@ -266,13 +266,13 @@ Plans:
   4. Brand Partners and Corporate Clients logo sections each render only when at least one entry exists for that section, and are hidden entirely otherwise
   5. All new sections live on the homepage only, within the existing locked brand system (#021F4A/#F49314/#FAF7F2 + Inter/Plus Jakarta Sans) — no new colors, fonts, or off-brand styling
 
-**Plans:** 8 plans
+**Plans:** 1/8 plans executed
 
 Plans:
 
 **Wave 1**
 
-- [ ] 06-01-PLAN.md — DB schema (hero_slides, value_props, testimonials, partners) + site-content Storage bucket, [BLOCKING] push + types regen, install embla-carousel-autoplay + shadcn avatar
+- [x] 06-01-PLAN.md — DB schema (hero_slides, value_props, testimonials, partners) + site-content Storage bucket, [BLOCKING] push + types regen, install embla-carousel-autoplay + shadcn avatar
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
