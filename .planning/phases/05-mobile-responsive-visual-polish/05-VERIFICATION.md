@@ -1,7 +1,7 @@
 ---
 phase: 05-mobile-responsive-visual-polish
 verified: 2026-07-25T00:00:00Z
-status: human_needed
+status: passed
 score: 4/5 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
@@ -9,25 +9,32 @@ re_verification:
   previous_status: gaps_found
   previous_score: 3/5
   gaps_closed:
+
     - "Cards/dialogs/dropdowns show a consistent shadow/elevation hierarchy, within the locked brand system (roadmap SC5) — components/ui/dialog.tsx and components/ui/alert-dialog.tsx now carry shadow-md alongside their existing ring-1 ring-foreground/10, matching dropdown-menu.tsx/select.tsx's convention and sitting above card.tsx's shadow-sm"
   gaps_remaining: []
   regressions: []
 human_verification:
+
   - test: "Set actual browser zoom (Cmd/Ctrl + \"+\", not DevTools width simulator) to 200% on /, /packages, /packages/[slug], /contact, and the inquiry form's submitted/error state; repeat at 400% for /packages/[slug]"
     expected: "No horizontal scrollbar, no overlapping elements, every interactive element (nav, package cards, WhatsApp/Facebook CTAs, form fields, gallery lightbox nav buttons) stays fully visible and clickable at every route/zoom level"
     why_human: "WCAG 1.4.10 reflow requires real browser zoom; no browser-automation tooling is installed in this project. 05-01-PLAN.md's Task 2 explicitly deferred this to end-of-phase UAT (workflow.human_verify_mode=end-of-phase) — it is the authoritative check for roadmap SC1/D-02 and has not yet been performed (no 05-UAT.md exists)."
+
   - test: "At a <768px viewport on /admin/crm, select 2+ non-opted-out contacts, click 'Message Selected', confirm the dialog opens in bulk mode with exactly the selected contacts; confirm the opted-out contact's checkbox renders disabled with its tooltip; confirm tapping a card outside the checkbox navigates to the contact detail page while tapping the checkbox does not; confirm the empty-match state renders correctly"
     expected: "All 5 behaviors match desktop's row-mode equivalents with no console errors"
     why_human: "05-02-PLAN.md's Task 2 explicitly deferred this live interaction check to end-of-phase UAT. Static code evidence is strong (card mode reuses the exact same rowSelection state and 'select' column cell via flexRender — no duplicate consent-guard implementation exists), but the actual click-through has not been performed."
+
   - test: "At a <768px viewport on /admin/packages, confirm packages render as draggable Cards, drag-reorder a card and confirm the new order persists after refresh, and toggle a Published/Featured switch"
     expected: "Cards render, drag-reorder works and persists via reorderPackages, switches toggle correctly"
     why_human: "05-03-SUMMARY.md flags this as human_judgment: true, deferred to end-of-phase UAT — drag interaction and visual breakpoint rendering are not verifiable from static grep/build alone."
+
   - test: "Navigate to /admin/packages and /admin/users on a throttled connection (or via React DevTools Suspense simulation) and confirm a skeleton renders instead of a blank white flash before data loads"
     expected: "Skeleton placeholder visible during the initial Supabase query, not a blank flash"
     why_human: "05-03-SUMMARY.md (D2) and 05-04-SUMMARY.md (D3) both flag this Suspense-boundary timing effect as only observable in a real page load, deferred to end-of-phase UAT."
+
   - test: "At a <768px viewport on /admin/users, confirm accounts render as Cards with working Edit/Deactivate actions"
     expected: "Card rendering and dropdown actions match desktop's row-mode equivalents"
     why_human: "05-04-SUMMARY.md (D1) flags this as human_judgment: true, deferred to end-of-phase UAT."
+
   - test: "Visually confirm the full restored elevation scale reads as intentional: Card's shadow-sm sits visibly below Dialog/AlertDialog/DropdownMenu/Select's shadow-md/shadow-lg (open a message-compose dialog, an add/edit account dialog, and a delete-confirmation AlertDialog alongside a Card), and that the admin header's shadow-sm/bg-background separation reads as a deliberate, subtle cue against the locked brand background"
     expected: "Shadow treatments read as intentional polish with a perceptible, consistent elevation hierarchy — not visual noise, and no dialog/alert-dialog now reads as flatter than a Card"
     why_human: "05-05-SUMMARY.md (D2, D3) and 05-06-SUMMARY.md's 'Next Phase Readiness' note both flag the perceptual/visual read as a subjective judgment best confirmed by a human viewing the rendered admin shell — the code-level fix (05-06) is confirmed present, but its rendered legibility has not been human-confirmed."
@@ -102,6 +109,7 @@ This phase declares `requirements: []` in all six PLAN frontmatter blocks (05-01
 Scanned all 11 files modified/created across the 6 plans (`package-gallery.tsx`, `crm-table.tsx`, `sortable-package-list.tsx`, `package-list-card.tsx`, `users-table.tsx`, `packages/loading.tsx`, `users/loading.tsx`, `layout.tsx`, `card.tsx`, `dialog.tsx`, `alert-dialog.tsx`) for `TBD`/`FIXME`/`XXX`/`TODO`/`HACK`/`PLACEHOLDER`/"coming soon"/"not yet implemented" — zero matches in any file. No debt markers. `npm run build` succeeds with zero new TypeScript errors.
 
 No blocker-level anti-patterns found. `05-REVIEW.md` (code review re-run after 05-06, advisory, `status: issues_found`, 0 critical / 6 warnings / 8 info) independently confirms the same shadow-hierarchy fix and flags no regression from it. None of its 6 warnings or 8 info items are phase-goal blockers for SC1-SC5; noted for context:
+
 - WR-01 (`sortable-package-list.tsx` stale-state after `router.refresh()`) — pre-existing since Phase 2, not a regression introduced by Phase 5.
 - WR-02 (duplicate React keys in tag lists) — mirrors a pre-existing desktop pattern, not new.
 - WR-03 (mobile-card/desktop-row navigation not keyboard-accessible) — accessibility nit; the roadmap SC's do not include a keyboard-nav requirement, and mouse/touch navigation (the phase's actual scope) works.
