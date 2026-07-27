@@ -266,8 +266,26 @@ Plans:
   4. Brand Partners and Corporate Clients logo sections each render only when at least one entry exists for that section, and are hidden entirely otherwise
   5. All new sections live on the homepage only, within the existing locked brand system (#021F4A/#F49314/#FAF7F2 + Inter/Plus Jakarta Sans) — no new colors, fonts, or off-brand styling
 
-**Plans:** 0 plans
+**Plans:** 8 plans
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 6 to break down)
+**Wave 1**
+
+- [ ] 06-01-PLAN.md — DB schema (hero_slides, value_props, testimonials, partners) + site-content Storage bucket, [BLOCKING] push + types regen, install embla-carousel-autoplay + shadcn avatar
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 06-02-PLAN.md — Service layer: Server Actions for hero slides, value props, testimonials, partners, site-content image uploads
+- [ ] 06-03-PLAN.md — Public components: Hero Carousel (embla-carousel-autoplay), Why Choose Us, Featured Packages Grid
+- [ ] 06-04-PLAN.md — Public components: Testimonials Section, Brand Partners, Corporate Clients
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 06-05-PLAN.md — Admin CRUD: Hero Slides tab (form + drag-reorder list)
+- [ ] 06-06-PLAN.md — Admin CRUD: Why Choose Us, Testimonials, Partners & Clients tabs
+- [ ] 06-07-PLAN.md — Homepage composition: app/(public)/page.tsx rewrite (all sections + embedded inquiry form)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 06-08-PLAN.md — Admin route assembly: /admin/content Tabs page + sidebar nav item
