@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 06
 current_phase_name: public-site-content-sections-hero-carousel
 status: executing
-stopped_at: Completed 06-02-PLAN.md
-last_updated: "2026-07-27T14:05:19.754Z"
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-07-27T14:10:20.971Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 06 execution started
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 52
-  completed_plans: 45
+  completed_plans: 46
   percent: 67
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 06 (public-site-content-sections-hero-carousel) — EXECUTING
-Plan: 3 of 8
+Plan: 4 of 8
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 06 execution started
 
@@ -102,6 +102,7 @@ Progress: [█████████████████░░░] 44/52 p
 | Phase 05 P06 | 5min | 2 tasks | 2 files |
 | Phase 06 P01 | 5min | 3 tasks | 5 files |
 | Phase 06 P02 | 8min | 3 tasks | 6 files |
+| Phase 06 P03 | 9min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -200,6 +201,7 @@ Recent decisions affecting current work:
 - [Phase 06]: [Phase 06-02]: uploadSiteContentImage does not call revalidatePath -- the owning entity's own create/update call handles revalidation afterward
 - [Phase 06]: [Phase 06-02]: deleteSiteContentImage is a standalone Storage-only utility, not chained from deleteSlide/deleteTestimonial/deletePartner -- accepted orphaned-object scope limit
 - [Phase 06]: [Phase 06-02]: partners.ts scopes its sort_order count query with .eq('partner_type', values.partnerType) so Brand Partners and Corporate Clients maintain fully independent ordering
+- [Phase ?]: [Phase 06-03]: Adjusted FeaturedPackagesGrid's doc comment to reference PackageCard (not <PackageCard>) so the plan's acceptance-criteria grep for exactly 1 occurrence of '<PackageCard' matches only the real JSX usage, not a second hit from the comment
 
 ### Pending Todos
 
@@ -229,6 +231,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-27T14:05:19.746Z
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-07-27T14:10:20.966Z
+Stopped at: Completed 06-03-PLAN.md
 Resume file: None

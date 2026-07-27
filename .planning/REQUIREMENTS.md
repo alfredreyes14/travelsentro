@@ -67,7 +67,7 @@ Added 2026-07-27 — defined during Phase 6 discuss-phase (ROADMAP.md Phase 6 wa
 
 - [x] **HOME-01**: Homepage displays a hero carousel mixing rotating featured packages and general brand/promotional imagery, admin-editable (add/edit/delete/reorder slides) via the admin panel
 - [x] **HOME-02**: Homepage displays a "why choose us" / value props section, admin-editable
-- [ ] **HOME-03**: Homepage displays a featured packages grid, reusing the existing "featured" package flag (Phase 2 PKG-05) rather than a separate curation mechanism
+- [x] **HOME-03**: Homepage displays a featured packages grid, reusing the existing "featured" package flag (Phase 2 PKG-05) rather than a separate curation mechanism
 - [x] **HOME-04**: Homepage displays customer testimonials (photo, customer name, quote text, star rating), admin-editable (add/edit/delete)
 - [x] **HOME-05**: Homepage displays a Brand Partners section (logo + optional link), admin-editable, and renders only when at least one partner entry exists
 - [x] **HOME-06**: Homepage displays a Corporate Clients section (logo + optional link), admin-editable, and renders only when at least one client entry exists
