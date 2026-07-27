@@ -1,0 +1,1 @@
+{"content":"Stateless signed unsubscribe links: compute HMAC-SHA256(contactId, serverSecret) via Node crypto.createHmac, compare with crypto.timingSafeEqual at verification time, no DB-backed token table needed; avoids raw guessable contact id in URL.","source":"web","provider":"websearch","confidence":"LOW","fetched_at":"2026-07-24T09:19:44.980Z","ttl":86400000,"kind":"web"}

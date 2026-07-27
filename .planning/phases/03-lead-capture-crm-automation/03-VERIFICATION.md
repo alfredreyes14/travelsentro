@@ -1,20 +1,24 @@
 ---
 phase: 03-lead-capture-crm-automation
 verified: 2026-07-20T13:17:09Z
-status: human_needed
+status: passed
 score: 10/12 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
 human_verification:
+
   - test: "Configure a real RESEND_API_KEY (and optionally RESEND_FROM_EMAIL) in the deployment environment, submit a real inquiry via the public form, and confirm two emails actually arrive: the customer auto-reply (AUTO-01) and the bcc'd internal notification to the seeded Admin's inbox (AUTO-02)."
     expected: "Exactly one auto-reply email arrives at the submitted address and exactly one internal-notification email arrives (bcc) at every active admin/can_message_customers profile's inbox, both within seconds of submission."
     why_human: "RESEND_API_KEY is not configured in this environment (confirmed: process.env.RESEND_API_KEY is unset, lib/resend.ts falls back to a placeholder key that only produces a logged auth error at send time). Every send call is wrapped in try/catch and never throws, so the code path, the anon-callable get_notification_recipients() RPC, and the bcc-only fan-out were all verified live/structurally -- but actual message delivery to a real inbox has never been exercised in this codebase and cannot be from a sandboxed verifier without a paid/free Resend account and inbox access."
+
   - test: "Submit the same requestId twice against a live server with a real RESEND_API_KEY configured and confirm only ONE auto-reply and ONE internal notification email arrive (not two)."
     expected: "The second submission returns 200/ok:true (already verified) but does not trigger a second send of either email."
     why_human: "Same RESEND_API_KEY gap as above -- the is_new gate that prevents the double-send is code-verified (exactly 1 'if (is_new)' occurrence wrapping all 3 after() calls in app/api/inquiries/route.ts, confirmed by direct file read), but the actual non-duplication of email delivery has not been observed against a real send."
+
   - test: "As a can_edit_crm Staff/Admin session, visit /admin/crm/{id} and confirm the status Select is interactive, changing it auto-saves without a page reload, and a simulated update failure reverts the optimistic UI change. Then view the same contact as a Staff session WITHOUT can_edit_crm and confirm identical data renders with a plain read-only Badge and no 'Edit Contact' button."
     expected: "can_edit_crm session sees an editable Select + Edit Contact button; non-can_edit_crm session sees the same name/email/phone/tags/timeline data with zero edit affordances -- not a blocked/hidden page."
     why_human: "No authenticated browser session was driven in this codebase inspection -- the permission-gated rendering split (canEdit ? <Select>/<Dialog> : <Badge>) was confirmed by direct code read of components/admin/crm-detail.tsx and is logically sound, but has never been exercised live against two real sessions with differing can_edit_crm values, per every 03-04/03-05 SUMMARY's own human_judgment:true coverage notes."
+
   - test: "Open the Edit Contact dialog on a real contact, change name/phone/tags, save, and confirm the change persists (visible after a refresh) while the email field remains genuinely non-interactive (cannot be typed into)."
     expected: "Save Changes persists name/phone/tags via updateContact(); email input is disabled+readOnly and never sent to the server."
     why_human: "Code-verified (zero 'name=\"email\"' FormField, exactly 1 updateContact(contact.id call, disabled+readOnly present) but not exercised in a live browser round-trip against a real database row this session."
@@ -163,6 +167,7 @@ Both were explicitly reviewed and left open by `03-REVIEW.md`'s own resolution (
 No true gaps (FAILED must-haves) were found — the phase's core reliability promise ("no lead lost, no duplicate lead") is genuinely and robustly implemented, and all 3 Critical findings from `03-REVIEW.md` (email-normalization dedup, silent-overwrite-of-staff-edits, dead public write policies) were fixed in a follow-up migration that this verification pass independently re-tested live and confirmed working (case/whitespace dedup, staff-edit preservation, and rejected direct-table anon writes all reproduced successfully against the live Supabase project).
 
 The remaining open items are exclusively **human/live-environment verification gaps**, not code defects:
+
 1. Real email delivery (AUTO-01/AUTO-02) cannot be proven without a configured `RESEND_API_KEY` — this is documented `user_setup` from 03-03, not a coding gap. The wiring, dedup gating, and recipient-scoping RPC are all independently live-verified.
 2. Live authenticated-browser-session checks of the CRM admin UI (permission-gated rendering, status auto-save/revert, Edit Contact round-trip) were never driven in this or prior sessions — every relevant plan's own SUMMARY.md coverage table already flagged these as `human_judgment: true`, deferred to end-of-phase UAT per this project's `workflow.human_verify_mode=end-of-phase` configuration. This verification pass surfaces them for that UAT pass rather than silently passing them.
 

@@ -1,0 +1,1 @@
+{"content":"Resend Batch Emails API: POST https://api.resend.com/emails/batch, up to 100 distinct email objects per call each with own to/subject/react, attachments not supported on batch endpoint, react field Node SDK only.","source":"web","provider":"websearch","confidence":"MEDIUM","fetched_at":"2026-07-24T09:19:44.887Z","ttl":86400000,"kind":"docs"}

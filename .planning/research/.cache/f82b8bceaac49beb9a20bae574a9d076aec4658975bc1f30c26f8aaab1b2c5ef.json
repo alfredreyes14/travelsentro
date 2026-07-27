@@ -1,0 +1,1 @@
+{"content":"wa.me deep links: format https://wa.me/<countrycode+number, no plus/spaces/dashes>?text=<URL-encoded message>. Use encodeURIComponent() for the message. Works cross-platform (opens app or web.whatsapp.com).","source":"web","provider":"websearch","confidence":"MEDIUM","fetched_at":"2026-07-18T09:23:25.183Z","ttl":86400000,"kind":"web"}
