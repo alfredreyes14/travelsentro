@@ -3,22 +3,22 @@ status: testing
 phase: 05-mobile-responsive-visual-polish
 source: [05-VERIFICATION.md]
 started: 2026-07-25T01:58:48.000Z
-updated: 2026-07-25T01:58:48.000Z
+updated: 2026-07-27T00:00:00.000Z
 ---
 
 ## Current Test
 
-number: 1
-name: 200%/400% browser-zoom reflow pass across public pages
+number: 2
+name: CRM mobile card-mode live interaction
 expected: |
-  Set actual browser zoom (Cmd/Ctrl + "+", not DevTools width simulator) to 200% on /, /packages, /packages/[slug], /contact, and the inquiry form's submitted/error state; repeat at 400% for /packages/[slug]. No horizontal scrollbar, no overlapping elements, every interactive element (nav, package cards, WhatsApp/Facebook CTAs, form fields, gallery lightbox nav buttons) stays fully visible and clickable at every route/zoom level.
+  At a <768px viewport on /admin/crm, select 2+ non-opted-out contacts, click "Message Selected", confirm the dialog opens in bulk mode with exactly the selected contacts; confirm the opted-out contact's checkbox renders disabled with its tooltip; confirm tapping a card outside the checkbox navigates to the contact detail page while tapping the checkbox does not; confirm the empty-match state renders correctly. All 5 behaviors should match desktop's row-mode equivalents with no console errors.
 awaiting: user response
 
 ## Tests
 
 ### 1. 200%/400% browser-zoom reflow pass across public pages
 expected: No horizontal scrollbar, no overlapping elements, every interactive element (nav, package cards, WhatsApp/Facebook CTAs, form fields, gallery lightbox nav buttons) stays fully visible and clickable at every route/zoom level. This is roadmap SC1/D-02's authoritative check.
-result: [pending]
+result: pass
 
 ### 2. CRM mobile card-mode live interaction
 expected: At a <768px viewport on /admin/crm, select 2+ non-opted-out contacts, click "Message Selected", confirm the dialog opens in bulk mode with exactly the selected contacts; confirm the opted-out contact's checkbox renders disabled with its tooltip; confirm tapping a card outside the checkbox navigates to the contact detail page while tapping the checkbox does not; confirm the empty-match state renders correctly. All 5 behaviors should match desktop's row-mode equivalents with no console errors.
@@ -43,9 +43,9 @@ result: [pending]
 ## Summary
 
 total: 6
-passed: 0
+passed: 1
 issues: 0
-pending: 6
+pending: 5
 skipped: 0
 blocked: 0
 
