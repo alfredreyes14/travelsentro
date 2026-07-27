@@ -218,14 +218,22 @@ export default async function HomePage() {
     })
   );
 
-  // TODO(Task 2): compose <HeroCarousel>, <WhyChooseUs>,
-  // <FeaturedPackagesGrid>, <TestimonialsSection>, <InquiryForm />,
-  // <BrandPartners>, <CorporateClients> in UI-SPEC's exact order.
-  void slides;
-  void valueProps;
-  void featuredItems;
-  void testimonials;
-  void brandPartners;
-  void corporateClients;
-  return null;
+  return (
+    <>
+      <HeroCarousel slides={slides} />
+      <WhyChooseUs valueProps={valueProps} />
+      <FeaturedPackagesGrid items={featuredItems} />
+      <TestimonialsSection testimonials={testimonials} />
+
+      <section className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-12 sm:px-8">
+        <h2 className="font-heading text-[28px] leading-[1.2] font-semibold">
+          Get in Touch
+        </h2>
+        <InquiryForm />
+      </section>
+
+      <BrandPartners partners={brandPartners} />
+      <CorporateClients clients={corporateClients} />
+    </>
+  );
 }
