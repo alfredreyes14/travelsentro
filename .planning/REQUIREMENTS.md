@@ -61,6 +61,18 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **AUTO-02**: Admin/Staff with "message customers" permission receive an internal notification when a new inquiry arrives
 - [x] **AUTO-03**: Duplicate webhook deliveries for the same inquiry do not create duplicate leads or duplicate auto-reply/notification sends (idempotency)
 
+### Homepage Content
+
+Added 2026-07-27 — defined during Phase 6 discuss-phase (ROADMAP.md Phase 6 was created as a placeholder with no requirements; scoped interactively with the user before planning).
+
+- [ ] **HOME-01**: Homepage displays a hero carousel mixing rotating featured packages and general brand/promotional imagery, admin-editable (add/edit/delete/reorder slides) via the admin panel
+- [ ] **HOME-02**: Homepage displays a "why choose us" / value props section, admin-editable
+- [ ] **HOME-03**: Homepage displays a featured packages grid, reusing the existing "featured" package flag (Phase 2 PKG-05) rather than a separate curation mechanism
+- [ ] **HOME-04**: Homepage displays customer testimonials (photo, customer name, quote text, star rating), admin-editable (add/edit/delete)
+- [ ] **HOME-05**: Homepage displays a Brand Partners section (logo + optional link), admin-editable, and renders only when at least one partner entry exists
+- [ ] **HOME-06**: Homepage displays a Corporate Clients section (logo + optional link), admin-editable, and renders only when at least one client entry exists
+- [ ] **HOME-07**: Homepage includes an embedded general inquiry form section, reusing the existing inquiry pipeline (PUBL-07/CRM-01, Formspree + CRM-backed) rather than a new form/pipeline
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.
@@ -99,18 +111,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | PUBL-01 through PUBL-09 | Phase 1 | Complete |
-| AUTH-01 through AUTH-05 | Phase 2 | Pending |
-| PKG-01 through PKG-06 | Phase 2 | Pending |
-| CRM-01 through CRM-07 | Phase 3 | Pending |
-| AUTO-01 through AUTO-03 | Phase 3 | Pending |
-| MSG-01 through MSG-06 | Phase 4 | Pending |
+| AUTH-01 through AUTH-05 | Phase 2 | Complete |
+| PKG-01 through PKG-06 | Phase 2 | Complete |
+| CRM-01 through CRM-07 | Phase 3 | Complete |
+| AUTO-01 through AUTO-03 | Phase 3 | Complete |
+| MSG-01 through MSG-06 | Phase 4 | Complete |
+| HOME-01 through HOME-07 | Phase 6 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 36 total
-- Mapped to phases: 36/36 ✓
+- v1 requirements: 43 total
+- Mapped to phases: 43/43 ✓
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-18*
-*Last updated: 2026-07-18 after roadmap creation (4 phases, 100% coverage)*
+*Last updated: 2026-07-27 after Phase 6 discuss-phase added Homepage Content requirements (HOME-01–07)*

@@ -255,9 +255,17 @@ Plans:
 
 ### Phase 6: Public Site Content Sections & Hero Carousel
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** The homepage gains a hero carousel (rotating featured packages and general brand/promotional imagery) and admin-editable content sections — value props, a featured packages grid, customer testimonials, an embedded inquiry form, and conditional Brand Partners/Corporate Clients logo sections — all within the existing locked brand system.
+**Requirements**: HOME-01 through HOME-07
 **Depends on:** Phase 5
+**Success Criteria** (what must be TRUE):
+
+  1. Homepage displays a hero carousel mixing rotating featured packages and general brand/promotional imagery, fully admin-editable (add/edit/delete/reorder slides)
+  2. Homepage displays a "why choose us" / value props section, a featured packages grid (reusing the existing "featured" package flag), and customer testimonials (photo, name, quote, star rating) — all admin-editable
+  3. Homepage includes an embedded general inquiry form section reusing the existing inquiry pipeline (Formspree + CRM), not a new form/pipeline
+  4. Brand Partners and Corporate Clients logo sections each render only when at least one entry exists for that section, and are hidden entirely otherwise
+  5. All new sections live on the homepage only, within the existing locked brand system (#021F4A/#F49314/#FAF7F2 + Inter/Plus Jakarta Sans) — no new colors, fonts, or off-brand styling
+
 **Plans:** 0 plans
 
 Plans:
