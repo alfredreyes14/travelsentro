@@ -106,6 +106,53 @@ export type Database = {
           },
         ]
       }
+      hero_slides: {
+        Row: {
+          created_at: string
+          cta_label: string | null
+          external_link: string | null
+          headline: string | null
+          id: string
+          image_storage_path: string | null
+          package_id: string | null
+          slide_type: string
+          sort_order: number
+          subheading: string | null
+        }
+        Insert: {
+          created_at?: string
+          cta_label?: string | null
+          external_link?: string | null
+          headline?: string | null
+          id?: string
+          image_storage_path?: string | null
+          package_id?: string | null
+          slide_type: string
+          sort_order?: number
+          subheading?: string | null
+        }
+        Update: {
+          created_at?: string
+          cta_label?: string | null
+          external_link?: string | null
+          headline?: string | null
+          id?: string
+          image_storage_path?: string | null
+          package_id?: string | null
+          slide_type?: string
+          sort_order?: number
+          subheading?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_slides_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       inquiries: {
         Row: {
           contact_id: string
@@ -343,6 +390,33 @@ export type Database = {
         }
         Relationships: []
       }
+      partners: {
+        Row: {
+          created_at: string
+          id: string
+          link_url: string | null
+          logo_storage_path: string
+          partner_type: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          logo_storage_path: string
+          partner_type: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          logo_storage_path?: string
+          partner_type?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           can_edit_crm: boolean
@@ -376,6 +450,60 @@ export type Database = {
           is_active?: boolean
           name?: string | null
           role?: string
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          created_at: string
+          customer_name: string
+          id: string
+          photo_storage_path: string | null
+          quote: string
+          rating: number
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          id?: string
+          photo_storage_path?: string | null
+          quote: string
+          rating: number
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          id?: string
+          photo_storage_path?: string | null
+          quote?: string
+          rating?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      value_props: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          sort_order?: number
+          title?: string
         }
         Relationships: []
       }
