@@ -129,3 +129,14 @@ None - no external service configuration required. This plan adds zero new Serve
 ---
 *Phase: 06-public-site-content-sections-hero-carousel*
 *Completed: 2026-07-27*
+
+## Self-Check: PASSED
+
+- FOUND: `components/admin/content/hero-slide-form-schema.ts`
+- FOUND: `components/admin/content/hero-slide-form.tsx`
+- FOUND: `components/admin/content/hero-slides-list.tsx`
+- FOUND: `.planning/phases/06-public-site-content-sections-hero-carousel/06-05-SUMMARY.md`
+- FOUND: commit `1a5bb50` (Task 1 -- hero-slide-form-schema.ts)
+- FOUND: commit `8103863` (Task 2 -- hero-slide-form.tsx)
+- FOUND: commit `fa34785` (Task 3 -- hero-slides-list.tsx)
+- FOUND: commit `2f7cee0` (docs -- summary)
