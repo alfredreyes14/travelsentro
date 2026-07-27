@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 06
 current_phase_name: public-site-content-sections-hero-carousel
 status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-07-27T07:59:34.116Z"
+stopped_at: Completed 06-02-PLAN.md
+last_updated: "2026-07-27T14:05:19.754Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 06 execution started
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 52
-  completed_plans: 44
+  completed_plans: 45
   percent: 67
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 06 (public-site-content-sections-hero-carousel) — EXECUTING
-Plan: 2 of 8
+Plan: 3 of 8
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 06 execution started
 
@@ -101,6 +101,7 @@ Progress: [█████████████████░░░] 44/52 p
 | Phase 05 P05 | 3min | 3 tasks | 2 files |
 | Phase 05 P06 | 5min | 2 tasks | 2 files |
 | Phase 06 P01 | 5min | 3 tasks | 5 files |
+| Phase 06 P02 | 8min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -196,6 +197,9 @@ Recent decisions affecting current work:
 - [Phase ?]: [Phase 05-05]: Task 3 required no code changes -- D-07's hover/focus/active-state requirement for sidebar chrome and table rows confirmed already satisfied by existing shadcn defaults, documented in SUMMARY.md rather than silently assumed
 - [Phase 05-06]: Used exactly shadow-md (identical value already used by dropdown-menu.tsx/select.tsx) for DialogContent/AlertDialogContent rather than inventing a new elevation value — Matches existing floating-surface elevation convention, restores Card (shadow-sm) < Dialog/AlertDialog/DropdownMenu/Select (shadow-md/shadow-lg) hierarchy, closes 05-VERIFICATION.md failed truth #5
 - [Phase ?]: [Phase 06-01]: shadcn CLI's base-nova preset generates multi-line named exports for avatar.tsx (not the plan's single-line grep pattern) -- same precedent as Phase 01, functionally correct, confirmed via npm run build
+- [Phase 06]: [Phase 06-02]: uploadSiteContentImage does not call revalidatePath -- the owning entity's own create/update call handles revalidation afterward
+- [Phase 06]: [Phase 06-02]: deleteSiteContentImage is a standalone Storage-only utility, not chained from deleteSlide/deleteTestimonial/deletePartner -- accepted orphaned-object scope limit
+- [Phase 06]: [Phase 06-02]: partners.ts scopes its sort_order count query with .eq('partner_type', values.partnerType) so Brand Partners and Corporate Clients maintain fully independent ordering
 
 ### Pending Todos
 
@@ -225,6 +229,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-27T07:58:56.503Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-07-27T14:05:19.746Z
+Stopped at: Completed 06-02-PLAN.md
 Resume file: None

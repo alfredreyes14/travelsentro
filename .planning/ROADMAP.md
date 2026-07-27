@@ -266,7 +266,7 @@ Plans:
   4. Brand Partners and Corporate Clients logo sections each render only when at least one entry exists for that section, and are hidden entirely otherwise
   5. All new sections live on the homepage only, within the existing locked brand system (#021F4A/#F49314/#FAF7F2 + Inter/Plus Jakarta Sans) — no new colors, fonts, or off-brand styling
 
-**Plans:** 1/8 plans executed
+**Plans:** 2/8 plans executed
 
 Plans:
 
@@ -276,7 +276,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 06-02-PLAN.md — Service layer: Server Actions for hero slides, value props, testimonials, partners, site-content image uploads
+- [x] 06-02-PLAN.md — Service layer: Server Actions for hero slides, value props, testimonials, partners, site-content image uploads
 - [ ] 06-03-PLAN.md — Public components: Hero Carousel (embla-carousel-autoplay), Why Choose Us, Featured Packages Grid
 - [ ] 06-04-PLAN.md — Public components: Testimonials Section, Brand Partners, Corporate Clients
 
