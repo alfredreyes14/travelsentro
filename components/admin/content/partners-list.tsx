@@ -28,6 +28,18 @@ const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
 /**
+ * Display-ready partners row, as assembled server-side by 06-08's
+ * /admin/content page: PartnerRecord's raw editable fields (logoStoragePath
+ * stays a bare Storage path -- PartnerForm's edit-mode default value and
+ * updatePartner() both need the raw path, never a resolved URL, or a
+ * no-photo-change save would overwrite logo_storage_path with a public URL)
+ * plus one display-only resolved logoUrl this list needs to actually render
+ * an <img>. Mirrors hero-slides-list.tsx's HeroSlideListItem split between a
+ * form-facing raw path and a display-only resolved URL.
+ */
+export type PartnerListItem = PartnerRecord & { logoUrl: string };
+
+/**
  * Renders TWO fully independent sub-sections (Brand Partners, Corporate
  * Clients) stacked vertically within one admin tab, each with its own Add
  * button, empty state, and delete confirmation (D-07). The two sub-sections'
@@ -38,8 +50,8 @@ export function PartnersList({
   initialBrandPartners,
   initialCorporateClients,
 }: {
-  initialBrandPartners: PartnerRecord[];
-  initialCorporateClients: PartnerRecord[];
+  initialBrandPartners: PartnerListItem[];
+  initialCorporateClients: PartnerListItem[];
 }) {
   return (
     <div className="flex flex-col gap-8">
@@ -81,12 +93,12 @@ function PartnerSubSection({
   emptyHeading: string;
   emptyBody: string;
   removeBody: string;
-  initialItems: PartnerRecord[];
+  initialItems: PartnerListItem[];
 }) {
   const [items, setItems] = useState(initialItems);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<PartnerRecord | null>(null);
-  const [deletingItem, setDeletingItem] = useState<PartnerRecord | null>(
+  const [editingItem, setEditingItem] = useState<PartnerListItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState<PartnerListItem | null>(
     null
   );
   const [isDeleting, startDeleting] = useTransition();
@@ -163,7 +175,7 @@ function PartnerSubSection({
                     remotePatterns (scoped only to package-photos), matching
                     hero-slides-list.tsx's precedent. */}
                 <img
-                  src={item.logoStoragePath}
+                  src={item.logoUrl}
                   alt=""
                   className="h-full w-full object-contain"
                 />
