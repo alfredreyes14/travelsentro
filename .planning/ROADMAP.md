@@ -266,7 +266,7 @@ Plans:
   4. Brand Partners and Corporate Clients logo sections each render only when at least one entry exists for that section, and are hidden entirely otherwise
   5. All new sections live on the homepage only, within the existing locked brand system (#021F4A/#F49314/#FAF7F2 + Inter/Plus Jakarta Sans) — no new colors, fonts, or off-brand styling
 
-**Plans:** 6/8 plans executed
+**Plans:** 7/8 plans executed
 
 Plans:
 
@@ -284,7 +284,7 @@ Plans:
 
 - [x] 06-05-PLAN.md — Admin CRUD: Hero Slides tab (form + drag-reorder list)
 - [x] 06-06-PLAN.md — Admin CRUD: Why Choose Us, Testimonials, Partners & Clients tabs
-- [ ] 06-07-PLAN.md — Homepage composition: app/(public)/page.tsx rewrite (all sections + embedded inquiry form)
+- [x] 06-07-PLAN.md — Homepage composition: app/(public)/page.tsx rewrite (all sections + embedded inquiry form)
 
 **Wave 4** *(blocked on Wave 3 completion)*
 

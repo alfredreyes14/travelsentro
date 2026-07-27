@@ -71,7 +71,7 @@ Added 2026-07-27 — defined during Phase 6 discuss-phase (ROADMAP.md Phase 6 wa
 - [x] **HOME-04**: Homepage displays customer testimonials (photo, customer name, quote text, star rating), admin-editable (add/edit/delete)
 - [x] **HOME-05**: Homepage displays a Brand Partners section (logo + optional link), admin-editable, and renders only when at least one partner entry exists
 - [x] **HOME-06**: Homepage displays a Corporate Clients section (logo + optional link), admin-editable, and renders only when at least one client entry exists
-- [ ] **HOME-07**: Homepage includes an embedded general inquiry form section, reusing the existing inquiry pipeline (PUBL-07/CRM-01, Formspree + CRM-backed) rather than a new form/pipeline
+- [x] **HOME-07**: Homepage includes an embedded general inquiry form section, reusing the existing inquiry pipeline (PUBL-07/CRM-01, Formspree + CRM-backed) rather than a new form/pipeline
 
 ## v2 Requirements
 

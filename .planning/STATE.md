@@ -6,14 +6,14 @@ current_phase: 06
 current_phase_name: public-site-content-sections-hero-carousel
 status: executing
 stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-07-27T14:33:46.813Z"
+last_updated: "2026-07-27T14:42:21.403Z"
 last_activity: 2026-07-27
 last_activity_desc: Phase 06 execution started
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 52
-  completed_plans: 49
+  completed_plans: 50
   percent: 67
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-27)
 ## Current Position
 
 Phase: 06 (public-site-content-sections-hero-carousel) — EXECUTING
-Plan: 7 of 8
+Plan: 8 of 8
 Status: Ready to execute
 Last activity: 2026-07-27 — Phase 06 execution started
 
@@ -106,6 +106,7 @@ Progress: [██████████████████░░] 47/52 p
 | Phase 06 P04 | 8 min | 2 tasks | 3 files |
 | Phase 06 P05 | 12min | 3 tasks | 3 files |
 | Phase 06 P06 | 8min | 3 tasks | 10 files |
+| Phase 06 P07 | 12min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -211,6 +212,7 @@ Recent decisions affecting current work:
 - [Phase ?]: [Phase 06-05]: Used plain <img> (not next/image) for the hero-slide-row thumbnail since next.config.ts's remotePatterns only allowlists the package-photos bucket, not site-content
 - [Phase ?]: [Phase 06-06]: value-props-list.tsx/testimonials-list.tsx use local setItems-based filtering on delete but call router.refresh() via a shared handleMutationSuccess on create/edit, mirroring hero-slides-list.tsx's exact split between optimistic local-state deletes and server-refresh-driven create/edit
 - [Phase ?]: [Phase 06-06]: partners-list.tsx's PartnerSubSection is a single parameterized component instantiated twice (brand_partner/corporate_client) rather than duplicating JSX -- keeps the two sub-sections' state fully independent per-instance
+- [Phase ?]: [Phase 06-07]: Added a second next.config.ts remotePatterns entry for the site-content Storage bucket (Rule 2) -- promo hero slides, testimonial photos, and partner/client logos all resolve URLs from this bucket and render via next/image; without it the Image Optimizer would 400 on every such image at request time
 
 ### Pending Todos
 
@@ -240,6 +242,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-27T14:33:09.378Z
+Last session: 2026-07-27T14:41:30.594Z
 Stopped at: Completed 06-03-PLAN.md
 Resume file: None
