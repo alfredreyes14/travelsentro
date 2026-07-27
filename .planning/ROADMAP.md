@@ -266,7 +266,7 @@ Plans:
   4. Brand Partners and Corporate Clients logo sections each render only when at least one entry exists for that section, and are hidden entirely otherwise
   5. All new sections live on the homepage only, within the existing locked brand system (#021F4A/#F49314/#FAF7F2 + Inter/Plus Jakarta Sans) — no new colors, fonts, or off-brand styling
 
-**Plans:** 7/8 plans executed
+**Plans:** 8/8 plans complete
 
 Plans:
 
@@ -288,4 +288,4 @@ Plans:
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 06-08-PLAN.md — Admin route assembly: /admin/content Tabs page + sidebar nav item
+- [x] 06-08-PLAN.md — Admin route assembly: /admin/content Tabs page + sidebar nav item
