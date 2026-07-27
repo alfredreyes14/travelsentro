@@ -13,6 +13,17 @@ const nextConfig: NextConfig = {
         hostname: "*.supabase.co",
         pathname: "/storage/v1/object/public/package-photos/**",
       },
+      {
+        protocol: "https",
+        // Phase 6 (06-07): homepage promo-slide images, testimonial
+        // photos, and Brand Partners/Corporate Clients logos are all
+        // resolved from the "site-content" bucket and rendered via
+        // next/image in components/homepage/{hero-carousel,brand-partners,
+        // corporate-clients}.tsx -- scoped identically to the
+        // package-photos pattern above (same Pitfall 3 rationale).
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/site-content/**",
+      },
     ],
   },
   experimental: {
