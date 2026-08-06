@@ -116,7 +116,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CRM-01 through CRM-07 | Phase 3 | Complete |
 | AUTO-01 through AUTO-03 | Phase 3 | Complete |
 | MSG-01 through MSG-06 | Phase 4 | Complete |
-| HOME-01 through HOME-07 | Phase 6 | Pending |
+| HOME-01 through HOME-07 | Phase 6 | Complete |
 
 **Coverage:**
 
@@ -126,4 +126,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-07-18*
-*Last updated: 2026-07-27 after Phase 6 discuss-phase added Homepage Content requirements (HOME-01–07)*
+*Last updated: 2026-08-06 after Phase 6 (public-site-content-sections-hero-carousel) completion — HOME-01–07 complete*
