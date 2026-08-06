@@ -1,20 +1,24 @@
 ---
 phase: 06-public-site-content-sections-hero-carousel
 verified: 2026-07-27T15:07:02Z
-status: human_needed
+status: passed
 score: 5/5 must-haves verified (2 present, behavior-unverified)
 behavior_unverified: 2
 overrides_applied: 0
 human_verification:
+
   - test: "As an Admin, create a promo-type hero slide (headline + uploaded image, no linked package) and save it; then edit that same promo slide's headline and re-save."
     expected: "Both create and edit succeed with a success toast and no error -- this exercises the CR-01 fix (values.packageId || null coercion) against the live hero_slides_package_shape CHECK constraint, which cannot be proven by static grep/read alone."
     why_human: "Requires an actual Supabase INSERT/UPDATE round-trip through Postgres's CHECK constraint evaluation; static code review confirms the `||` operator is used correctly but cannot prove the live DB accepts the resulting payload."
+
   - test: "As an Admin, add a new Hero Slide (or Value Prop / Testimonial / Partner) via its Dialog form and confirm the new row appears in the list immediately after the dialog closes, with no browser reload. Repeat for an edit on an existing row."
     expected: "The new/edited item appears in the list right after the success toast -- no stale data, no requirement to hard-reload the page."
     why_human: "This is the CR-02 fix: a prop-to-state resync pattern (`if (initialX !== prevInitialX) { setPrevInitialX(...); setItems(...) }`) that is only observable at runtime across a router.refresh() cycle. The pattern matches React's documented 'adjusting state during render' idiom and is applied consistently across all 4 lists (including the previously-missing `router.refresh()` in partners-list.tsx), but no test suite exists in this project to exercise it, so its correctness in the browser must be confirmed by hand."
+
   - test: "Load the homepage with at least one hero slide of each type (package + promo) present, and confirm: (a) the carousel autoplays every ~5s, (b) hovering pauses it, (c) manual prev/next interaction stops autoplay (stopOnInteraction), (d) with OS-level 'reduce motion' enabled, the carousel never auto-advances but manual controls still work."
     expected: "All 4 behaviors hold as documented in hero-carousel.tsx's comment."
     why_human: "Runtime timing/animation and OS-level media-query behavior cannot be verified via static analysis. Note: keyboard focus-based pausing is NOT wired (only onMouseEnter/onMouseLeave) -- this is WR-02 in 06-REVIEW.md, a known non-blocking gap, not a defect to newly discover."
+
   - test: "In the admin Hero Slides tab, drag-reorder 2+ slides and confirm the new order persists after a page refresh; then simulate a reorder failure (e.g. temporarily revoke can_manage_packages mid-drag or throttle network) and confirm the list rolls back to the prior order with an error toast."
     expected: "Successful reorders persist via reorderSlides; failed reorders roll back optimistically-applied order."
     why_human: "dnd-kit drag interaction and the optimistic-rollback-on-failure path are runtime behaviors verified in this pass only by confirming the code mirrors sortable-package-list.tsx's pattern (reorderSlides call + rollback wiring present) -- not by observing an actual failed drag."
