@@ -7,13 +7,22 @@ export type PartnerDisplay = {
 };
 
 /**
- * Homepage Brand Partners logo band — independently conditional (D-07):
- * returns null on an empty array, structurally separate from
- * CorporateClients' own visibility check (RESEARCH.md Pitfall 3). Fully
- * absent from the DOM when empty, never an empty-state placeholder.
+ * Homepage Brand Partners logo band — independently conditional (D-07),
+ * structurally separate from CorporateClients' own visibility check
+ * (RESEARCH.md Pitfall 3). Renders a muted placeholder message (rather
+ * than disappearing) when no partner logos exist yet.
  */
 export function BrandPartners({ partners }: { partners: PartnerDisplay[] }) {
-  if (partners.length === 0) return null;
+  if (partners.length === 0) {
+    return (
+      <section className="bg-secondary py-16">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 sm:px-8">
+          <p className="text-sm leading-[1.4] text-white/80">Our Partners</p>
+          <p className="text-sm text-white/70">Partner logos coming soon.</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="bg-secondary py-16">

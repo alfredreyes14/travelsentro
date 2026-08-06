@@ -2,6 +2,7 @@ import { StarIcon } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export type TestimonialDisplay = {
   id: string;
@@ -51,15 +52,36 @@ function StarRating({ rating }: { rating: number }) {
 
 /**
  * Homepage testimonials section — pure prop-driven, zero Supabase
- * awareness. Returns null on an empty array per UI-SPEC's public homepage
- * empty-state rule (no placeholder/"coming soon" copy).
+ * awareness. Renders skeleton placeholder cards (rather than disappearing)
+ * when no admin-entered testimonials exist yet.
  */
 export function TestimonialsSection({
   testimonials,
 }: {
   testimonials: TestimonialDisplay[];
 }) {
-  if (testimonials.length === 0) return null;
+  if (testimonials.length === 0) {
+    return (
+      <section className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 sm:px-8">
+        <h2 className="font-heading text-[28px] leading-[1.2] font-semibold">
+          What Our Customers Say
+        </h2>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          {Array.from({ length: 3 }, (_, i) => (
+            <Card key={i} className="flex flex-col items-start gap-3 p-4">
+              <Skeleton className="size-12 rounded-full" />
+              <Skeleton className="h-5 w-1/2" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-4/5" />
+            </Card>
+          ))}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Customer stories coming soon.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 sm:px-8">

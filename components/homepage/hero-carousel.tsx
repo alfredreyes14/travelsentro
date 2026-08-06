@@ -13,6 +13,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export type HeroSlideDisplay = {
   id: string;
@@ -29,6 +30,8 @@ export type HeroSlideDisplay = {
  * awareness. Autoplays every 5s with stopOnInteraction, pauses on
  * hover/focus, and never auto-advances when the visitor has
  * prefers-reduced-motion enabled (RESEARCH.md Pitfall 6 / WCAG 2.2.2).
+ * Renders a skeleton placeholder banner (rather than disappearing) when
+ * no hero slides exist yet.
  */
 export function HeroCarousel({ slides }: { slides: HeroSlideDisplay[] }) {
   const prefersReducedMotion =
@@ -46,7 +49,18 @@ export function HeroCarousel({ slides }: { slides: HeroSlideDisplay[] }) {
     Autoplay({ delay: 5000, stopOnInteraction: true, playOnInit: !prefersReducedMotion })
   );
 
-  if (slides.length === 0) return null;
+  if (slides.length === 0) {
+    return (
+      <div className="relative h-72 w-full overflow-hidden sm:h-96 lg:h-112">
+        <Skeleton className="h-full w-full rounded-none bg-secondary/15" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <p className="text-sm font-medium text-secondary/60">
+            Hero content coming soon.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Carousel
