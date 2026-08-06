@@ -4,11 +4,11 @@ import { cookies } from "next/headers";
 /**
  * Server/RSC Supabase client factory (anon key, @supabase/ssr).
  *
- * Phase 1 has no auth, so cookie writes are best-effort only (a Server
- * Component render can't mutate cookies — the write is caught and ignored).
- * The shape matches the official createServerClient pattern so Phase 2 can
- * extend this with real session refresh via middleware without reshaping
- * the client.
+ * proxy.ts (root) refreshes the session cookie on every /admin/* request via
+ * lib/supabase/proxy.ts's updateSession(). Cookie writes from this factory
+ * are still best-effort when called from a Server Component render (which
+ * can't mutate cookies — the write is caught and ignored below); Server
+ * Actions and Route Handlers can write cookies directly.
  */
 export async function createClient() {
   const cookieStore = await cookies();

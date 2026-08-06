@@ -1,0 +1,1 @@
+{"content":"Common zoom-reflow causes: fixed px widths instead of fluid %, improper vw/vh usage, scrollbar-gutter reflow, overflow:scroll vs auto, sticky elements inside overflow:hidden ancestors.","source":"web","provider":"websearch","confidence":"MEDIUM","fetched_at":"2026-07-24T14:59:45.503Z","ttl":86400000,"kind":"web"}

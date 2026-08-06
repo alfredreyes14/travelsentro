@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      contacts: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          email: string
+          id: string
+          name: string
+          opted_out: boolean
+          phone: string | null
+          status: string
+          tags: string[]
+          updated_at: string
+          updated_by: string | null
+          updated_by_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          email: string
+          id?: string
+          name: string
+          opted_out?: boolean
+          phone?: string | null
+          status?: string
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          email?: string
+          id?: string
+          name?: string
+          opted_out?: boolean
+          phone?: string | null
+          status?: string
+          tags?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          updated_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contacts_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       faq_facts: {
         Row: {
           best_time_to_go: string
@@ -38,6 +101,95 @@ export type Database = {
             foreignKeyName: "faq_facts_package_id_fkey"
             columns: ["package_id"]
             isOneToOne: true
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hero_slides: {
+        Row: {
+          created_at: string
+          cta_label: string | null
+          external_link: string | null
+          headline: string | null
+          id: string
+          image_storage_path: string | null
+          package_id: string | null
+          slide_type: string
+          sort_order: number
+          subheading: string | null
+        }
+        Insert: {
+          created_at?: string
+          cta_label?: string | null
+          external_link?: string | null
+          headline?: string | null
+          id?: string
+          image_storage_path?: string | null
+          package_id?: string | null
+          slide_type: string
+          sort_order?: number
+          subheading?: string | null
+        }
+        Update: {
+          created_at?: string
+          cta_label?: string | null
+          external_link?: string | null
+          headline?: string | null
+          id?: string
+          image_storage_path?: string | null
+          package_id?: string | null
+          slide_type?: string
+          sort_order?: number
+          subheading?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hero_slides_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inquiries: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          message: string
+          package_id: string | null
+          request_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          message: string
+          package_id?: string | null
+          request_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          package_id?: string | null
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inquiries_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
             referencedRelation: "packages"
             referencedColumns: ["id"]
           },
@@ -71,6 +223,63 @@ export type Database = {
             columns: ["package_id"]
             isOneToOne: false
             referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          batch_id: string | null
+          body: string
+          channel: string
+          contact_id: string
+          created_at: string
+          id: string
+          provider_message_id: string | null
+          sent_by: string | null
+          sent_by_name: string | null
+          status: string
+          subject: string | null
+        }
+        Insert: {
+          batch_id?: string | null
+          body: string
+          channel: string
+          contact_id: string
+          created_at?: string
+          id?: string
+          provider_message_id?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Update: {
+          batch_id?: string | null
+          body?: string
+          channel?: string
+          contact_id?: string
+          created_at?: string
+          id?: string
+          provider_message_id?: string | null
+          sent_by?: string | null
+          sent_by_name?: string | null
+          status?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sent_by_fkey"
+            columns: ["sent_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -142,6 +351,7 @@ export type Database = {
       packages: {
         Row: {
           created_at: string
+          deleted_at: string | null
           duration_days: number
           duration_label: string | null
           from_price: number
@@ -154,6 +364,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           duration_days: number
           duration_label?: string | null
           from_price: number
@@ -166,6 +377,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           duration_days?: number
           duration_label?: string | null
           from_price?: number
@@ -178,12 +390,164 @@ export type Database = {
         }
         Relationships: []
       }
+      partners: {
+        Row: {
+          created_at: string
+          id: string
+          link_url: string | null
+          logo_storage_path: string
+          partner_type: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          logo_storage_path: string
+          partner_type: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link_url?: string | null
+          logo_storage_path?: string
+          partner_type?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          can_edit_crm: boolean
+          can_manage_packages: boolean
+          can_message_customers: boolean
+          created_at: string
+          email: string
+          id: string
+          is_active: boolean
+          name: string | null
+          role: string
+        }
+        Insert: {
+          can_edit_crm?: boolean
+          can_manage_packages?: boolean
+          can_message_customers?: boolean
+          created_at?: string
+          email: string
+          id: string
+          is_active?: boolean
+          name?: string | null
+          role?: string
+        }
+        Update: {
+          can_edit_crm?: boolean
+          can_manage_packages?: boolean
+          can_message_customers?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          is_active?: boolean
+          name?: string | null
+          role?: string
+        }
+        Relationships: []
+      }
+      testimonials: {
+        Row: {
+          created_at: string
+          customer_name: string
+          id: string
+          photo_storage_path: string | null
+          quote: string
+          rating: number
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          customer_name: string
+          id?: string
+          photo_storage_path?: string | null
+          quote: string
+          rating: number
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string
+          id?: string
+          photo_storage_path?: string | null
+          quote?: string
+          rating?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      value_props: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_notification_recipients: {
+        Args: never
+        Returns: {
+          email: string
+        }[]
+      }
+      has_permission: { Args: { perm: string; uid: string }; Returns: boolean }
+      record_inquiry: {
+        Args: {
+          p_email: string
+          p_message: string
+          p_name: string
+          p_package_id?: string
+          p_phone: string
+          p_request_id: string
+        }
+        Returns: {
+          contact_id: string
+          inquiry_id: string
+          is_new: boolean
+        }[]
+      }
+      set_contact_opted_out: {
+        Args: { p_contact_id: string }
+        Returns: undefined
+      }
+      write_package_children: {
+        Args: {
+          p_best_time_to_go: string
+          p_group_size: string
+          p_inclusions: Json
+          p_itinerary: Json
+          p_package_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

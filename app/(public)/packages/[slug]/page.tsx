@@ -126,7 +126,7 @@ export default async function PackageDetailPage({
         <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
           Send an Inquiry
         </h2>
-        <InquiryForm packageName={pkg.name} />
+        <InquiryForm packageName={pkg.name} packageId={pkg.id} />
       </section>
     </div>
   );

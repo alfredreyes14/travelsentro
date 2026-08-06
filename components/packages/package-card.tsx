@@ -27,7 +27,7 @@ export function PackageCard({
   photoUrl: string | null;
 }) {
   return (
-    <Card className="relative gap-0 overflow-hidden p-0">
+    <Card className="relative gap-0 overflow-hidden p-0 transition-shadow duration-200 hover:shadow-md has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50">
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-secondary/10">
         {photoUrl ? (
           <Image

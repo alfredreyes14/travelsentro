@@ -21,45 +21,57 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Package Management
 
-- [ ] **PKG-01**: Admin/Staff with "manage packages" permission can create a new tour package (itinerary, price, inclusions/exclusions, photos)
-- [ ] **PKG-02**: Admin/Staff with "manage packages" permission can edit an existing tour package
-- [ ] **PKG-03**: Admin/Staff with "manage packages" permission can delete a tour package
-- [ ] **PKG-04**: Admin/Staff with "manage packages" permission can publish/unpublish a package (hide from public site without deleting)
-- [ ] **PKG-05**: Admin/Staff with "manage packages" permission can mark a package as featured/highlighted
-- [ ] **PKG-06**: Admin/Staff with "manage packages" permission can set the manual display order of packages on the public list
+- [x] **PKG-01**: Admin/Staff with "manage packages" permission can create a new tour package (itinerary, price, inclusions/exclusions, photos)
+- [x] **PKG-02**: Admin/Staff with "manage packages" permission can edit an existing tour package
+- [x] **PKG-03**: Admin/Staff with "manage packages" permission can delete a tour package
+- [x] **PKG-04**: Admin/Staff with "manage packages" permission can publish/unpublish a package (hide from public site without deleting)
+- [x] **PKG-05**: Admin/Staff with "manage packages" permission can mark a package as featured/highlighted
+- [x] **PKG-06**: Admin/Staff with "manage packages" permission can set the manual display order of packages on the public list
 
 ### Admin Auth & Users
 
-- [ ] **AUTH-01**: Admin/Staff can log in to the admin panel with email/password
-- [ ] **AUTH-02**: Admin can create new Admin or Staff accounts
-- [ ] **AUTH-03**: Admin can edit or deactivate existing Admin/Staff accounts
-- [ ] **AUTH-04**: Admin can toggle per-staff permissions individually: can message customers, can manage packages, can edit CRM data
-- [ ] **AUTH-05**: A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer (server-side enforcement, not UI-only)
+- [x] **AUTH-01**: Admin/Staff can log in to the admin panel with email/password
+- [x] **AUTH-02**: Admin can create new Admin or Staff accounts
+- [x] **AUTH-03**: Admin can edit or deactivate existing Admin/Staff accounts
+- [x] **AUTH-04**: Admin can toggle per-staff permissions individually: can message customers, can manage packages, can edit CRM data
+- [x] **AUTH-05**: A Staff member without a given permission is blocked from that action both in the UI and at the API/data layer (server-side enforcement, not UI-only)
 
 ### CRM
 
-- [ ] **CRM-01**: New Formspree inquiry submissions automatically create a lead/contact record in the CRM (via webhook)
-- [ ] **CRM-02**: Admin/Staff can view a contact's inquiry/message history as a timeline
-- [ ] **CRM-03**: Admin/Staff with "edit CRM" permission can edit a contact's information; Staff without it get read-only access
-- [ ] **CRM-04**: Admin/Staff can set/update a lead's status (New / Contacted / Qualified / Won / Lost)
-- [ ] **CRM-05**: Admin/Staff can search/filter contacts by name, status, or tag
-- [ ] **CRM-06**: Admin/Staff can see which package a lead inquired about, linked directly in the CRM record
-- [ ] **CRM-07**: CRM records track who created/last edited them and when (audit trail)
+- [x] **CRM-01**: New Formspree inquiry submissions automatically create a lead/contact record in the CRM (via webhook)
+- [x] **CRM-02**: Admin/Staff can view a contact's inquiry/message history as a timeline
+- [x] **CRM-03**: Admin/Staff with "edit CRM" permission can edit a contact's information; Staff without it get read-only access
+- [x] **CRM-04**: Admin/Staff can set/update a lead's status (New / Contacted / Qualified / Won / Lost)
+- [x] **CRM-05**: Admin/Staff can search/filter contacts by name, status, or tag
+- [x] **CRM-06**: Admin/Staff can see which package a lead inquired about, linked directly in the CRM record
+- [x] **CRM-07**: CRM records track who created/last edited them and when (audit trail)
 
 ### Messaging
 
-- [ ] **MSG-01**: Admin/Staff with "message customers" permission can send an individual email to a contact
-- [ ] **MSG-02**: Admin/Staff with "message customers" permission can send an individual SMS to a contact
-- [ ] **MSG-03**: Admin/Staff with "message customers" permission can send a bulk email to a selected set of contacts
-- [ ] **MSG-04**: Admin/Staff with "message customers" permission can send a bulk SMS to a selected set of contacts
-- [ ] **MSG-05**: Contacts can opt out of bulk email/SMS, and opted-out contacts are excluded from future bulk sends
-- [ ] **MSG-06**: Sent messages (individual and bulk) are logged and visible in the contact's history
+- [x] **MSG-01**: Admin/Staff with "message customers" permission can send an individual email to a contact
+- [x] **MSG-02**: Admin/Staff with "message customers" permission can send an individual SMS to a contact
+- [x] **MSG-03**: Admin/Staff with "message customers" permission can send a bulk email to a selected set of contacts
+- [x] **MSG-04**: Admin/Staff with "message customers" permission can send a bulk SMS to a selected set of contacts
+- [x] **MSG-05**: Contacts can opt out of bulk email/SMS, and opted-out contacts are excluded from future bulk sends
+- [x] **MSG-06**: Sent messages (individual and bulk) are logged and visible in the contact's history
 
 ### Automation
 
-- [ ] **AUTO-01**: Customer receives an instant auto-reply email when their inquiry is received
-- [ ] **AUTO-02**: Admin/Staff with "message customers" permission receive an internal notification when a new inquiry arrives
-- [ ] **AUTO-03**: Duplicate webhook deliveries for the same inquiry do not create duplicate leads or duplicate auto-reply/notification sends (idempotency)
+- [x] **AUTO-01**: Customer receives an instant auto-reply email when their inquiry is received
+- [x] **AUTO-02**: Admin/Staff with "message customers" permission receive an internal notification when a new inquiry arrives
+- [x] **AUTO-03**: Duplicate webhook deliveries for the same inquiry do not create duplicate leads or duplicate auto-reply/notification sends (idempotency)
+
+### Homepage Content
+
+Added 2026-07-27 — defined during Phase 6 discuss-phase (ROADMAP.md Phase 6 was created as a placeholder with no requirements; scoped interactively with the user before planning).
+
+- [x] **HOME-01**: Homepage displays a hero carousel mixing rotating featured packages and general brand/promotional imagery, admin-editable (add/edit/delete/reorder slides) via the admin panel
+- [x] **HOME-02**: Homepage displays a "why choose us" / value props section, admin-editable
+- [x] **HOME-03**: Homepage displays a featured packages grid, reusing the existing "featured" package flag (Phase 2 PKG-05) rather than a separate curation mechanism
+- [x] **HOME-04**: Homepage displays customer testimonials (photo, customer name, quote text, star rating), admin-editable (add/edit/delete)
+- [x] **HOME-05**: Homepage displays a Brand Partners section (logo + optional link), admin-editable, and renders only when at least one partner entry exists
+- [x] **HOME-06**: Homepage displays a Corporate Clients section (logo + optional link), admin-editable, and renders only when at least one client entry exists
+- [x] **HOME-07**: Homepage includes an embedded general inquiry form section, reusing the existing inquiry pipeline (PUBL-07/CRM-01, Formspree + CRM-backed) rather than a new form/pipeline
 
 ## v2 Requirements
 
@@ -99,18 +111,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | PUBL-01 through PUBL-09 | Phase 1 | Complete |
-| AUTH-01 through AUTH-05 | Phase 2 | Pending |
-| PKG-01 through PKG-06 | Phase 2 | Pending |
-| CRM-01 through CRM-07 | Phase 3 | Pending |
-| AUTO-01 through AUTO-03 | Phase 3 | Pending |
-| MSG-01 through MSG-06 | Phase 4 | Pending |
+| AUTH-01 through AUTH-05 | Phase 2 | Complete |
+| PKG-01 through PKG-06 | Phase 2 | Complete |
+| CRM-01 through CRM-07 | Phase 3 | Complete |
+| AUTO-01 through AUTO-03 | Phase 3 | Complete |
+| MSG-01 through MSG-06 | Phase 4 | Complete |
+| HOME-01 through HOME-07 | Phase 6 | Complete |
 
 **Coverage:**
 
-- v1 requirements: 36 total
-- Mapped to phases: 36/36 ✓
+- v1 requirements: 43 total
+- Mapped to phases: 43/43 ✓
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-18*
-*Last updated: 2026-07-18 after roadmap creation (4 phases, 100% coverage)*
+*Last updated: 2026-08-06 after Phase 6 (public-site-content-sections-hero-carousel) completion — HOME-01–07 complete*
