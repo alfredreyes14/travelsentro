@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
 import { PackageCard } from "@/components/packages/package-card";
@@ -17,14 +18,48 @@ type PackageWithPhotos = Database["public"]["Tables"]["packages"]["Row"] & {
   >[];
 };
 
-export default async function PackagesPage() {
+export default async function PackagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ destination?: string }>;
+}) {
+  const { destination: destinationSlug } = await searchParams;
   const supabase = await createClient();
 
-  const { data: packages, error } = await supabase
-    .from("packages")
-    .select("*, package_photos(storage_path, display_order)")
-    .eq("is_published", true)
-    .order("sort_order", { ascending: true });
+  // Looked up separately (not derived from the packages join below) so the
+  // heading still shows a real destination name even when zero packages
+  // match -- an inner-joined query returns zero rows in that case, which
+  // would otherwise leave destinationName with nothing to read from.
+  let destinationName: string | null = null;
+  if (destinationSlug) {
+    const { data: destinationRow } = await supabase
+      .from("destinations")
+      .select("name")
+      .eq("slug", destinationSlug)
+      .eq("is_active", true)
+      .maybeSingle();
+    destinationName = destinationRow?.name ?? destinationSlug;
+  }
+
+  // destinations!inner is required, not the default to-one embed --
+  // PostgREST only restricts which *parent* rows come back when the
+  // embedded relation is an inner join; without !inner, .eq() on the
+  // embedded column just nulls out non-matching embeds instead of
+  // filtering the packages themselves.
+  const { data: packages, error } = destinationSlug
+    ? await supabase
+        .from("packages")
+        .select(
+          "*, package_photos(storage_path, display_order), destinations!inner(slug, name)"
+        )
+        .eq("is_published", true)
+        .eq("destinations.slug", destinationSlug)
+        .order("sort_order", { ascending: true })
+    : await supabase
+        .from("packages")
+        .select("*, package_photos(storage_path, display_order)")
+        .eq("is_published", true)
+        .order("sort_order", { ascending: true });
 
   if (error) {
     // Surfaced server-side only — the page still renders the empty state
@@ -38,12 +73,20 @@ export default async function PackagesPage() {
     <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8 lg:py-16">
       <div className="flex flex-col gap-2">
         <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
-          Tour Packages
+          {destinationName ? `Packages in ${destinationName}` : "Tour Packages"}
         </h1>
         <p className="max-w-xl text-base leading-[1.5] text-muted-foreground">
           Browse our tour packages and reach out on WhatsApp or Facebook to
           start planning your trip.
         </p>
+        {destinationName ? (
+          <Link
+            href="/packages"
+            className="w-fit text-sm text-primary underline underline-offset-2"
+          >
+            Clear filter
+          </Link>
+        ) : null}
       </div>
 
       {rows.length === 0 ? (
