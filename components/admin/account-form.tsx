@@ -30,6 +30,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormSection,
 } from "@/components/ui/form";
 import type { Profile } from "@/lib/auth/dal";
 
@@ -176,57 +177,59 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="canManagePackages"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-              <FormLabel className="cursor-pointer">
-                Manage Packages
-              </FormLabel>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        <FormSection title="Permissions">
+          <FormField
+            control={form.control}
+            name="canManagePackages"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
+                <FormLabel className="cursor-pointer">
+                  Manage Packages
+                </FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="canMessageCustomers"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-              <FormLabel className="cursor-pointer">
-                Message Customers
-              </FormLabel>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="canMessageCustomers"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
+                <FormLabel className="cursor-pointer">
+                  Message Customers
+                </FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="canEditCrm"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-              <FormLabel className="cursor-pointer">Edit CRM Data</FormLabel>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="canEditCrm"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
+                <FormLabel className="cursor-pointer">Edit CRM Data</FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </FormSection>
 
         <Button
           type="submit"
@@ -343,57 +346,59 @@ function EditAccountForm({
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="canManagePackages"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-              <FormLabel className="cursor-pointer">
-                Manage Packages
-              </FormLabel>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        <FormSection title="Permissions">
+          <FormField
+            control={form.control}
+            name="canManagePackages"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
+                <FormLabel className="cursor-pointer">
+                  Manage Packages
+                </FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="canMessageCustomers"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-              <FormLabel className="cursor-pointer">
-                Message Customers
-              </FormLabel>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="canMessageCustomers"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
+                <FormLabel className="cursor-pointer">
+                  Message Customers
+                </FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="canEditCrm"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-              <FormLabel className="cursor-pointer">Edit CRM Data</FormLabel>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="canEditCrm"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
+                <FormLabel className="cursor-pointer">Edit CRM Data</FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+        </FormSection>
 
         <Button
           type="submit"
