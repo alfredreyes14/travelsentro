@@ -11,15 +11,11 @@ export const metadata: Metadata = {
   title: "Edit Package | TravelSentro Admin",
 };
 
-type FaqFactsRow = Database["public"]["Tables"]["faq_facts"]["Row"];
-
 type PackageDetail = Database["public"]["Tables"]["packages"]["Row"] & {
   package_photos: Database["public"]["Tables"]["package_photos"]["Row"][];
   itinerary_days: Database["public"]["Tables"]["itinerary_days"]["Row"][];
   package_inclusions: Database["public"]["Tables"]["package_inclusions"]["Row"][];
-  // faq_facts is a to-one relation (isOneToOne: true), but defensively
-  // handle either shape, same as app/(public)/packages/[slug]/page.tsx.
-  faq_facts: FaqFactsRow | FaqFactsRow[] | null;
+  package_travel_dates: Database["public"]["Tables"]["package_travel_dates"]["Row"][];
   destinations: Pick<
     Database["public"]["Tables"]["destinations"]["Row"],
     "id" | "name"
@@ -52,7 +48,7 @@ export default async function EditPackagePage({
           package_photos(id, storage_path, display_order, alt_text),
           itinerary_days(id, day_number, title, description),
           package_inclusions(id, kind, label, sort_order),
-          faq_facts(best_time_to_go, group_size),
+          package_travel_dates(id, travel_date, additional_fee),
           destinations(id, name)`
         )
         .eq("id", id)
@@ -70,9 +66,6 @@ export default async function EditPackagePage({
   }
 
   const pkg = data as PackageDetail;
-  const faqFacts = Array.isArray(pkg.faq_facts)
-    ? pkg.faq_facts[0]
-    : pkg.faq_facts;
 
   const itinerary = [...pkg.itinerary_days]
     .sort((a, b) => a.day_number - b.day_number)
@@ -90,6 +83,13 @@ export default async function EditPackagePage({
     .filter((item) => item.kind === "bring")
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((item) => ({ label: item.label }));
+
+  const travelDates = [...pkg.package_travel_dates]
+    .sort((a, b) => a.travel_date.localeCompare(b.travel_date))
+    .map((date) => ({
+      date: date.travel_date,
+      additionalFee: date.additional_fee ?? undefined,
+    }));
 
   const photos = pkg.package_photos.map((photo) => ({
     id: photo.id,
@@ -112,17 +112,16 @@ export default async function EditPackagePage({
 
   const defaultValues: Partial<PackageFormValues> = {
     name: pkg.name,
-    slug: pkg.slug,
-    fromPrice: pkg.from_price,
-    durationDays: pkg.duration_days,
+    pricePerPax: pkg.price_per_pax,
+    discountAmount: pkg.discount_amount ?? undefined,
     durationLabel: pkg.duration_label ?? "",
     destinationId: pkg.destination_id ?? "",
+    remarks: pkg.remarks ?? "",
+    travelDates,
     itinerary,
     inclusions,
     exclusions,
     bringItems,
-    bestTimeToGo: faqFacts?.best_time_to_go ?? "",
-    groupSize: faqFacts?.group_size ?? "",
   };
 
   return (
@@ -132,7 +131,7 @@ export default async function EditPackagePage({
           Edit Package
         </h1>
         <p className="text-base leading-[1.5] text-muted-foreground">
-          {pkg.name}
+          {pkg.name} · {pkg.slug}
         </p>
       </div>
 
