@@ -130,35 +130,6 @@ export type Database = {
         }
         Relationships: []
       }
-      faq_facts: {
-        Row: {
-          best_time_to_go: string
-          group_size: string
-          id: string
-          package_id: string
-        }
-        Insert: {
-          best_time_to_go: string
-          group_size: string
-          id?: string
-          package_id: string
-        }
-        Update: {
-          best_time_to_go?: string
-          group_size?: string
-          id?: string
-          package_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "faq_facts_package_id_fkey"
-            columns: ["package_id"]
-            isOneToOne: true
-            referencedRelation: "packages"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       hero_slides: {
         Row: {
           created_at: string
@@ -401,18 +372,51 @@ export type Database = {
           },
         ]
       }
+      package_travel_dates: {
+        Row: {
+          additional_fee: number | null
+          created_at: string
+          id: string
+          package_id: string
+          travel_date: string
+        }
+        Insert: {
+          additional_fee?: number | null
+          created_at?: string
+          id?: string
+          package_id: string
+          travel_date: string
+        }
+        Update: {
+          additional_fee?: number | null
+          created_at?: string
+          id?: string
+          package_id?: string
+          travel_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_travel_dates_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       packages: {
         Row: {
           created_at: string
           deleted_at: string | null
           destination_id: string | null
-          duration_days: number
+          discount_amount: number | null
           duration_label: string | null
-          from_price: number
           id: string
           is_featured: boolean
           is_published: boolean
           name: string
+          price_per_pax: number
+          remarks: string | null
           slug: string
           sort_order: number
         }
@@ -420,27 +424,29 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           destination_id?: string | null
-          duration_days: number
+          discount_amount?: number | null
           duration_label?: string | null
-          from_price: number
           id?: string
           is_featured?: boolean
           is_published?: boolean
           name: string
-          slug: string
+          price_per_pax: number
+          remarks?: string | null
+          slug?: string
           sort_order?: number
         }
         Update: {
           created_at?: string
           deleted_at?: string | null
           destination_id?: string | null
-          duration_days?: number
+          discount_amount?: number | null
           duration_label?: string | null
-          from_price?: number
           id?: string
           is_featured?: boolean
           is_published?: boolean
           name?: string
+          price_per_pax?: number
+          remarks?: string | null
           slug?: string
           sort_order?: number
         }
