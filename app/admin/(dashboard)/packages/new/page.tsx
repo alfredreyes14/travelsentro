@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { createClient } from "@/lib/supabase/server";
 import { PackageForm } from "@/components/admin/package-form";
 
 export const metadata: Metadata = {
@@ -11,6 +12,17 @@ export default async function NewPackagePage() {
   // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
   // second independent layer (T-02-18).
   await requirePermissionOrRedirect("can_manage_packages");
+
+  const supabase = await createClient();
+  const { data: destinationRows, error } = await supabase
+    .from("destinations")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  if (error) {
+    console.error("Failed to load destinations:", error.message);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -24,7 +36,7 @@ export default async function NewPackagePage() {
         </p>
       </div>
 
-      <PackageForm />
+      <PackageForm destinations={destinationRows ?? []} />
     </div>
   );
 }

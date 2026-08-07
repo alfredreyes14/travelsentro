@@ -20,6 +20,10 @@ type PackageDetail = Database["public"]["Tables"]["packages"]["Row"] & {
   // faq_facts is a to-one relation (isOneToOne: true), but defensively
   // handle either shape, same as app/(public)/packages/[slug]/page.tsx.
   faq_facts: FaqFactsRow | FaqFactsRow[] | null;
+  destinations: Pick<
+    Database["public"]["Tables"]["destinations"]["Row"],
+    "id" | "name"
+  > | null;
 };
 
 /**
@@ -39,19 +43,31 @@ export default async function EditPackagePage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("packages")
-    .select(
-      `*,
-      package_photos(id, storage_path, display_order, alt_text),
-      itinerary_days(id, day_number, title, description),
-      package_inclusions(id, kind, label, sort_order),
-      faq_facts(best_time_to_go, group_size)`
-    )
-    .eq("id", id)
-    .single();
+  const [{ data, error }, { data: activeDestinationRows, error: destinationsError }] =
+    await Promise.all([
+      supabase
+        .from("packages")
+        .select(
+          `*,
+          package_photos(id, storage_path, display_order, alt_text),
+          itinerary_days(id, day_number, title, description),
+          package_inclusions(id, kind, label, sort_order),
+          faq_facts(best_time_to_go, group_size),
+          destinations(id, name)`
+        )
+        .eq("id", id)
+        .single(),
+      supabase
+        .from("destinations")
+        .select("id, name")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true }),
+    ]);
 
   if (error || !data) notFound();
+  if (destinationsError) {
+    console.error("Failed to load destinations:", destinationsError.message);
+  }
 
   const pkg = data as PackageDetail;
   const faqFacts = Array.isArray(pkg.faq_facts)
@@ -82,12 +98,25 @@ export default async function EditPackagePage({
     altText: photo.alt_text,
   }));
 
+  // A package's previously-assigned destination may have since been
+  // disabled -- if so it won't be in activeDestinationRows, and the Select
+  // would silently show blank instead of the actual saved value. Add it
+  // back in so the form always shows what's really saved.
+  const activeDestinations = activeDestinationRows ?? [];
+  const currentDestination = pkg.destinations;
+  const destinationOptions =
+    currentDestination &&
+    !activeDestinations.some((d) => d.id === currentDestination.id)
+      ? [...activeDestinations, currentDestination]
+      : activeDestinations;
+
   const defaultValues: Partial<PackageFormValues> = {
     name: pkg.name,
     slug: pkg.slug,
     fromPrice: pkg.from_price,
     durationDays: pkg.duration_days,
     durationLabel: pkg.duration_label ?? "",
+    destinationId: pkg.destination_id ?? "",
     itinerary,
     inclusions,
     exclusions,
@@ -111,6 +140,7 @@ export default async function EditPackagePage({
         packageId={pkg.id}
         defaultValues={defaultValues}
         initialPhotos={photos}
+        destinations={destinationOptions}
       />
     </div>
   );

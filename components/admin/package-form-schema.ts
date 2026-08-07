@@ -36,6 +36,7 @@ export const packageFormSchema = z.object({
     .int("Duration must be a positive number")
     .positive("Duration must be a positive number"),
   durationLabel: z.string().optional(),
+  destinationId: z.string().optional(),
   itinerary: z.array(itineraryDaySchema),
   inclusions: z.array(inclusionItemSchema),
   exclusions: z.array(inclusionItemSchema),

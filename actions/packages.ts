@@ -92,6 +92,7 @@ export async function createPackage(
       from_price: values.fromPrice,
       duration_days: values.durationDays,
       duration_label: values.durationLabel || null,
+      destination_id: values.destinationId || null,
       is_published: false,
       is_featured: false,
       sort_order: count ?? 0,
@@ -140,6 +141,7 @@ export async function updatePackage(
       from_price: values.fromPrice,
       duration_days: values.durationDays,
       duration_label: values.durationLabel || null,
+      destination_id: values.destinationId || null,
     })
     .eq("id", id)
     .select("slug")
