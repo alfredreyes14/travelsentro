@@ -1,30 +1,27 @@
 import type { NextConfig } from "next";
 
+// Derived from NEXT_PUBLIC_R2_PUBLIC_URL rather than hardcoded so a future
+// custom-domain swap (see docs/superpowers/specs/2026-08-08-r2-image-storage-design.md's
+// Future: Production Domain section) only requires changing the env var, not this file.
+const r2Hostname = process.env.NEXT_PUBLIC_R2_PUBLIC_URL
+  ? new URL(process.env.NEXT_PUBLIC_R2_PUBLIC_URL).hostname
+  : undefined;
+
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        // Concrete Supabase project ref isn't known until the project is
-        // provisioned (next plan); pathname is scoped tightly to the
-        // package-photos bucket's public objects so the Image Optimizer
-        // can't be tricked into proxy-fetching arbitrary Supabase-hosted
-        // content outside this bucket (RESEARCH.md Pitfall 3).
-        hostname: "*.supabase.co",
-        pathname: "/storage/v1/object/public/package-photos/**",
-      },
-      {
-        protocol: "https",
-        // Phase 6 (06-07): homepage promo-slide images, testimonial
-        // photos, and Brand Partners/Corporate Clients logos are all
-        // resolved from the "site-content" bucket and rendered via
-        // next/image in components/homepage/{hero-carousel,brand-partners,
-        // corporate-clients}.tsx -- scoped identically to the
-        // package-photos pattern above (same Pitfall 3 rationale).
-        hostname: "*.supabase.co",
-        pathname: "/storage/v1/object/public/site-content/**",
-      },
-    ],
+    remotePatterns: r2Hostname
+      ? [
+          {
+            protocol: "https",
+            // All uploaded images (package photos, destination photos, hero
+            // slides, partner logos, testimonial photos) now live in the
+            // single R2 bucket behind this hostname -- replaces the two
+            // Supabase Storage patterns this project used before the R2
+            // migration (docs/superpowers/plans/2026-08-08-r2-image-storage.md).
+            hostname: r2Hostname,
+          },
+        ]
+      : [],
   },
   experimental: {
     serverActions: {
