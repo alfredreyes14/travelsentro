@@ -10,8 +10,6 @@ import type {
   HeroSlidePackageOption,
   HeroSlideRecord,
 } from "@/components/admin/content/hero-slide-form";
-import { ValuePropsList } from "@/components/admin/content/value-props-list";
-import type { ValuePropRecord } from "@/components/admin/content/value-prop-form";
 import { TestimonialsList } from "@/components/admin/content/testimonials-list";
 import type { TestimonialRecord } from "@/components/admin/content/testimonial-form";
 import { PartnersList } from "@/components/admin/content/partners-list";
@@ -53,7 +51,6 @@ export default async function AdminContentPage() {
   const [
     { data: heroSlideRows, error: heroSlidesError },
     { data: packageOptionRows, error: packagesError },
-    { data: valuePropRows, error: valuePropsError },
     { data: testimonialRows, error: testimonialsError },
     { data: brandPartnerRows, error: brandPartnersError },
     { data: corporateClientRows, error: corporateClientsError },
@@ -66,7 +63,6 @@ export default async function AdminContentPage() {
     // runs. Only featured, published, non-deleted packages are valid hero
     // slide candidates (T-06-22).
     supabase.from("packages").select("id, name").eq("is_featured", true).eq("is_published", true).is("deleted_at", null).order("name"),
-    supabase.from("value_props").select("*").order("sort_order", { ascending: true }),
     supabase.from("testimonials").select("*").order("sort_order", { ascending: true }),
     supabase
       .from("partners")
@@ -88,9 +84,6 @@ export default async function AdminContentPage() {
       "Failed to load package picker options:",
       packagesError.message
     );
-  }
-  if (valuePropsError) {
-    console.error("Failed to load value props:", valuePropsError.message);
   }
   if (testimonialsError) {
     console.error("Failed to load testimonials:", testimonialsError.message);
@@ -150,12 +143,6 @@ export default async function AdminContentPage() {
     }
   );
 
-  const valueProps: ValuePropRecord[] = (valuePropRows ?? []).map((row) => ({
-    id: row.id,
-    title: row.title,
-    description: row.description,
-  }));
-
   const testimonials: TestimonialRecord[] = (testimonialRows ?? []).map(
     (row) => ({
       id: row.id,
@@ -199,17 +186,12 @@ export default async function AdminContentPage() {
       <Tabs defaultValue="hero-slides">
         <TabsList>
           <TabsTrigger value="hero-slides">{"Hero Slides"}</TabsTrigger>
-          <TabsTrigger value="why-choose-us">{"Why Choose Us"}</TabsTrigger>
           <TabsTrigger value="testimonials">{"Testimonials"}</TabsTrigger>
           <TabsTrigger value="partners">{"Partners & Clients"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="hero-slides" keepMounted className="pt-4">
           <HeroSlidesList initialSlides={heroSlides} packages={packages} />
-        </TabsContent>
-
-        <TabsContent value="why-choose-us" keepMounted className="pt-4">
-          <ValuePropsList initialItems={valueProps} />
         </TabsContent>
 
         <TabsContent value="testimonials" keepMounted className="pt-4">

@@ -10,14 +10,32 @@ import type { Database } from "@/types/database";
 type PackageRow = Database["public"]["Tables"]["packages"]["Row"];
 
 /**
- * List card: photo, name, "From ₱X" badge, "Featured" badge, icon-only
- * WhatsApp/Facebook CTAs. The whole card links to the package detail page
- * (`/packages/[slug]`, built in 01-06) via the "stretched link" pattern —
- * the title's <Link> covers the full card via an absolutely-positioned
- * pseudo-element (`after:absolute after:inset-0`) so the card is clickable
- * everywhere, while the CTA <a> elements stay independently clickable
- * (raised above the stretched link with `relative z-10`) without nesting
- * anchors, which is invalid HTML.
+ * Immersive overlay card: full-bleed photo with name, duration, "From ₱X"
+ * badge, and icon-only WhatsApp/Facebook CTAs sitting on a bottom gradient
+ * scrim instead of a separate white panel.
+ *
+ * The photo, scrim, badge, and text layers are stacked via the CSS "grid
+ * stack" technique (every layer shares `col-start-1 row-start-1` inside a
+ * `grid` Card). next/image's `fill` prop renders the <img> itself as
+ * `position: absolute` internally, and a positioned element always paints
+ * above `position: static` siblings regardless of DOM order — so every
+ * layer that must appear above the photo (scrim, badge, text block) is
+ * also explicitly `relative`, ordered by DOM position (later = on top).
+ * The scrim and badge are `pointer-events-none` (purely visual, nothing to
+ * click), and the text block is `pointer-events-none` with the CTA row
+ * opted back in via `pointer-events-auto`, so clicks fall through to the
+ * layer beneath them.
+ *
+ * The whole-card click target is a dedicated invisible <Link> (its own
+ * positioned layer, placed right after the photo) rather than a
+ * pseudo-element hung off the visible title text — the title renders as
+ * plain (non-interactive) text. Decoupling the click target from the
+ * title sidesteps the "nearest positioned ancestor" trap of the
+ * after:absolute after:inset-0 pattern, where any positioned wrapper
+ * between the Link and Card would shrink the click area to that
+ * wrapper's box instead of the full card. The CTA <a> elements stay
+ * independently clickable (raised above the stretched link with
+ * `relative z-10`).
  */
 export function PackageCard({
   pkg,
@@ -27,43 +45,54 @@ export function PackageCard({
   photoUrl: string | null;
 }) {
   return (
-    <Card className="relative gap-0 overflow-hidden p-0 transition-shadow duration-200 hover:shadow-md has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50">
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-secondary/10">
-        {photoUrl ? (
-          <Image
-            src={photoUrl}
-            alt={pkg.name}
-            fill
-            sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-            className="object-cover"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-            No photo available
-          </div>
-        )}
-        {pkg.is_featured && (
-          <Badge className="absolute top-3 left-3">Featured</Badge>
-        )}
-      </div>
+    <Card className="relative grid aspect-[4/5] overflow-hidden p-0 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-lg has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50">
+      {photoUrl ? (
+        <Image
+          src={photoUrl}
+          alt={pkg.name}
+          fill
+          sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+          className="col-start-1 row-start-1 object-cover transition-transform duration-300 ease-out motion-reduce:transition-none group-hover/card:scale-105"
+        />
+      ) : (
+        <div className="col-start-1 row-start-1 flex items-center justify-center bg-secondary/10 text-sm text-muted-foreground">
+          No photo available
+        </div>
+      )}
 
-      <div className="flex flex-col gap-3 p-4">
-        <h3 className="font-heading text-[20px] leading-[1.2] font-semibold">
-          <Link
-            href={`/packages/${pkg.slug}`}
-            className="static after:absolute after:inset-0"
-          >
-            {pkg.name}
-          </Link>
+      <div
+        aria-hidden="true"
+        className="pointer-events-none relative col-start-1 row-start-1 bg-gradient-to-t from-black/90 via-black/10 to-transparent"
+      />
+
+      <Link
+        href={`/packages/${pkg.slug}`}
+        aria-label={pkg.name}
+        className="relative col-start-1 row-start-1"
+      />
+
+      {pkg.is_featured && (
+        <Badge className="pointer-events-none relative col-start-1 row-start-1 m-3 self-start justify-self-start shadow-sm">
+          Featured
+        </Badge>
+      )}
+
+      <div className="pointer-events-none relative col-start-1 row-start-1 flex flex-col justify-end gap-1 p-4">
+        <p className="truncate text-xs font-medium tracking-wide text-white/80 text-shadow-sm uppercase">
+          {pkg.duration_label ?? `${pkg.duration_days} days`}
+        </p>
+
+        <h3 className="line-clamp-2 font-heading text-[20px] leading-[1.2] font-semibold text-white text-shadow-sm">
+          {pkg.name}
         </h3>
 
-        <Badge className="w-fit">
-          From ₱{pkg.from_price.toLocaleString("en-PH")}
-        </Badge>
+        <div className="flex items-center justify-between gap-2 pt-1">
+          <Badge>From ₱{pkg.from_price.toLocaleString("en-PH")}</Badge>
 
-        <div className="flex items-center gap-2">
-          <WhatsAppCta packageName={pkg.name} variant="icon-only" />
-          <FacebookCta variant="icon-only" />
+          <div className="pointer-events-auto flex shrink-0 items-center gap-2">
+            <WhatsAppCta packageName={pkg.name} variant="icon-only" />
+            <FacebookCta variant="icon-only" />
+          </div>
         </div>
       </div>
     </Card>

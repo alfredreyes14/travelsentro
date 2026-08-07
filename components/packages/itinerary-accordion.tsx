@@ -24,9 +24,14 @@ export function ItineraryAccordion({ days }: { days: ItineraryDay[] }) {
       {sortedDays.map((day) => (
         <AccordionItem key={day.id} value={day.id}>
           <AccordionTrigger>
-            Day {day.day_number}: {day.title}
+            <span className="flex items-center gap-3">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[12px] font-semibold text-secondary-foreground">
+                {day.day_number}
+              </span>
+              <span>{day.title}</span>
+            </span>
           </AccordionTrigger>
-          <AccordionContent>
+          <AccordionContent className="pl-10">
             <p className="text-base leading-[1.5] text-muted-foreground">
               {day.description}
             </p>

@@ -10,10 +10,10 @@ const ICONS: Record<ChecklistKind, LucideIcon> = {
   bring: Backpack,
 };
 
-const ICON_COLORS: Record<ChecklistKind, string> = {
-  included: "text-secondary",
-  excluded: "text-muted-foreground",
-  bring: "text-secondary",
+const ICON_CHIP_STYLES: Record<ChecklistKind, string> = {
+  included: "bg-secondary/10 text-secondary",
+  excluded: "bg-destructive/10 text-destructive",
+  bring: "bg-secondary/10 text-secondary",
 };
 
 /**
@@ -35,12 +35,16 @@ export function Checklist({
       {items.map((item, index) => (
         <li
           key={index}
-          className="flex items-start gap-2 text-[14px] leading-[1.4] text-foreground"
+          className="flex items-center gap-2.5 text-[14px] leading-[1.4] text-foreground"
         >
-          <Icon
-            className={cn("mt-0.5 size-4 shrink-0", ICON_COLORS[kind])}
-            aria-hidden="true"
-          />
+          <span
+            className={cn(
+              "flex size-6 shrink-0 items-center justify-center rounded-full",
+              ICON_CHIP_STYLES[kind]
+            )}
+          >
+            <Icon className="size-3.5" aria-hidden="true" />
+          </span>
           <span>{item.label}</span>
         </li>
       ))}

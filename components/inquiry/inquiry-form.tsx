@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 import { inquirySchema, type InquiryFormValues } from "./inquiry-schema";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+
+// Touch-friendly sizing (44px min) for this form specifically — the shared
+// Input/Button primitives default shorter (h-8/h-9) for density-first admin
+// UI, so override here rather than raising the shared default everywhere.
+const FIELD_HEIGHT = "h-11 px-3";
+
+function RequiredMark() {
+  return (
+    <span className="text-destructive" aria-hidden="true">
+      *
+    </span>
+  );
+}
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong sending your inquiry. Please try again, or reach us directly on WhatsApp or Facebook.";
@@ -36,6 +50,8 @@ export function InquiryForm({
 
   const form = useForm<InquiryFormValues>({
     resolver: zodResolver(inquirySchema),
+    mode: "onBlur",
+    reValidateMode: "onChange",
     defaultValues: {
       name: "",
       email: "",
@@ -73,59 +89,70 @@ export function InquiryForm({
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-4 rounded-xl border border-foreground/10 bg-card p-6 shadow-sm"
         noValidate
       >
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="text"
-                  autoComplete="name"
-                  placeholder="Your full name"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Name <RequiredMark />
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Your full name"
+                    className={FIELD_HEIGHT}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Email <RequiredMark />
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    {...field}
+                    type="email"
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    className={FIELD_HEIGHT}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <FormField
           control={form.control}
           name="phone"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Phone</FormLabel>
+              <FormLabel>
+                Phone <RequiredMark />
+              </FormLabel>
               <FormControl>
                 <Input
                   {...field}
                   type="tel"
                   autoComplete="tel"
                   placeholder="09XX XXX XXXX"
+                  className={FIELD_HEIGHT}
                 />
               </FormControl>
               <FormMessage />
@@ -138,7 +165,9 @@ export function InquiryForm({
           name="message"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Message</FormLabel>
+              <FormLabel>
+                Message <RequiredMark />
+              </FormLabel>
               <FormControl>
                 <Textarea
                   {...field}
@@ -180,8 +209,11 @@ export function InquiryForm({
           type="submit"
           size="lg"
           disabled={isSubmitting}
-          className="self-start"
+          className="h-11 w-full sm:w-auto sm:self-end"
         >
+          {isSubmitting && (
+            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+          )}
           {isSubmitting ? "Sending..." : "Send Inquiry"}
         </Button>
       </form>

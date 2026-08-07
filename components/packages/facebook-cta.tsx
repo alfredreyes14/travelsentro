@@ -15,8 +15,10 @@ import { cn } from "@/lib/utils";
  */
 export function FacebookCta({
   variant = "icon-only",
+  className,
 }: {
   variant?: "icon-only" | "icon-label";
+  className?: string;
 }) {
   return (
     <a
@@ -25,7 +27,8 @@ export function FacebookCta({
       rel="noopener noreferrer"
       aria-label="Message us on Facebook"
       className={cn(
-        "relative z-10 inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-[#1877F2] px-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-3 focus-visible:ring-[#1877F2]/50 focus-visible:outline-none"
+        "relative z-10 inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-[#1877F2] px-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-3 focus-visible:ring-[#1877F2]/50 focus-visible:outline-none",
+        className
       )}
     >
       <svg

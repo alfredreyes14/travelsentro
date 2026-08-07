@@ -1,14 +1,60 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Clock,
+  Info,
+  ListChecks,
+  ListX,
+  Mail,
+  Route,
+  Send,
+  type LucideIcon,
+} from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 import { Checklist } from "@/components/packages/checklist";
 import { ItineraryAccordion } from "@/components/packages/itinerary-accordion";
 import { TripFacts } from "@/components/packages/trip-facts";
 import { PackageGallery } from "@/components/packages/package-gallery";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
+import { StickyCtaBar } from "@/components/packages/sticky-cta-bar";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import type { Database } from "@/types/database";
+
+const SECTION_CARD =
+  "flex flex-col gap-4 rounded-xl border border-foreground/10 bg-card p-6 shadow-sm";
+
+function SectionHeading({
+  icon: Icon,
+  tone = "secondary",
+  children,
+}: {
+  icon: LucideIcon;
+  tone?: "secondary" | "destructive";
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2.5">
+      <span
+        className={cn(
+          "flex size-8 shrink-0 items-center justify-center rounded-lg",
+          tone === "destructive"
+            ? "bg-destructive/10 text-destructive"
+            : "bg-secondary/10 text-secondary"
+        )}
+      >
+        <Icon className="size-4" aria-hidden="true" />
+      </span>
+      <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
+        {children}
+      </h2>
+    </div>
+  );
+}
 
 type FaqFactsRow = Database["public"]["Tables"]["faq_facts"]["Row"];
 
@@ -76,40 +122,74 @@ export default async function PackageDetailPage({
     .sort((a, b) => a.sort_order - b.sort_order);
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-12 px-6 py-12 sm:px-8 lg:py-16">
-      <div className="flex flex-col gap-2">
-        <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
+    <div className="mx-auto flex max-w-4xl flex-col gap-10 px-6 pt-8 pb-28 sm:px-8 sm:pb-12 lg:pt-12 lg:pb-16">
+      <Link
+        href="/packages"
+        className="inline-flex w-fit items-center gap-1.5 rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" />
+        Back to Packages
+      </Link>
+
+      <div className="flex flex-col gap-3">
+        <h1 className="font-heading text-[30px] leading-[1.15] font-semibold sm:text-[36px]">
           {pkg.name}
         </h1>
-        <p className="text-[14px] leading-[1.4] text-muted-foreground">
-          {pkg.duration_label ?? `${pkg.duration_days} days`} &middot; From
-          &#8369;{pkg.from_price.toLocaleString("en-PH")}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <span className="inline-flex h-9 items-center gap-2 rounded-full border border-foreground/10 bg-card py-1 pr-3.5 pl-1 text-[13px] font-medium text-foreground shadow-sm">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-secondary/10 text-secondary">
+              <Clock className="size-3.5" aria-hidden="true" />
+            </span>
+            {pkg.duration_label ?? `${pkg.duration_days} days`}
+          </span>
+          <Badge className="h-9 rounded-full px-4 text-[15px] font-bold tabular-nums shadow-sm">
+            From &#8369;{pkg.from_price.toLocaleString("en-PH")}
+          </Badge>
+        </div>
       </div>
 
       <PackageGallery photos={photos} />
 
-      <section className="flex flex-col gap-6">
-        <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
-          What&apos;s Included
-        </h2>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <Checklist items={inclusions} kind="included" />
-          <Checklist items={exclusions} kind="excluded" />
+      <section className="flex flex-col gap-6 rounded-xl bg-secondary p-6 text-secondary-foreground shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
+              <Send className="size-4" aria-hidden="true" />
+            </span>
+            <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
+              Ready to Book This Trip?
+            </h2>
+          </div>
+          <p className="max-w-sm text-[14px] leading-[1.5] text-secondary-foreground/70">
+            Message us on WhatsApp or Facebook — we usually reply within
+            minutes.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 sm:shrink-0">
+          <WhatsAppCta packageName={pkg.name} variant="icon-label" />
+          <FacebookCta variant="icon-label" />
         </div>
       </section>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
-          Itinerary
-        </h2>
+      <section className={SECTION_CARD}>
+        <SectionHeading icon={ListChecks}>What&apos;s Included</SectionHeading>
+        <Checklist items={inclusions} kind="included" />
+      </section>
+
+      <section className={SECTION_CARD}>
+        <SectionHeading icon={ListX} tone="destructive">
+          What&apos;s Not Included
+        </SectionHeading>
+        <Checklist items={exclusions} kind="excluded" />
+      </section>
+
+      <section className={SECTION_CARD}>
+        <SectionHeading icon={Route}>Itinerary</SectionHeading>
         <ItineraryAccordion days={pkg.itinerary_days} />
       </section>
 
-      <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
-          Trip Facts
-        </h2>
+      <section className={SECTION_CARD}>
+        <SectionHeading icon={Info}>Trip Facts</SectionHeading>
         <TripFacts
           bestTimeToGo={faqFacts?.best_time_to_go ?? ""}
           groupSize={faqFacts?.group_size ?? ""}
@@ -117,17 +197,12 @@ export default async function PackageDetailPage({
         />
       </section>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <WhatsAppCta packageName={pkg.name} variant="icon-label" />
-        <FacebookCta variant="icon-label" />
+      <div className="flex flex-col gap-4">
+        <SectionHeading icon={Mail}>Inquire About {pkg.name}</SectionHeading>
+        <InquiryForm packageName={pkg.name} packageId={pkg.id} />
       </div>
 
-      <section className="flex flex-col gap-4 border-t border-foreground/10 pt-8">
-        <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
-          Send an Inquiry
-        </h2>
-        <InquiryForm packageName={pkg.name} packageId={pkg.id} />
-      </section>
+      <StickyCtaBar packageName={pkg.name} />
     </div>
   );
 }

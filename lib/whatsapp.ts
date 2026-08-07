@@ -4,7 +4,9 @@
 // spaces/dashes, per wa.me's documented link format.
 const WHATSAPP_NUMBER = "639205351673";
 
-export function buildWhatsAppLink(packageName: string): string {
-  const message = `Hi! I'm interested in ${packageName}`;
+export function buildWhatsAppLink(packageName?: string): string {
+  const message = packageName
+    ? `Hi! I'm interested in ${packageName}`
+    : "Hi! I'd like to know more about your tour packages";
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
 }

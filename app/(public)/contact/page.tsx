@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
+import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
+import { FacebookCta } from "@/components/packages/facebook-cta";
 
 export const metadata: Metadata = {
   title: "Contact Us | TravelSentro",
@@ -20,6 +22,17 @@ export default function ContactPage() {
           message and we&apos;ll get back to you soon — or reach out directly
           on WhatsApp or Facebook.
         </p>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <WhatsAppCta variant="icon-label" />
+        <FacebookCta variant="icon-label" />
+      </div>
+
+      <div className="flex items-center gap-3 text-sm text-muted-foreground">
+        <div className="h-px flex-1 bg-border" />
+        or send us a message
+        <div className="h-px flex-1 bg-border" />
       </div>
 
       <InquiryForm />
