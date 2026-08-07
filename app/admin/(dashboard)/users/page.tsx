@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { requireAdminOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { UsersTable } from "@/components/admin/users-table";
+import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = {
   title: "Users | TravelSentro Admin",
@@ -27,14 +28,10 @@ export default async function UsersPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-[24px] leading-[1.2] font-semibold">
-          Users
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Manage Admin and Staff accounts and their permissions.
-        </p>
-      </div>
+      <PageHeader
+        title="Users"
+        description="Manage Admin and Staff accounts and their permissions."
+      />
 
       <UsersTable profiles={profiles ?? []} />
     </div>

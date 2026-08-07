@@ -5,6 +5,7 @@ import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { PackageForm } from "@/components/admin/package-form";
 import type { PackageFormValues } from "@/components/admin/package-form-schema";
+import { PageHeader } from "@/components/admin/page-header";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -126,14 +127,7 @@ export default async function EditPackagePage({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
-          Edit Package
-        </h1>
-        <p className="text-base leading-[1.5] text-muted-foreground">
-          {pkg.name} · {pkg.slug}
-        </p>
-      </div>
+      <PageHeader title="Edit Package" description={`${pkg.name} · ${pkg.slug}`} />
 
       <PackageForm
         packageId={pkg.id}

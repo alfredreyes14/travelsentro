@@ -6,6 +6,7 @@ import {
   DestinationsList,
   type DestinationListItem,
 } from "@/components/admin/content/destinations-list";
+import { PageHeader } from "@/components/admin/page-header";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -52,16 +53,10 @@ export default async function AdminDestinationsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
-          Destinations
-        </h1>
-        <p className="text-base leading-[1.5] text-muted-foreground">
-          Manage the Local/International destinations shown on the homepage
-          and available when linking a package. A destination can&apos;t be
-          disabled or deleted while an active package still uses it.
-        </p>
-      </div>
+      <PageHeader
+        title="Destinations"
+        description="Manage the Local/International destinations shown on the homepage and available when linking a package. A destination can't be disabled or deleted while an active package still uses it."
+      />
 
       <DestinationsList initialDestinations={destinations} />
     </div>

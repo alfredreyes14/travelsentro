@@ -4,6 +4,7 @@ import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { createDraftPackage } from "@/actions/packages";
 import { SortablePackageList } from "@/components/admin/sortable-package-list";
+import { PageHeader } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import type { Database } from "@/types/database";
 
@@ -72,22 +73,16 @@ export default async function AdminPackagesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
-            Packages
-          </h1>
-          <p className="text-base leading-[1.5] text-muted-foreground">
-            Drag to reorder, and toggle Published/Featured — changes go live
-            on the public site immediately.
-          </p>
-        </div>
+      <PageHeader
+        title="Packages"
+        description="Drag to reorder, and toggle Published/Featured — changes go live on the public site immediately."
+      >
         <form action={createDraftPackage}>
           <Button type="submit" size="lg">
             Add Package
           </Button>
         </form>
-      </div>
+      </PageHeader>
 
       {items.length === 0 ? (
         <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-8 ring-1 ring-foreground/10">

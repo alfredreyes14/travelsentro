@@ -14,6 +14,7 @@ import { TestimonialsList } from "@/components/admin/content/testimonials-list";
 import type { TestimonialRecord } from "@/components/admin/content/testimonial-form";
 import { PartnersList } from "@/components/admin/content/partners-list";
 import type { PartnerRecord } from "@/components/admin/content/partner-form";
+import { PageHeader } from "@/components/admin/page-header";
 import {
   Tabs,
   TabsContent,
@@ -173,15 +174,10 @@ export default async function AdminContentPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
-          Homepage Content
-        </h1>
-        <p className="text-base leading-[1.5] text-muted-foreground">
-          Manage the hero carousel and homepage content sections — changes go
-          live on the public site immediately.
-        </p>
-      </div>
+      <PageHeader
+        title="Homepage Content"
+        description="Manage the hero carousel and homepage content sections — changes go live on the public site immediately."
+      />
 
       <Tabs defaultValue="hero-slides">
         <TabsList>
