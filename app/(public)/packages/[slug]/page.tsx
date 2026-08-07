@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
+  Backpack,
+  CalendarDays,
   Clock,
   Info,
   ListChecks,
@@ -17,7 +19,6 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Checklist } from "@/components/packages/checklist";
 import { ItineraryAccordion } from "@/components/packages/itinerary-accordion";
-import { TripFacts } from "@/components/packages/trip-facts";
 import { PackageGallery } from "@/components/packages/package-gallery";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
@@ -56,16 +57,11 @@ function SectionHeading({
   );
 }
 
-type FaqFactsRow = Database["public"]["Tables"]["faq_facts"]["Row"];
-
 type PackageDetail = Database["public"]["Tables"]["packages"]["Row"] & {
   package_photos: Database["public"]["Tables"]["package_photos"]["Row"][];
   itinerary_days: Database["public"]["Tables"]["itinerary_days"]["Row"][];
   package_inclusions: Database["public"]["Tables"]["package_inclusions"]["Row"][];
-  // faq_facts is a to-one relation (isOneToOne: true in types/database.ts),
-  // but defensively handle either shape in case the query builder ever
-  // returns it as a single-element array.
-  faq_facts: FaqFactsRow | FaqFactsRow[] | null;
+  package_travel_dates: Database["public"]["Tables"]["package_travel_dates"]["Row"][];
 };
 
 /**
@@ -89,7 +85,7 @@ export default async function PackageDetailPage({
       package_photos(storage_path, display_order, alt_text),
       itinerary_days(day_number, title, description),
       package_inclusions(kind, label, sort_order),
-      faq_facts(best_time_to_go, group_size)`
+      package_travel_dates(travel_date, additional_fee)`
     )
     .eq("slug", slug)
     .eq("is_published", true)
@@ -98,9 +94,6 @@ export default async function PackageDetailPage({
   if (error || !data) notFound();
 
   const pkg = data as PackageDetail;
-  const faqFacts = Array.isArray(pkg.faq_facts)
-    ? pkg.faq_facts[0]
-    : pkg.faq_facts;
 
   const photos = [...pkg.package_photos]
     .sort((a, b) => a.display_order - b.display_order)
@@ -120,6 +113,9 @@ export default async function PackageDetailPage({
   const bringItems = pkg.package_inclusions
     .filter((item) => item.kind === "bring")
     .sort((a, b) => a.sort_order - b.sort_order);
+  const travelDates = [...pkg.package_travel_dates].sort((a, b) =>
+    a.travel_date.localeCompare(b.travel_date)
+  );
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-10 px-6 pt-8 pb-28 sm:px-8 sm:pb-12 lg:pt-12 lg:pb-16">
@@ -140,11 +136,22 @@ export default async function PackageDetailPage({
             <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-secondary/10 text-secondary">
               <Clock className="size-3.5" aria-hidden="true" />
             </span>
-            {pkg.duration_label ?? `${pkg.duration_days} days`}
+            {pkg.duration_label ?? "Duration TBA"}
           </span>
-          <Badge className="h-9 rounded-full px-4 text-[15px] font-bold tabular-nums shadow-sm">
-            From &#8369;{pkg.from_price.toLocaleString("en-PH")}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {pkg.discount_amount ? (
+              <span className="text-sm text-muted-foreground line-through">
+                &#8369;{pkg.price_per_pax.toLocaleString("en-PH")}
+              </span>
+            ) : null}
+            <Badge className="h-9 rounded-full px-4 text-[15px] font-bold tabular-nums shadow-sm">
+              &#8369;
+              {(
+                pkg.price_per_pax - (pkg.discount_amount ?? 0)
+              ).toLocaleString("en-PH")}{" "}
+              / pax
+            </Badge>
+          </div>
         </div>
       </div>
 
@@ -189,13 +196,45 @@ export default async function PackageDetailPage({
       </section>
 
       <section className={SECTION_CARD}>
-        <SectionHeading icon={Info}>Trip Facts</SectionHeading>
-        <TripFacts
-          bestTimeToGo={faqFacts?.best_time_to_go ?? ""}
-          groupSize={faqFacts?.group_size ?? ""}
-          bringItems={bringItems}
-        />
+        <SectionHeading icon={Backpack}>What to Bring</SectionHeading>
+        <Checklist items={bringItems} kind="bring" />
       </section>
+
+      {travelDates.length > 0 ? (
+        <section className={SECTION_CARD}>
+          <SectionHeading icon={CalendarDays}>Travel Dates</SectionHeading>
+          <ul className="flex flex-col gap-2">
+            {travelDates.map((date) => (
+              <li
+                key={date.travel_date}
+                className="flex items-center justify-between gap-2 text-[14px] leading-[1.4] text-foreground"
+              >
+                <span>
+                  {new Date(date.travel_date).toLocaleDateString("en-PH", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </span>
+                {date.additional_fee ? (
+                  <Badge variant="outline">
+                    +&#8369;{date.additional_fee.toLocaleString("en-PH")}
+                  </Badge>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {pkg.remarks ? (
+        <section className={SECTION_CARD}>
+          <SectionHeading icon={Info}>Remarks</SectionHeading>
+          <p className="whitespace-pre-line text-base leading-[1.5] text-muted-foreground">
+            {pkg.remarks}
+          </p>
+        </section>
+      ) : null}
 
       <div className="flex flex-col gap-4">
         <SectionHeading icon={Mail}>Inquire About {pkg.name}</SectionHeading>

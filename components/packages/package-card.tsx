@@ -10,7 +10,7 @@ import type { Database } from "@/types/database";
 type PackageRow = Database["public"]["Tables"]["packages"]["Row"];
 
 /**
- * Immersive overlay card: full-bleed photo with name, duration, "From ₱X"
+ * Immersive overlay card: full-bleed photo with name, duration, "₱X / pax"
  * badge, and icon-only WhatsApp/Facebook CTAs sitting on a bottom gradient
  * scrim instead of a separate white panel.
  *
@@ -79,7 +79,7 @@ export function PackageCard({
 
       <div className="pointer-events-none relative col-start-1 row-start-1 flex flex-col justify-end gap-1 p-4">
         <p className="truncate text-xs font-medium tracking-wide text-white/80 text-shadow-sm uppercase">
-          {pkg.duration_label ?? `${pkg.duration_days} days`}
+          {pkg.duration_label ?? "Duration TBA"}
         </p>
 
         <h3 className="line-clamp-2 font-heading text-[20px] leading-[1.2] font-semibold text-white text-shadow-sm">
@@ -87,7 +87,20 @@ export function PackageCard({
         </h3>
 
         <div className="flex items-center justify-between gap-2 pt-1">
-          <Badge>From ₱{pkg.from_price.toLocaleString("en-PH")}</Badge>
+          <div className="flex items-center gap-1.5">
+            {pkg.discount_amount ? (
+              <span className="text-xs text-white/70 text-shadow-sm line-through">
+                ₱{pkg.price_per_pax.toLocaleString("en-PH")}
+              </span>
+            ) : null}
+            <Badge>
+              ₱
+              {(
+                pkg.price_per_pax - (pkg.discount_amount ?? 0)
+              ).toLocaleString("en-PH")}{" "}
+              / pax
+            </Badge>
+          </div>
 
           <div className="pointer-events-auto flex shrink-0 items-center gap-2">
             <WhatsAppCta packageName={pkg.name} variant="icon-only" />
