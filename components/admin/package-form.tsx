@@ -16,6 +16,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Tabs,
   TabsContent,
   TabsList,
@@ -33,12 +40,15 @@ import {
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
+export type PackageDestinationOption = { id: string; name: string };
+
 const EMPTY_DEFAULTS: PackageFormValues = {
   name: "",
   slug: "",
   fromPrice: 0,
   durationDays: 0,
   durationLabel: "",
+  destinationId: "",
   itinerary: [],
   inclusions: [],
   exclusions: [],
@@ -65,7 +75,7 @@ const TAB_FIELD_MAP: Array<{
   tab: string;
   fields: Array<keyof PackageFormValues>;
 }> = [
-  { tab: "details", fields: ["name", "slug", "fromPrice", "durationDays", "durationLabel"] },
+  { tab: "details", fields: ["name", "slug", "fromPrice", "durationDays", "durationLabel", "destinationId"] },
   { tab: "itinerary", fields: ["itinerary"] },
   {
     tab: "inclusions",
@@ -84,10 +94,12 @@ export function PackageForm({
   packageId,
   defaultValues,
   initialPhotos = [],
+  destinations = [],
 }: {
   packageId?: string;
   defaultValues?: Partial<PackageFormValues>;
   initialPhotos?: PhotoManagerPhoto[];
+  destinations?: PackageDestinationOption[];
 }) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -284,6 +296,31 @@ export function PackageForm({
                       placeholder="3 days, 2 nights"
                     />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="destinationId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Destination (optional)</FormLabel>
+                  <Select value={field.value || ""} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Select a destination" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {destinations.map((destination) => (
+                        <SelectItem key={destination.id} value={destination.id}>
+                          {destination.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

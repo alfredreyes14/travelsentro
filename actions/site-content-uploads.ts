@@ -30,7 +30,7 @@ function extensionFromMimeType(type: string): string {
  * etc. call runs afterward and revalidates.
  */
 export async function uploadSiteContentImage(
-  folder: "hero-slides" | "testimonials" | "partners",
+  folder: "hero-slides" | "testimonials" | "partners" | "destinations",
   file: UploadImageInput
 ): Promise<ActionResult & { storagePath?: string }> {
   await requirePermission("can_manage_packages");

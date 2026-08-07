@@ -67,11 +67,30 @@ type SeedPackage = {
   isPublished: true
   isFeatured: boolean
   sortOrder: number
+  destinationSlug: string
   photos: SeedPhoto[]
   itinerary: SeedItineraryDay[]
   inclusions: SeedInclusion[]
   faq: { bestTimeToGo: string; groupSize: string }
 }
+
+type SeedDestination = {
+  slug: string
+  name: string
+  region: 'local' | 'international'
+  sortOrder: number
+}
+
+const SEED_DESTINATIONS: SeedDestination[] = [
+  { slug: 'palawan', name: 'Palawan', region: 'local', sortOrder: 0 },
+  { slug: 'siargao', name: 'Siargao', region: 'local', sortOrder: 1 },
+  { slug: 'banaue', name: 'Banaue', region: 'local', sortOrder: 2 },
+  { slug: 'boracay', name: 'Boracay', region: 'local', sortOrder: 3 },
+  { slug: 'japan', name: 'Japan', region: 'international', sortOrder: 0 },
+  { slug: 'thailand', name: 'Thailand', region: 'international', sortOrder: 1 },
+  { slug: 'south-korea', name: 'South Korea', region: 'international', sortOrder: 2 },
+  { slug: 'singapore', name: 'Singapore', region: 'international', sortOrder: 3 },
+]
 
 const SEED_PACKAGES: SeedPackage[] = [
   {
@@ -83,6 +102,7 @@ const SEED_PACKAGES: SeedPackage[] = [
     isPublished: true,
     isFeatured: true,
     sortOrder: 0,
+    destinationSlug: 'palawan',
     photos: [
       { file: 'palawan-1.jpg', altText: 'Limestone cliffs and turquoise lagoon in Palawan', displayOrder: 0 },
       { file: 'palawan-2.jpg', altText: 'Banca boat anchored off a white sand island near El Nido', displayOrder: 1 },
@@ -129,6 +149,7 @@ const SEED_PACKAGES: SeedPackage[] = [
     isPublished: true,
     isFeatured: false,
     sortOrder: 1,
+    destinationSlug: 'siargao',
     photos: [
       { file: 'siargao-1.jpg', altText: 'Surfer paddling out at Cloud 9, Siargao', displayOrder: 0 },
       { file: 'siargao-2.jpg', altText: 'Palm-lined coastline of Siargao Island', displayOrder: 1 },
@@ -180,6 +201,7 @@ const SEED_PACKAGES: SeedPackage[] = [
     isPublished: true,
     isFeatured: false,
     sortOrder: 2,
+    destinationSlug: 'banaue',
     photos: [
       { file: 'banaue-1.jpg', altText: 'Terraced rice paddies carved into the mountains of Banaue', displayOrder: 0 },
       { file: 'banaue-2.jpg', altText: 'Misty mountain view over the Banaue Rice Terraces', displayOrder: 1 },
@@ -219,7 +241,37 @@ const SEED_PACKAGES: SeedPackage[] = [
   },
 ]
 
-async function seedPackage(pkg: SeedPackage) {
+async function seedDestinations(): Promise<Map<string, string>> {
+  console.log(`Seeding ${SEED_DESTINATIONS.length} destinations...`)
+  const idBySlug = new Map<string, string>()
+
+  for (const destination of SEED_DESTINATIONS) {
+    const { data, error } = await supabase
+      .from('destinations')
+      .upsert(
+        {
+          slug: destination.slug,
+          name: destination.name,
+          region: destination.region,
+          sort_order: destination.sortOrder,
+        },
+        { onConflict: 'slug' }
+      )
+      .select('id')
+      .single()
+
+    if (error || !data) {
+      throw new Error(`Failed to upsert destination ${destination.slug}: ${error?.message}`)
+    }
+
+    idBySlug.set(destination.slug, data.id)
+  }
+
+  console.log('  -> destinations done')
+  return idBySlug
+}
+
+async function seedPackage(pkg: SeedPackage, destinationIdBySlug: Map<string, string>) {
   console.log(`Seeding "${pkg.name}" (${pkg.slug})...`)
 
   const { data: pkgRow, error: pkgError } = await supabase
@@ -234,6 +286,7 @@ async function seedPackage(pkg: SeedPackage) {
         is_published: pkg.isPublished,
         is_featured: pkg.isFeatured,
         sort_order: pkg.sortOrder,
+        destination_id: destinationIdBySlug.get(pkg.destinationSlug) ?? null,
       },
       { onConflict: 'slug' }
     )
@@ -334,9 +387,11 @@ async function seed() {
     auth: { persistSession: false },
   })
 
+  const destinationIdBySlug = await seedDestinations()
+
   console.log(`Seeding ${SEED_PACKAGES.length} placeholder packages...`)
   for (const pkg of SEED_PACKAGES) {
-    await seedPackage(pkg)
+    await seedPackage(pkg, destinationIdBySlug)
   }
   console.log('Seed complete.')
 }
