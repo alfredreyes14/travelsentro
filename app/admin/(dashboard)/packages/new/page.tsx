@@ -1,42 +1,22 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { requirePermissionOrRedirect } from "@/lib/auth/dal";
-import { createClient } from "@/lib/supabase/server";
-import { PackageForm } from "@/components/admin/package-form";
+import { createDraftPackage } from "@/actions/packages";
 
-export const metadata: Metadata = {
-  title: "New Package | TravelSentro Admin",
-};
-
+/**
+ * Creates a minimal draft package immediately and redirects straight to its
+ * edit page — there is no standalone create form anymore. Every package
+ * gets a real id (and a usable Photos tab) from the moment "Add Package" is
+ * clicked, so the rest of the flow lives entirely in
+ * app/admin/(dashboard)/packages/[id]/page.tsx.
+ */
 export default async function NewPackagePage() {
-  // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
-  // second independent layer (T-02-18).
   await requirePermissionOrRedirect("can_manage_packages");
 
-  const supabase = await createClient();
-  const { data: destinationRows, error } = await supabase
-    .from("destinations")
-    .select("id, name")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
-
-  if (error) {
-    console.error("Failed to load destinations:", error.message);
+  const result = await createDraftPackage();
+  if (!result.ok || !result.id) {
+    throw new Error(result.ok ? "Missing package id" : result.error);
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
-          New Package
-        </h1>
-        <p className="text-base leading-[1.5] text-muted-foreground">
-          Create a new tour package. It starts as an unpublished draft until
-          you publish it from the package list.
-        </p>
-      </div>
-
-      <PackageForm destinations={destinationRows ?? []} />
-    </div>
-  );
+  redirect(`/admin/packages/${result.id}`);
 }
