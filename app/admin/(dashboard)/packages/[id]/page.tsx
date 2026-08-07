@@ -86,7 +86,11 @@ export default async function EditPackagePage({
     .map((item) => ({ label: item.label }));
 
   const travelDates = [...pkg.package_travel_dates]
-    .sort((a, b) => a.travel_date_from.localeCompare(b.travel_date_from))
+    .sort(
+      (a, b) =>
+        a.travel_date_from.localeCompare(b.travel_date_from) ||
+        a.travel_date_to.localeCompare(b.travel_date_to)
+    )
     .map((date) => ({
       dateFrom: date.travel_date_from,
       dateTo: date.travel_date_to,

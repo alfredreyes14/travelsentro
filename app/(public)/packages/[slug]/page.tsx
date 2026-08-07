@@ -113,8 +113,10 @@ export default async function PackageDetailPage({
   const bringItems = pkg.package_inclusions
     .filter((item) => item.kind === "bring")
     .sort((a, b) => a.sort_order - b.sort_order);
-  const travelDates = [...pkg.package_travel_dates].sort((a, b) =>
-    a.travel_date_from.localeCompare(b.travel_date_from)
+  const travelDates = [...pkg.package_travel_dates].sort(
+    (a, b) =>
+      a.travel_date_from.localeCompare(b.travel_date_from) ||
+      a.travel_date_to.localeCompare(b.travel_date_to)
   );
 
   return (
