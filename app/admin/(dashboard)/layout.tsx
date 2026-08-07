@@ -5,6 +5,7 @@ import {
   UsersIcon,
   LogOutIcon,
   LayoutTemplateIcon,
+  MapPinIcon,
 } from "lucide-react";
 
 import { getProfile } from "@/lib/auth/dal";
@@ -72,6 +73,22 @@ export default async function AdminDashboardLayout({
                     <SidebarMenuButton size="lg" render={<Link href="/admin/content" />}>
                       <LayoutTemplateIcon />
                       <span>Content</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
+                {/* Hidden entirely (not disabled) when the permission is
+                    absent, reusing the identical canManagePackages boolean
+                    already computed for Packages/Content above -- no new
+                    permission toggle. Server-side enforcement still happens
+                    independently via requirePermissionOrRedirect() (AUTH-05). */}
+                {canManagePackages && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      size="lg"
+                      render={<Link href="/admin/packages/destinations" />}
+                    >
+                      <MapPinIcon />
+                      <span>Destinations</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 )}
