@@ -12,7 +12,7 @@ function Input({
   prefix,
   suffix,
   ...props
-}: React.ComponentProps<"input"> & {
+}: Omit<React.ComponentProps<"input">, "prefix"> & {
   prefix?: React.ReactNode
   suffix?: React.ReactNode
 }) {
