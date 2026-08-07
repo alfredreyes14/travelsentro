@@ -76,7 +76,7 @@ function SortableHeader({
   return (
     <button
       type="button"
-      className="inline-flex items-center gap-1 hover:text-foreground"
+      className="inline-flex cursor-pointer items-center gap-1 [&>svg]:hover:text-foreground"
       onClick={() => column.toggleSorting()}
     >
       {label}
