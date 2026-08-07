@@ -77,7 +77,7 @@ function SortableHeader({
     <button
       type="button"
       className="inline-flex items-center gap-1 hover:text-foreground"
-      onClick={() => column.toggleSorting(sorted === "asc")}
+      onClick={() => column.toggleSorting()}
     >
       {label}
       {sorted === "asc" ? (
