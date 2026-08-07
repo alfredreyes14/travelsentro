@@ -120,7 +120,7 @@ export function DestinationsList({
           />
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger render={<Button size="lg" />}>
+          <DialogTrigger render={<Button />}>
             Add Destination
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
