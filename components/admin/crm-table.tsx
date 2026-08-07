@@ -3,18 +3,22 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { SearchIcon } from "lucide-react";
+import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon, SearchIcon } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
   getFilteredRowModel,
+  getSortedRowModel,
   flexRender,
+  type Column,
   type ColumnDef,
   type ColumnFiltersState,
   type RowSelectionState,
+  type SortingState,
 } from "@tanstack/react-table";
 
 import { MessageComposeDialog } from "./message-compose-dialog";
+import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -61,6 +65,32 @@ export type AdminContactListItem = {
 
 const STATUS_FILTER_ALL = "all";
 
+function SortableHeader({
+  label,
+  column,
+}: {
+  label: string;
+  column: Column<AdminContactListItem, unknown>;
+}) {
+  const sorted = column.getIsSorted();
+  return (
+    <button
+      type="button"
+      className="inline-flex items-center gap-1 hover:text-foreground"
+      onClick={() => column.toggleSorting(sorted === "asc")}
+    >
+      {label}
+      {sorted === "asc" ? (
+        <ArrowUpIcon className="size-3.5" />
+      ) : sorted === "desc" ? (
+        <ArrowDownIcon className="size-3.5" />
+      ) : (
+        <ArrowUpDownIcon className="size-3.5 text-muted-foreground/50" />
+      )}
+    </button>
+  );
+}
+
 const columns: ColumnDef<AdminContactListItem>[] = [
   {
     id: "select",
@@ -100,7 +130,7 @@ const columns: ColumnDef<AdminContactListItem>[] = [
   },
   {
     accessorKey: "name",
-    header: "Name",
+    header: ({ column }) => <SortableHeader label="Name" column={column} />,
     cell: ({ row }) => row.original.name,
   },
   {
@@ -110,7 +140,7 @@ const columns: ColumnDef<AdminContactListItem>[] = [
   },
   {
     accessorKey: "status",
-    header: "Status",
+    header: ({ column }) => <SortableHeader label="Status" column={column} />,
     filterFn: (row, columnId, filterValue) => {
       if (!filterValue || filterValue === STATUS_FILTER_ALL) return true;
       return row.getValue(columnId) === filterValue;
@@ -145,7 +175,7 @@ const columns: ColumnDef<AdminContactListItem>[] = [
   },
   {
     accessorKey: "createdAt",
-    header: "Created",
+    header: ({ column }) => <SortableHeader label="Created" column={column} />,
     cell: ({ row }) => (
       <span title={new Date(row.original.createdAt).toLocaleString()}>
         {formatDistanceToNow(new Date(row.original.createdAt), {
@@ -161,19 +191,22 @@ export function CrmTable({ contacts }: { contacts: AdminContactListItem[] }) {
   const [globalFilter, setGlobalFilter] = useState("");
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [sorting, setSorting] = useState<SortingState>([]);
   const [isComposeOpen, setIsComposeOpen] = useState(false);
 
   const table = useReactTable({
     data: contacts,
     columns,
-    state: { globalFilter, columnFilters, rowSelection },
+    state: { globalFilter, columnFilters, rowSelection, sorting },
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
     getRowId: (row) => row.id,
     enableRowSelection: (row) => !row.original.opted_out,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     globalFilterFn: (row, _columnId, filterValue) => {
       const q = String(filterValue).toLowerCase();
       return (
@@ -200,7 +233,7 @@ export function CrmTable({ contacts }: { contacts: AdminContactListItem[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <DataTableToolbar>
         <div className="relative flex-1">
           <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -230,7 +263,7 @@ export function CrmTable({ contacts }: { contacts: AdminContactListItem[] }) {
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </DataTableToolbar>
 
       {selectedRows.length > 0 ? (
         <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
