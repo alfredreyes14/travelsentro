@@ -11,6 +11,12 @@ const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
 const FK_VIOLATION = "23503";
+const UNIQUE_VIOLATION = "23505";
+// SQLSTATE the disable-guard trigger's `raise exception` surfaces as
+// (Postgres's generic "raised_exception" code) -- empirically confirmed
+// against this repo's actual trigger
+// (prevent_disable_destination_with_active_packages), not assumed.
+const DISABLE_GUARD_ERROR = "P0001";
 
 /**
  * Creates a new destination, appending it to the end of the admin list's
@@ -43,6 +49,13 @@ export async function createDestination(
     .single();
 
   if (createError || !created) {
+    if (createError?.code === UNIQUE_VIOLATION) {
+      return {
+        ok: false,
+        error:
+          "A destination with that slug already exists. Please choose a different slug.",
+      };
+    }
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
@@ -79,6 +92,13 @@ export async function updateDestination(
     .single();
 
   if (updateError || !updated) {
+    if (updateError?.code === UNIQUE_VIOLATION) {
+      return {
+        ok: false,
+        error:
+          "A destination with that slug already exists. Please choose a different slug.",
+      };
+    }
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
@@ -93,7 +113,10 @@ export async function updateDestination(
  * true -> false transition with a raised Postgres exception -- its message
  * is already a safe, human-readable string (e.g. 'Cannot disable "Palawan"
  * — 2 active package(s)...'), so it's surfaced directly via error.message
- * instead of the generic fallback.
+ * instead of the generic fallback. That passthrough is gated to the
+ * trigger's own SQLSTATE (P0001, empirically confirmed) so an unrelated
+ * Supabase error (e.g. a stale id causing .single() to fail with PGRST116)
+ * doesn't leak raw Postgres/PostgREST text into the admin's toast.
  */
 export async function toggleDestinationActive(
   id: string,
@@ -110,7 +133,10 @@ export async function toggleDestinationActive(
     .single();
 
   if (error || !data) {
-    return { ok: false, error: error?.message || GENERIC_ERROR_MESSAGE };
+    if (error?.code === DISABLE_GUARD_ERROR) {
+      return { ok: false, error: error.message };
+    }
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
   revalidatePath("/");

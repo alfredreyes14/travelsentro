@@ -46,6 +46,16 @@ export default async function PackagesPage({
   // embedded relation is an inner join; without !inner, .eq() on the
   // embedded column just nulls out non-matching embeds instead of
   // filtering the packages themselves.
+  //
+  // .eq("destinations.is_active", true) is kept here even though RLS also
+  // scopes anonymous visitors to is_active = true destinations, because RLS
+  // grants authenticated can_manage_packages users read access to ALL
+  // destinations -- without this query-layer filter, an admin browsing this
+  // nominally public page would see packages for an inactive destination
+  // that an anonymous visitor cannot, diverging from the destinationName
+  // lookup above (which already filters is_active = true). Same
+  // belt-and-suspenders reasoning as app/(public)/page.tsx's destinations
+  // query.
   const { data: packages, error } = destinationSlug
     ? await supabase
         .from("packages")
@@ -54,6 +64,7 @@ export default async function PackagesPage({
         )
         .eq("is_published", true)
         .eq("destinations.slug", destinationSlug)
+        .eq("destinations.is_active", true)
         .order("sort_order", { ascending: true })
     : await supabase
         .from("packages")
