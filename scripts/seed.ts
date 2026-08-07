@@ -21,6 +21,7 @@ import { createClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Database } from '../types/database'
+import { uploadObject } from '../lib/storage/r2-client'
 
 /**
  * Node 20 has no native global WebSocket (added in Node 22); @supabase/supabase-js
@@ -341,18 +342,17 @@ async function seedPackage(pkg: SeedPackage, destinationIdBySlug: Map<string, st
     if (res.error) throw new Error(`Failed to clear existing ${label} for "${pkg.name}": ${res.error.message}`)
   }
 
-  // Upload photos to Storage, then insert package_photos rows.
+  // Upload photos to R2, then insert package_photos rows.
   for (const photo of pkg.photos) {
     const fileBuffer = readFileSync(join(SEED_ASSETS_DIR, photo.file))
-    const storagePath = `${packageId}/photo-${photo.displayOrder + 1}.jpg`
+    const storagePath = `packages/${packageId}/photo-${photo.displayOrder + 1}.jpg`
 
-    const { error: uploadError } = await supabase.storage.from('package-photos').upload(storagePath, fileBuffer, {
-      contentType: 'image/jpeg',
-      upsert: true,
-    })
-
-    if (uploadError) {
-      throw new Error(`Failed to upload photo ${photo.file} for "${pkg.name}": ${uploadError.message}`)
+    try {
+      await uploadObject(storagePath, fileBuffer, 'image/jpeg')
+    } catch (err) {
+      throw new Error(
+        `Failed to upload photo ${photo.file} for "${pkg.name}": ${err instanceof Error ? err.message : String(err)}`
+      )
     }
 
     const { error: photoRowError } = await supabase.from('package_photos').insert({
