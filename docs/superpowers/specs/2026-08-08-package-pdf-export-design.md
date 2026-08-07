@@ -1,7 +1,7 @@
 # Package PDF Export — Design Spec
 
 **Date:** 2026-08-08
-**Status:** Approved by user, pending implementation plan.
+**Status:** Approved by user; implementation plan updated post-approval for the travel-dates-range schema change (`package_travel_dates.travel_date` → `travel_date_from`/`travel_date_to`) merged to master during execution — see the plan file for current field names.
 
 ## Summary
 
@@ -16,7 +16,7 @@ Mirrors `app/(public)/packages/[slug]/page.tsx`'s sections, minus `package_photo
 - **Header:** `logo-header.png`, package `name`, `duration_label` badge, price — struck-through `price_per_pax` plus discounted total when `discount_amount` is set, same math as the detail page (`price_per_pax - (discount_amount ?? 0)`).
 - **Itinerary:** one block per `itinerary_days` row sorted by `day_number` — `"Day {day_number}: {title}"` bold, then `description` split on `\n` into bullet lines (a single-paragraph description becomes one bullet — mirrors the sample PDF's bulleted-activities look without requiring new structured fields).
 - **What's Included / What's Not Included / What to Bring:** bullet lists from `package_inclusions`, filtered by `kind` (`"included" | "excluded" | "bring"`), sorted by `sort_order`. Unlike the website's persistent cards, **a section is omitted entirely when it has zero items** — cleaner for a printable/shareable document.
-- **Travel Dates:** only rendered if `package_travel_dates` is non-empty. Each entry: `travel_date` formatted `en-PH` long-form (`"August 20, 2026"`), plus `+₱{additional_fee}` when set — same formatting as the detail page.
+- **Travel Dates:** only rendered if `package_travel_dates` is non-empty. Each entry: `travel_date_from`/`travel_date_to` formatted `en-PH` long-form as `"{From}"` (same-day) or `"{From} – {To}"` (range), plus `+₱{additional_fee}` when set — same formatting as the detail page.
 - **Remarks:** only rendered if `pkg.remarks` is non-null.
 - **Footer (every page):** navy (`#021f4a`) bar with phone, email, and address, plus a thin orange (`#f49314`) strip below — built natively with react-pdf primitives (not a raster image), reusing the exact brand hex already defined in `app/globals.css` (`--secondary`, `--primary`).
 

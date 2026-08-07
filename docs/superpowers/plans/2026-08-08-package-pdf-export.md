@@ -266,7 +266,14 @@ async function main() {
 
     const { error: travelDatesError } = await supabase
       .from("package_travel_dates")
-      .insert([{ package_id: packageId, travel_date: "2026-12-01", additional_fee: 500 }]);
+      .insert([
+        {
+          package_id: packageId,
+          travel_date_from: "2026-12-01",
+          travel_date_to: "2026-12-03",
+          additional_fee: 500,
+        },
+      ]);
     if (travelDatesError) {
       throw new Error(
         `Failed to insert package_travel_dates: ${travelDatesError.message}`
@@ -376,7 +383,7 @@ export type PackagePdfData = Tables<"packages"> & {
   >[];
   package_travel_dates: Pick<
     Tables<"package_travel_dates">,
-    "travel_date" | "additional_fee"
+    "travel_date_from" | "travel_date_to" | "additional_fee"
   >[];
 };
 
@@ -413,7 +420,7 @@ export async function fetchPackageForPdf(
   const columns = `*,
     itinerary_days(day_number, title, description),
     package_inclusions(kind, label, sort_order),
-    package_travel_dates(travel_date, additional_fee)`;
+    package_travel_dates(travel_date_from, travel_date_to, additional_fee)`;
 
   // Written as two full, separate chains (rather than building a shared
   // partial query builder and branching with .eq() calls) to avoid relying
@@ -447,12 +454,19 @@ function formatPhp(amount: number): string {
   return `PHP ${amount.toLocaleString("en-PH")}`;
 }
 
-function formatTravelDate(isoDate: string): string {
+function formatDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString("en-PH", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+}
+
+// Same "From" / "From – To" collapsing as the public detail page
+// (app/(public)/packages/[slug]/page.tsx) -- a same-day departure (from ===
+// to) shows just one date instead of a redundant "Sep 12 – Sep 12."
+function formatTravelDateRange(from: string, to: string): string {
+  return from === to ? formatDate(from) : `${formatDate(from)} – ${formatDate(to)}`;
 }
 
 const NAVY = "#021f4a";
@@ -575,8 +589,10 @@ export function PackagePdfDocument({
   const bringItems = pkg.package_inclusions
     .filter((item) => item.kind === "bring")
     .sort((a, b) => a.sort_order - b.sort_order);
-  const travelDates = [...pkg.package_travel_dates].sort((a, b) =>
-    a.travel_date.localeCompare(b.travel_date)
+  const travelDates = [...pkg.package_travel_dates].sort(
+    (a, b) =>
+      a.travel_date_from.localeCompare(b.travel_date_from) ||
+      a.travel_date_to.localeCompare(b.travel_date_to)
   );
 
   return (
@@ -658,7 +674,7 @@ export function PackagePdfDocument({
             {travelDates.map((date, index) => (
               <View key={index} style={styles.dateRow}>
                 <Text style={styles.paragraph}>
-                  {formatTravelDate(date.travel_date)}
+                  {formatTravelDateRange(date.travel_date_from, date.travel_date_to)}
                 </Text>
                 {date.additional_fee ? (
                   <Text style={styles.paragraph}>
