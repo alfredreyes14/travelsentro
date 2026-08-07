@@ -56,7 +56,8 @@ async function writePackageChildren(
     })),
     p_inclusions: inclusionRows,
     p_travel_dates: values.travelDates.map((item) => ({
-      travel_date: item.date,
+      travel_date_from: item.dateFrom,
+      travel_date_to: item.dateTo,
       additional_fee: item.additionalFee ?? null,
     })),
   });
