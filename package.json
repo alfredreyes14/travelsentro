@@ -15,7 +15,8 @@
     "verify:semaphore-error-handling": "tsx scripts/verify-semaphore-error-handling.ts",
     "verify:unsubscribe-token-secret": "tsx scripts/verify-unsubscribe-token-secret.ts",
     "verify:bulk-email-status": "tsx scripts/verify-bulk-email-status-accuracy.ts",
-    "verify:package-pdf": "tsx --env-file=.env.local scripts/verify-package-pdf.ts"
+    "verify:package-pdf": "tsx --env-file=.env.local scripts/verify-package-pdf.ts",
+    "verify:public-package-pdf": "tsx --env-file=.env.local scripts/verify-public-package-pdf.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
