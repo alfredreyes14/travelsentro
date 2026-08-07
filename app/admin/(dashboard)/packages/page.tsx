@@ -82,23 +82,13 @@ export default async function AdminPackagesPage() {
             on the public site immediately.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="lg"
-            render={<Link href="/admin/packages/destinations" />}
-            nativeButton={false}
-          >
-            Manage Destinations
-          </Button>
-          <Button
-            size="lg"
-            render={<Link href="/admin/packages/new" />}
-            nativeButton={false}
-          >
-            Add Package
-          </Button>
-        </div>
+        <Button
+          size="lg"
+          render={<Link href="/admin/packages/new" />}
+          nativeButton={false}
+        >
+          Add Package
+        </Button>
       </div>
 
       {items.length === 0 ? (
