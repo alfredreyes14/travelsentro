@@ -20,7 +20,7 @@ export function StickyCtaBar({ packageName }: { packageName: string }) {
       style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
     >
       <WhatsAppCta packageName={packageName} className="flex-1" />
-      <FacebookCta className="flex-1" />
+      <FacebookCta packageName={packageName} className="flex-1" />
     </div>
   );
 }

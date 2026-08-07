@@ -161,13 +161,13 @@ export default async function PackageDetailPage({
             </h2>
           </div>
           <p className="max-w-sm text-[14px] leading-[1.5] text-secondary-foreground/70">
-            Message us on WhatsApp or Facebook — we usually reply within
-            minutes.
+            Message us on WhatsApp or Facebook about the {pkg.name} — we
+            usually reply within minutes.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 sm:shrink-0">
           <WhatsAppCta packageName={pkg.name} variant="icon-label" />
-          <FacebookCta variant="icon-label" />
+          <FacebookCta packageName={pkg.name} variant="icon-label" />
         </div>
       </section>
 

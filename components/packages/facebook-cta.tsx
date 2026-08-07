@@ -5,6 +5,17 @@ import { cn } from "@/lib/utils";
  * Outbound-only link to TravelSentro's Facebook page (D-04). Plain anchor,
  * same shape as WhatsAppCta.
  *
+ * Unlike wa.me, Messenger's m.me links have no equivalent of WhatsApp's
+ * `?text=` param — there's no way to pre-fill the chat composer with the
+ * package name. As a substitute, `aria-label` names the package directly
+ * ("Message us about {packageName}") so screen-reader users still get that
+ * context. The *visible* label stays the static "Message us on Facebook"
+ * regardless of package name — WhatsAppCta's visible label is static too,
+ * and a package name embedded in the visible text would grow the button
+ * unpredictably (long package names visually unbalance it against the
+ * WhatsApp button next to it). Surface the package name in surrounding
+ * copy instead, not the button label.
+ *
  * Background is Facebook's own brand blue (#1877F2), an explicit
  * third-party exception to the 60/30/10 palette (UI-SPEC.md Color).
  *
@@ -14,18 +25,24 @@ import { cn } from "@/lib/utils";
  * imported from lucide-react.
  */
 export function FacebookCta({
+  packageName,
   variant = "icon-only",
   className,
 }: {
+  packageName?: string;
   variant?: "icon-only" | "icon-label";
   className?: string;
 }) {
+  const ariaLabel = packageName
+    ? `Message us about ${packageName}`
+    : "Message us on Facebook";
+
   return (
     <a
       href={FACEBOOK_URL}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="Message us on Facebook"
+      aria-label={ariaLabel}
       className={cn(
         "relative z-10 inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-[#1877F2] px-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-3 focus-visible:ring-[#1877F2]/50 focus-visible:outline-none",
         className
