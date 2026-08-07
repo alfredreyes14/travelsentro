@@ -458,7 +458,7 @@ export function PackageForm({
               </h3>
               {inclusionsArray.fields.map((field, index) => (
                 <div key={field.id} className="flex items-end gap-2">
-                  <span className="pb-1.5 text-sm text-muted-foreground">
+                  <span className="pt-2 self-start text-sm text-muted-foreground">
                     {index + 1}.
                   </span>
                   <FormField
@@ -506,7 +506,7 @@ export function PackageForm({
               </h3>
               {exclusionsArray.fields.map((field, index) => (
                 <div key={field.id} className="flex items-end gap-2">
-                  <span className="pb-1.5 text-sm text-muted-foreground">
+                  <span className="pt-2 self-start text-sm text-muted-foreground">
                     {index + 1}.
                   </span>
                   <FormField
@@ -554,7 +554,7 @@ export function PackageForm({
               </h3>
               {bringItemsArray.fields.map((field, index) => (
                 <div key={field.id} className="flex items-end gap-2">
-                  <span className="pb-1.5 text-sm text-muted-foreground">
+                  <span className="pt-2 self-start text-sm text-muted-foreground">
                     {index + 1}.
                   </span>
                   <FormField
