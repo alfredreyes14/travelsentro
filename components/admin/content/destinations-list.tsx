@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { SearchIcon } from "lucide-react";
 
 import {
   deleteDestination,
@@ -10,8 +11,10 @@ import {
 } from "@/actions/destinations";
 import { DestinationForm, type DestinationRecord } from "./destination-form";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +68,17 @@ export function DestinationsList({
     useState<DestinationListItem | null>(null);
   const [isDeleting, startDeleting] = useTransition();
 
+  const [search, setSearch] = useState("");
+
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((item) => item.name.toLowerCase().includes(q));
+  }, [items, search]);
+
+  const hasItems = items.length > 0;
+  const hasNoMatches = hasItems && filteredItems.length === 0;
+
   function handleMutationSuccess() {
     setIsCreateOpen(false);
     setEditingDestination(null);
@@ -95,7 +109,16 @@ export function DestinationsList({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <DataTableToolbar>
+        <div className="relative flex-1">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search destinations by name..."
+            className="pl-8"
+          />
+        </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger render={<Button size="lg" />}>
             Add Destination
@@ -107,9 +130,9 @@ export function DestinationsList({
             <DestinationForm mode="create" onSuccess={handleMutationSuccess} />
           </DialogContent>
         </Dialog>
-      </div>
+      </DataTableToolbar>
 
-      {items.length === 0 ? (
+      {!hasItems ? (
         <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-8 ring-1 ring-foreground/10">
           <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
             No destinations yet
@@ -119,9 +142,21 @@ export function DestinationsList({
             can browse by destination on the homepage.
           </p>
         </div>
+      ) : hasNoMatches ? (
+        <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-8 ring-1 ring-foreground/10">
+          <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
+            No destinations match your search
+          </h2>
+          <p className="text-base leading-[1.5] text-muted-foreground">
+            Try a different name.
+          </p>
+          <Button variant="secondary" onClick={() => setSearch("")}>
+            Clear search
+          </Button>
+        </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {items.map((item) => (
+          {filteredItems.map((item) => (
             <DestinationRow
               key={item.id}
               item={item}
