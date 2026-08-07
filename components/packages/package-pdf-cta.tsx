@@ -3,7 +3,7 @@ import { FileDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Outbound-only link to a package's PDF download route (D-XX), same shape
+ * Outbound-only link to a package's PDF download route, same shape
  * as WhatsAppCta/FacebookCta -- plain anchor, no client JS, since
  * Content-Disposition: attachment on the response already makes the
  * browser download the file without navigating away. Uses bg-primary

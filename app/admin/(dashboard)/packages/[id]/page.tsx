@@ -137,7 +137,7 @@ export default async function EditPackagePage({
         <Button
           variant="outline"
           size="lg"
-          render={<a href={`/admin/packages/${pkg.id}/pdf`} />}
+          render={<a href={`/admin/packages/${pkg.id}/pdf`} download />}
         >
           Download PDF
         </Button>

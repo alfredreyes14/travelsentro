@@ -84,7 +84,11 @@ export async function fetchPackageForPdf(
           .eq("id", selector.id)
           .single();
 
-  if (error || !data) return null;
+  if (error) {
+    console.error("fetchPackageForPdf failed:", error);
+    return null;
+  }
+  if (!data) return null;
 
   return data as PackagePdfData;
 }
@@ -261,7 +265,7 @@ export function PackagePdfDocument({
 
         {sortedDays.length > 0 ? (
           <View>
-            <Text style={styles.sectionTitle}>ITINERARY</Text>
+            <Text style={styles.sectionTitle} minPresenceAhead={30}>ITINERARY</Text>
             {sortedDays.map((day) => (
               <View key={day.day_number} style={styles.dayBlock} wrap={false}>
                 <Text style={styles.dayTitle}>
@@ -283,7 +287,7 @@ export function PackagePdfDocument({
 
         {inclusions.length > 0 ? (
           <View>
-            <Text style={styles.sectionTitle}>WHAT&apos;S INCLUDED</Text>
+            <Text style={styles.sectionTitle} minPresenceAhead={30}>WHAT&apos;S INCLUDED</Text>
             {inclusions.map((item, index) => (
               <Text key={index} style={styles.bullet}>
                 • {item.label}
@@ -294,7 +298,7 @@ export function PackagePdfDocument({
 
         {exclusions.length > 0 ? (
           <View>
-            <Text style={styles.sectionTitle}>WHAT&apos;S NOT INCLUDED</Text>
+            <Text style={styles.sectionTitle} minPresenceAhead={30}>WHAT&apos;S NOT INCLUDED</Text>
             {exclusions.map((item, index) => (
               <Text key={index} style={styles.bullet}>
                 • {item.label}
@@ -305,7 +309,7 @@ export function PackagePdfDocument({
 
         {bringItems.length > 0 ? (
           <View>
-            <Text style={styles.sectionTitle}>WHAT TO BRING</Text>
+            <Text style={styles.sectionTitle} minPresenceAhead={30}>WHAT TO BRING</Text>
             {bringItems.map((item, index) => (
               <Text key={index} style={styles.bullet}>
                 • {item.label}
@@ -316,7 +320,7 @@ export function PackagePdfDocument({
 
         {travelDates.length > 0 ? (
           <View>
-            <Text style={styles.sectionTitle}>TRAVEL DATES</Text>
+            <Text style={styles.sectionTitle} minPresenceAhead={30}>TRAVEL DATES</Text>
             {travelDates.map((date, index) => (
               <View key={index} style={styles.dateRow}>
                 <Text style={styles.paragraph}>
@@ -334,7 +338,7 @@ export function PackagePdfDocument({
 
         {pkg.remarks ? (
           <View>
-            <Text style={styles.sectionTitle}>REMARKS</Text>
+            <Text style={styles.sectionTitle} minPresenceAhead={30}>REMARKS</Text>
             <Text style={styles.paragraph}>{pkg.remarks}</Text>
           </View>
         ) : null}

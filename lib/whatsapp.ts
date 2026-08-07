@@ -17,6 +17,5 @@ export function buildWhatsAppLink(packageName?: string): string {
 // human-readable form ("+63-920-535-1673", matching the official letterhead
 // template), not wa.me's dash/space-free international format.
 export function formatWhatsAppNumberForDisplay(): string {
-  const digits = WHATSAPP_NUMBER;
-  return `+${digits.slice(0, 2)}-${digits.slice(2, 5)}-${digits.slice(5, 8)}-${digits.slice(8)}`;
+  return `+${WHATSAPP_NUMBER.slice(0, 2)}-${WHATSAPP_NUMBER.slice(2, 5)}-${WHATSAPP_NUMBER.slice(5, 8)}-${WHATSAPP_NUMBER.slice(8)}`;
 }

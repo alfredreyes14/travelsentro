@@ -197,7 +197,7 @@ export function PackageListCard({
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem
-                render={<a href={`/admin/packages/${item.id}/pdf`} />}
+                render={<a href={`/admin/packages/${item.id}/pdf`} download />}
               >
                 Download PDF
               </DropdownMenuItem>

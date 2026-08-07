@@ -2,7 +2,7 @@ import { fetchPackageForPdf, renderPackagePdf } from "@/lib/pdf/package-pdf";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Public PDF download for a single published package (D-XX). Same
+ * Public PDF download for a single published package. Same
  * "unpublished slug is indistinguishable from nonexistent" behavior as
  * app/(public)/packages/[slug]/page.tsx -- fetchPackageForPdf's slug path
  * already filters on is_published.
@@ -20,7 +20,14 @@ export async function GET(
   }
 
   const logoSrc = new URL("/logo-header.png", request.url).toString();
-  const buffer = await renderPackagePdf(pkg, logoSrc);
+
+  let buffer: Buffer;
+  try {
+    buffer = await renderPackagePdf(pkg, logoSrc);
+  } catch (err) {
+    console.error("renderPackagePdf failed:", err);
+    return Response.json({ error: "Failed to generate PDF" }, { status: 500 });
+  }
 
   // Response's BodyInit type doesn't accept Node's Buffer directly under
   // this repo's TS config (Buffer<ArrayBufferLike> vs. the DOM lib's
@@ -30,6 +37,7 @@ export async function GET(
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${pkg.slug}.pdf"`,
+      "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
     },
   });
 }
