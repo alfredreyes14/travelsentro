@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { MoreHorizontalIcon } from "lucide-react";
+import { MoreHorizontalIcon, SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { deactivateAccount } from "@/actions/users";
 import { AccountForm } from "@/components/admin/account-form";
+import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -53,6 +55,24 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
   const [deactivatingAccount, setDeactivatingAccount] =
     useState<Profile | null>(null);
   const [isDeactivating, startDeactivating] = useTransition();
+  const [search, setSearch] = useState("");
+
+  const filteredProfiles = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return profiles;
+    return profiles.filter(
+      (profile) =>
+        (profile.name ?? "").toLowerCase().includes(q) ||
+        profile.email.toLowerCase().includes(q)
+    );
+  }, [profiles, search]);
+
+  const hasProfiles = profiles.length > 0;
+  const hasNoMatches = hasProfiles && filteredProfiles.length === 0;
+
+  function handleClearSearch() {
+    setSearch("");
+  }
 
   function handleMutationSuccess() {
     setIsCreateOpen(false);
@@ -82,7 +102,16 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <DataTableToolbar>
+        <div className="relative flex-1">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search accounts by name or email..."
+            className="pl-8"
+          />
+        </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger render={<Button size="lg" />}>
             Add Staff Account
@@ -94,9 +123,9 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
             <AccountForm mode="create" onSuccess={handleMutationSuccess} />
           </DialogContent>
         </Dialog>
-      </div>
+      </DataTableToolbar>
 
-      {profiles.length === 0 ? (
+      {!hasProfiles ? (
         <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-8 ring-1 ring-foreground/10">
           <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
             No accounts yet
@@ -104,6 +133,18 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
           <p className="text-base leading-[1.5] text-muted-foreground">
             Add a Staff or Admin account to get started.
           </p>
+        </div>
+      ) : hasNoMatches ? (
+        <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-8 ring-1 ring-foreground/10">
+          <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
+            No accounts match your search
+          </h2>
+          <p className="text-base leading-[1.5] text-muted-foreground">
+            Try a different name or email.
+          </p>
+          <Button variant="secondary" onClick={handleClearSearch}>
+            Clear search
+          </Button>
         </div>
       ) : (
         <>
@@ -122,7 +163,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {profiles.map((profile) => (
+                {filteredProfiles.map((profile) => (
                   <TableRow key={profile.id}>
                     <TableCell>{profile.name ?? "—"}</TableCell>
                     <TableCell>{profile.email}</TableCell>
@@ -195,7 +236,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
           </div>
 
           <div className="flex flex-col gap-3 md:hidden">
-            {profiles.map((profile) => (
+            {filteredProfiles.map((profile) => (
               <Card key={profile.id} className="p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
