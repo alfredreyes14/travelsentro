@@ -93,7 +93,7 @@ export function SortablePackageList({
 
   return (
     <>
-      <div className="hidden overflow-hidden rounded-xl border border-border md:block">
+      <div className="hidden overflow-hidden rounded-xl border border-border bg-card shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow>

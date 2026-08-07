@@ -294,7 +294,7 @@ export function CrmTable({ contacts }: { contacts: AdminContactListItem[] }) {
         </div>
       ) : (
         <>
-          <div className="hidden md:block overflow-hidden rounded-xl border border-border">
+          <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (

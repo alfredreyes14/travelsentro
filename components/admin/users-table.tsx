@@ -148,7 +148,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
         </div>
       ) : (
         <>
-          <div className="hidden md:block overflow-hidden rounded-xl border border-border">
+          <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <Table>
               <TableHeader>
                 <TableRow>

@@ -1,30 +1,16 @@
-import Link from "next/link";
-import {
-  PackageIcon,
-  ContactIcon,
-  UsersIcon,
-  LogOutIcon,
-  LayoutTemplateIcon,
-  MapPinIcon,
-} from "lucide-react";
-
 import { getProfile } from "@/lib/auth/dal";
-import { logout } from "@/actions/auth";
+import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminSidebarHeader } from "@/components/admin/admin-sidebar-header";
+import { AdminTopbar } from "@/components/admin/admin-topbar";
+import { AdminUserFooter } from "@/components/admin/admin-user-footer";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
   SidebarHeader,
   SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
 
 export default async function AdminDashboardLayout({
   children,
@@ -41,106 +27,22 @@ export default async function AdminDashboardLayout({
 
   return (
     <SidebarProvider>
-      <Sidebar>
+      <Sidebar collapsible="icon">
         <SidebarHeader>
-          <span className="font-heading px-2 text-lg font-semibold">
-            TravelSentro
-          </span>
+          <AdminSidebarHeader />
         </SidebarHeader>
         <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {/* D-13: hidden entirely (not disabled) when the permission is
-                    absent. Server-side enforcement still happens independently
-                    via requirePermission()/requireAdmin() (AUTH-05). */}
-                {canManagePackages && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton size="lg" render={<Link href="/admin/packages" />}>
-                      <PackageIcon />
-                      <span>Packages</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {/* T-06-21: hidden entirely (not disabled) when the
-                    permission is absent, reusing the identical
-                    canManagePackages boolean already computed for Packages
-                    above -- no new permission toggle. Server-side
-                    enforcement still happens independently via
-                    requirePermissionOrRedirect() (AUTH-05). */}
-                {canManagePackages && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton size="lg" render={<Link href="/admin/content" />}>
-                      <LayoutTemplateIcon />
-                      <span>Content</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {/* Hidden entirely (not disabled) when the permission is
-                    absent, reusing the identical canManagePackages boolean
-                    already computed for Packages/Content above -- no new
-                    permission toggle. Server-side enforcement still happens
-                    independently via requirePermissionOrRedirect() (AUTH-05). */}
-                {canManagePackages && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      size="lg"
-                      render={<Link href="/admin/packages/destinations" />}
-                    >
-                      <MapPinIcon />
-                      <span>Destinations</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-                {/* CRM-03: universal read -- every authenticated Admin/Staff
-                    sees "Contacts" regardless of can_edit_crm, deliberately
-                    NOT permission-gated (unlike Packages/Users above). */}
-                <SidebarMenuItem>
-                  <SidebarMenuButton size="lg" render={<Link href="/admin/crm" />}>
-                    <ContactIcon />
-                    <span>Contacts</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                {canManageUsers && (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton size="lg" render={<Link href="/admin/users" />}>
-                      <UsersIcon />
-                      <span>Users</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+          <AdminNav
+            canManagePackages={canManagePackages}
+            canManageUsers={canManageUsers}
+          />
         </SidebarContent>
         <SidebarFooter>
-          <div className="flex flex-col gap-2 px-2 py-1 text-sm">
-            <div className="truncate">
-              <p className="truncate font-medium">
-                {profile.name ?? profile.email}
-              </p>
-              <p className="truncate text-xs text-sidebar-foreground/70">
-                {profile.email}
-              </p>
-            </div>
-            <form action={logout}>
-              <Button
-                type="submit"
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start gap-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-              >
-                <LogOutIcon className="size-4" />
-                Log Out
-              </Button>
-            </form>
-          </div>
+          <AdminUserFooter name={profile.name} email={profile.email} />
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex items-center gap-2 border-b border-border px-4 py-3 shadow-sm bg-background">
-          <SidebarTrigger className="size-11" />
-        </header>
+        <AdminTopbar name={profile.name} email={profile.email} />
         <div className="flex-1 p-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>

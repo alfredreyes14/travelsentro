@@ -147,7 +147,7 @@ export function ContactEditForm({
           type="submit"
           size="lg"
           disabled={isSubmitting}
-          className="self-start"
+          className="self-end"
         >
           {isSubmitting ? "Saving..." : "Save Changes"}
         </Button>

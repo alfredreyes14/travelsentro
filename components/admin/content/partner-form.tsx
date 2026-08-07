@@ -249,7 +249,7 @@ function PartnerFormBody({
           type="submit"
           size="lg"
           disabled={isSubmitting || isUploadingImage}
-          className="self-start"
+          className="self-end"
         >
           {isSubmitting ? "Saving..." : submitLabel}
         </Button>

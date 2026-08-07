@@ -78,16 +78,17 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  /* Phase 2 admin sidebar — mapped to the same Secondary color used in the
-     public site header/nav/footer (UI-SPEC.md Color section) so the admin
-     panel reads as visually continuous with the public site. */
-  --sidebar: #021f4a; /* same as --secondary */
-  --sidebar-foreground: #faf7f2; /* same as --secondary-foreground */
+  /* Admin sidebar — white surface with navy text/icons so the full-color
+     (navy wordmark) brand logo stays legible when placed directly on it;
+     marigold is reserved for the top bar and the subtle hover/active tint
+     here, keeping it an accent rather than a large dominant surface. */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #021f4a;
   --sidebar-primary: #f49314; /* accent — active/selected nav item indicator */
-  --sidebar-primary-foreground: #faf7f2;
-  --sidebar-accent: color-mix(in oklch, #021f4a 85%, white); /* hover/active row background — lighter tint, stays visibly distinct from the accent */
-  --sidebar-accent-foreground: #faf7f2;
-  --sidebar-border: color-mix(in oklch, #021f4a 70%, black);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: color-mix(in oklch, #f49314 12%, white); /* hover/active row background — soft marigold tint on the white rail */
+  --sidebar-accent-foreground: #021f4a;
+  --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
 }
 

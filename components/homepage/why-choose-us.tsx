@@ -1,30 +1,30 @@
-import { MapPinned, BadgePercent, MessageCircleHeart, ShieldCheck } from "lucide-react";
+import { ClipboardList, Headset, MessagesSquare, SlidersHorizontal } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 const VALUE_PROPS: { icon: LucideIcon; title: string; description: string }[] = [
   {
-    icon: MapPinned,
-    title: "Local Expertise",
+    icon: ClipboardList,
+    title: "Clear package information",
     description:
-      "Philippines-based and Philippines-focused -- we know the islands, the routes, and the best times to go.",
+      "Inclusions, travel dates, surcharges, and key conditions are presented for easier decisions.",
   },
   {
-    icon: BadgePercent,
-    title: "Best Value",
+    icon: Headset,
+    title: "Responsive human support",
     description:
-      "Carefully curated packages that balance price and experience, with no hidden fees.",
+      "Customers receive guided assistance rather than navigating booking details alone.",
   },
   {
-    icon: MessageCircleHeart,
-    title: "Personalized Service",
+    icon: MessagesSquare,
+    title: "Social-first convenience",
     description:
-      "Reach us directly on WhatsApp or Facebook and get a real answer from a real person, fast.",
+      "Inquiries and lead qualification can happen through Facebook, Instagram, and Messenger.",
   },
   {
-    icon: ShieldCheck,
-    title: "Trusted by Travelers",
+    icon: SlidersHorizontal,
+    title: "Flexible travel solutions",
     description:
-      "An established travel business with years of happy customers across the Philippines and beyond.",
+      "Options for leisure, group, corporate, and agency-partner requirements.",
   },
 ];
 
@@ -36,11 +36,11 @@ export function WhyChooseUs() {
         <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
           The TravelSentro Difference
         </span>
-        <h2 className="font-heading text-[28px] leading-[1.2] font-semibold">
-          Why Choose Us
+        <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-secondary">
+          Why TravelSentro
         </h2>
         <p className="text-base leading-[1.5] text-muted-foreground">
-          What travelers get every time they book with us.
+          What travelers get every time they inquire with us.
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export function WhyChooseUs() {
             <span className="flex size-12 items-center justify-center rounded-full bg-primary/10">
               <Icon className="size-6 text-primary" strokeWidth={1.75} aria-hidden="true" />
             </span>
-            <h3 className="font-heading text-[20px] leading-[1.2] font-semibold">
+            <h3 className="font-heading text-[20px] leading-[1.2] font-semibold text-secondary">
               {title}
             </h3>
             <p className="text-base leading-[1.5] text-muted-foreground">

@@ -235,7 +235,7 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
           type="submit"
           size="lg"
           disabled={isSubmitting}
-          className="self-start"
+          className="self-end"
         >
           {isSubmitting ? "Saving..." : "Add Staff Account"}
         </Button>
@@ -404,7 +404,7 @@ function EditAccountForm({
           type="submit"
           size="lg"
           disabled={isSubmitting}
-          className="self-start"
+          className="self-end"
         >
           {isSubmitting ? "Saving..." : "Save Changes"}
         </Button>

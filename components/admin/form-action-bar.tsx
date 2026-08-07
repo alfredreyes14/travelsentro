@@ -10,7 +10,7 @@ export function FormActionBar({
     <div
       data-slot="form-action-bar"
       className={cn(
-        "sticky bottom-0 z-10 flex items-center gap-3 border-t border-border bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80",
+        "sticky bottom-0 z-10 flex items-center justify-end gap-3 border-t border-border bg-background/95 py-4 backdrop-blur supports-[backdrop-filter]:bg-background/80",
         className
       )}
       {...props}
