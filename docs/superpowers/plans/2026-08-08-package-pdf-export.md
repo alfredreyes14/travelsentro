@@ -899,7 +899,11 @@ export async function GET(
   const logoSrc = new URL("/logo-header.png", request.url).toString();
   const buffer = await renderPackagePdf(pkg, logoSrc);
 
-  return new Response(buffer, {
+  // Buffer's TS type isn't directly assignable to BodyInit in this
+  // project's TS config -- Uint8Array (which Buffer is a runtime subclass
+  // of) is, so this wrapping is a type-correctness fix with no behavior
+  // change, not a data copy of consequence.
+  return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${pkg.slug}.pdf"`,
@@ -1221,7 +1225,11 @@ export async function GET(
   const logoSrc = new URL("/logo-header.png", request.url).toString();
   const buffer = await renderPackagePdf(pkg, logoSrc);
 
-  return new Response(buffer, {
+  // Buffer's TS type isn't directly assignable to BodyInit in this
+  // project's TS config -- Uint8Array (which Buffer is a runtime subclass
+  // of) is, so this wrapping is a type-correctness fix with no behavior
+  // change, not a data copy of consequence.
+  return new Response(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${pkg.slug}.pdf"`,
