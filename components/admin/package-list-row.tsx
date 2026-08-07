@@ -194,6 +194,11 @@ export function PackageListRow({
                 Edit
               </DropdownMenuItem>
               <DropdownMenuItem
+                render={<a href={`/admin/packages/${item.id}/pdf`} download />}
+              >
+                Download PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem
                 variant="destructive"
                 onClick={() => setIsDeleteOpen(true)}
               >

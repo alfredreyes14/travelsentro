@@ -22,6 +22,7 @@ import { ItineraryAccordion } from "@/components/packages/itinerary-accordion";
 import { PackageGallery } from "@/components/packages/package-gallery";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
+import { PackagePdfCta } from "@/components/packages/package-pdf-cta";
 import { StickyCtaBar } from "@/components/packages/sticky-cta-bar";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import type { Database } from "@/types/database";
@@ -177,6 +178,7 @@ export default async function PackageDetailPage({
         <div className="flex flex-wrap items-center gap-3 sm:shrink-0">
           <WhatsAppCta packageName={pkg.name} variant="icon-label" />
           <FacebookCta packageName={pkg.name} variant="icon-label" />
+          <PackagePdfCta slug={pkg.slug} variant="icon-label" />
         </div>
       </section>
 
