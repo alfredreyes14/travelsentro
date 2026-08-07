@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -76,6 +96,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      destinations: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          photo_storage_path: string | null
+          region: string
+          slug: string
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          photo_storage_path?: string | null
+          region: string
+          slug: string
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          photo_storage_path?: string | null
+          region?: string
+          slug?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       faq_facts: {
         Row: {
@@ -352,6 +405,7 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
+          destination_id: string | null
           duration_days: number
           duration_label: string | null
           from_price: number
@@ -365,6 +419,7 @@ export type Database = {
         Insert: {
           created_at?: string
           deleted_at?: string | null
+          destination_id?: string | null
           duration_days: number
           duration_label?: string | null
           from_price: number
@@ -378,6 +433,7 @@ export type Database = {
         Update: {
           created_at?: string
           deleted_at?: string | null
+          destination_id?: string | null
           duration_days?: number
           duration_label?: string | null
           from_price?: number
@@ -388,7 +444,15 @@ export type Database = {
           slug?: string
           sort_order?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "packages_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       partners: {
         Row: {
@@ -676,7 +740,11 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
 } as const
+
