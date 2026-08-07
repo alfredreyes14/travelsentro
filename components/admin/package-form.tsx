@@ -36,6 +36,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { FormActionBar } from "@/components/admin/form-action-bar";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -251,6 +252,7 @@ export function PackageForm({
                       {...field}
                       type="number"
                       min={1}
+                      prefix="₱"
                       onChange={(event) =>
                         field.onChange(event.target.valueAsNumber)
                       }
@@ -272,6 +274,7 @@ export function PackageForm({
                       {...field}
                       type="number"
                       min={1}
+                      suffix="days"
                       onChange={(event) =>
                         field.onChange(event.target.valueAsNumber)
                       }
@@ -556,18 +559,15 @@ export function PackageForm({
           </TabsContent>
         </Tabs>
 
-        <Button
-          type="submit"
-          size="lg"
-          disabled={isSubmitting}
-          className="self-start"
-        >
-          {isSubmitting
-            ? "Saving..."
-            : packageId
-              ? "Save Changes"
-              : "Create Package"}
-        </Button>
+        <FormActionBar>
+          <Button type="submit" size="lg" disabled={isSubmitting}>
+            {isSubmitting
+              ? "Saving..."
+              : packageId
+                ? "Save Changes"
+                : "Create Package"}
+          </Button>
+        </FormActionBar>
       </form>
     </Form>
   );
