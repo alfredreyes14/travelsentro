@@ -259,23 +259,27 @@ export function PackagePdfDocument({
           </View>
         </View>
 
-        <Text style={styles.sectionTitle}>ITINERARY</Text>
-        {sortedDays.map((day) => (
-          <View key={day.day_number} style={styles.dayBlock} wrap={false}>
-            <Text style={styles.dayTitle}>
-              Day {day.day_number}: {day.title}
-            </Text>
-            {day.description
-              .split("\n")
-              .map((line) => line.trim())
-              .filter(Boolean)
-              .map((line, index) => (
-                <Text key={index} style={styles.bullet}>
-                  • {line}
+        {sortedDays.length > 0 ? (
+          <View>
+            <Text style={styles.sectionTitle}>ITINERARY</Text>
+            {sortedDays.map((day) => (
+              <View key={day.day_number} style={styles.dayBlock} wrap={false}>
+                <Text style={styles.dayTitle}>
+                  Day {day.day_number}: {day.title}
                 </Text>
-              ))}
+                {day.description
+                  .split("\n")
+                  .map((line) => line.trim())
+                  .filter(Boolean)
+                  .map((line, index) => (
+                    <Text key={index} style={styles.bullet}>
+                      • {line}
+                    </Text>
+                  ))}
+              </View>
+            ))}
           </View>
-        ))}
+        ) : null}
 
         {inclusions.length > 0 ? (
           <View>
