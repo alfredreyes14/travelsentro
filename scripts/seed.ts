@@ -3,13 +3,15 @@
  *
  * Populates the live Supabase project (schema created in 01-02) with 3
  * placeholder packages, each with real Storage-hosted photos, a day-by-day
- * itinerary, inclusions/exclusions/bring-items, and a single faq_facts row.
+ * itinerary, inclusions/exclusions/bring-items, and one or more travel dates.
  *
  * Run via `npm run seed` (-> `tsx --env-file=.env.local scripts/seed.ts`).
  *
- * Re-runnable: package rows are upserted on `slug` (unique constraint), and
- * all child rows for that package are deleted and reinserted on every run,
- * so re-running never duplicates data.
+ * Re-runnable: package rows are upserted on `name` (looked up and updated or
+ * inserted -- `slug` is now DB-generated at insert time via a trigger, so it
+ * can't be used as a stable idempotency key), and all child rows for that
+ * package are deleted and reinserted on every run, so re-running never
+ * duplicates data.
  *
  * SECURITY: this script uses the Supabase service-role key, which bypasses
  * Row Level Security. It must only ever run from a CLI/dev-tooling context
@@ -57,13 +59,14 @@ const SEED_ASSETS_DIR = join(process.cwd(), 'supabase', 'seed-assets')
 type SeedInclusion = { kind: 'included' | 'excluded' | 'bring'; label: string; sortOrder: number }
 type SeedItineraryDay = { dayNumber: number; title: string; description: string }
 type SeedPhoto = { file: string; altText: string; displayOrder: number }
+type SeedTravelDate = { date: string; additionalFee?: number }
 
 type SeedPackage = {
-  slug: string
   name: string
-  fromPrice: number
-  durationDays: number
+  pricePerPax: number
+  discountAmount?: number
   durationLabel: string
+  remarks?: string
   isPublished: true
   isFeatured: boolean
   sortOrder: number
@@ -71,7 +74,7 @@ type SeedPackage = {
   photos: SeedPhoto[]
   itinerary: SeedItineraryDay[]
   inclusions: SeedInclusion[]
-  faq: { bestTimeToGo: string; groupSize: string }
+  travelDates: SeedTravelDate[]
 }
 
 type SeedDestination = {
@@ -86,19 +89,26 @@ const SEED_DESTINATIONS: SeedDestination[] = [
   { slug: 'siargao', name: 'Siargao', region: 'local', sortOrder: 1 },
   { slug: 'banaue', name: 'Banaue', region: 'local', sortOrder: 2 },
   { slug: 'boracay', name: 'Boracay', region: 'local', sortOrder: 3 },
+  { slug: 'cebu', name: 'Cebu', region: 'local', sortOrder: 4 },
+  { slug: 'bohol', name: 'Bohol', region: 'local', sortOrder: 5 },
+  { slug: 'baguio', name: 'Baguio', region: 'local', sortOrder: 6 },
+  { slug: 'tagaytay', name: 'Tagaytay', region: 'local', sortOrder: 7 },
   { slug: 'japan', name: 'Japan', region: 'international', sortOrder: 0 },
-  { slug: 'thailand', name: 'Thailand', region: 'international', sortOrder: 1 },
+  { slug: 'china', name: 'China', region: 'international', sortOrder: 1 },
   { slug: 'south-korea', name: 'South Korea', region: 'international', sortOrder: 2 },
-  { slug: 'singapore', name: 'Singapore', region: 'international', sortOrder: 3 },
+  { slug: 'malaysia', name: 'Malaysia', region: 'international', sortOrder: 3 },
+  { slug: 'thailand', name: 'Thailand', region: 'international', sortOrder: 4 },
+  { slug: 'singapore', name: 'Singapore', region: 'international', sortOrder: 5 },
+  { slug: 'taiwan', name: 'Taiwan', region: 'international', sortOrder: 6 },
+  { slug: 'hong-kong', name: 'Hong Kong', region: 'international', sortOrder: 7 },
 ]
 
 const SEED_PACKAGES: SeedPackage[] = [
   {
-    slug: 'palawan-island-hopping',
     name: 'Palawan Island Hopping',
-    fromPrice: 8500,
-    durationDays: 3,
+    pricePerPax: 8500,
     durationLabel: '3 days, 2 nights',
+    remarks: 'Boat schedules are weather-dependent and may shift by a day.',
     isPublished: true,
     isFeatured: true,
     sortOrder: 0,
@@ -138,14 +148,17 @@ const SEED_PACKAGES: SeedPackage[] = [
       { kind: 'bring', label: 'Waterproof bag or dry sack', sortOrder: 1 },
       { kind: 'bring', label: 'Swimwear and quick-dry clothing', sortOrder: 2 },
     ],
-    faq: { bestTimeToGo: 'November to May (dry season)', groupSize: '2-15 travelers per group' },
+    travelDates: [
+      { date: '2026-09-12' },
+      { date: '2026-10-17', additionalFee: 1500 },
+      { date: '2026-11-21' },
+    ],
   },
   {
-    slug: 'siargao-surf-island',
     name: 'Siargao Surf & Island',
-    fromPrice: 7200,
-    durationDays: 4,
+    pricePerPax: 7200,
     durationLabel: '4 days, 3 nights',
+    remarks: 'Surf lessons require a minimum of 2 participants.',
     isPublished: true,
     isFeatured: false,
     sortOrder: 1,
@@ -190,13 +203,14 @@ const SEED_PACKAGES: SeedPackage[] = [
       { kind: 'bring', label: 'Reef-safe sunscreen', sortOrder: 1 },
       { kind: 'bring', label: 'Cash for incidentals (limited ATMs)', sortOrder: 2 },
     ],
-    faq: { bestTimeToGo: 'March to October (surf season)', groupSize: '2-10 travelers per group' },
+    travelDates: [
+      { date: '2026-09-05' },
+      { date: '2026-10-03' },
+    ],
   },
   {
-    slug: 'banaue-rice-terraces',
     name: 'Banaue Rice Terraces',
-    fromPrice: 6300,
-    durationDays: 3,
+    pricePerPax: 6300,
     durationLabel: '3 days, 2 nights',
     isPublished: true,
     isFeatured: false,
@@ -237,7 +251,9 @@ const SEED_PACKAGES: SeedPackage[] = [
       { kind: 'bring', label: 'Light jacket (cool mountain evenings)', sortOrder: 1 },
       { kind: 'bring', label: 'Cash (limited card acceptance)', sortOrder: 2 },
     ],
-    faq: { bestTimeToGo: 'November to May (dry season, clearer trails)', groupSize: '2-12 travelers per group' },
+    travelDates: [
+      { date: '2026-11-14' },
+    ],
   },
 ]
 
@@ -272,47 +288,57 @@ async function seedDestinations(): Promise<Map<string, string>> {
 }
 
 async function seedPackage(pkg: SeedPackage, destinationIdBySlug: Map<string, string>) {
-  console.log(`Seeding "${pkg.name}" (${pkg.slug})...`)
+  console.log(`Seeding "${pkg.name}"...`)
 
-  const { data: pkgRow, error: pkgError } = await supabase
+  // slug is DB-generated (TSP-000001-style, assigned once at insert time),
+  // so it can't be used as an upsert key anymore -- look up any existing
+  // row by name instead, and only insert when none exists.
+  const { data: existing, error: findError } = await supabase
     .from('packages')
-    .upsert(
-      {
-        slug: pkg.slug,
-        name: pkg.name,
-        from_price: pkg.fromPrice,
-        duration_days: pkg.durationDays,
-        duration_label: pkg.durationLabel,
-        is_published: pkg.isPublished,
-        is_featured: pkg.isFeatured,
-        sort_order: pkg.sortOrder,
-        destination_id: destinationIdBySlug.get(pkg.destinationSlug) ?? null,
-      },
-      { onConflict: 'slug' }
-    )
-    .select()
-    .single()
+    .select('id')
+    .eq('name', pkg.name)
+    .maybeSingle()
+
+  if (findError) {
+    throw new Error(`Failed to look up existing package "${pkg.name}": ${findError.message}`)
+  }
+
+  const payload = {
+    name: pkg.name,
+    price_per_pax: pkg.pricePerPax,
+    discount_amount: pkg.discountAmount ?? null,
+    duration_label: pkg.durationLabel,
+    remarks: pkg.remarks ?? null,
+    is_published: pkg.isPublished,
+    is_featured: pkg.isFeatured,
+    sort_order: pkg.sortOrder,
+    destination_id: destinationIdBySlug.get(pkg.destinationSlug) ?? null,
+  }
+
+  const { data: pkgRow, error: pkgError } = existing
+    ? await supabase.from('packages').update(payload).eq('id', existing.id).select().single()
+    : await supabase.from('packages').insert(payload).select().single()
 
   if (pkgError || !pkgRow) {
-    throw new Error(`Failed to upsert package ${pkg.slug}: ${pkgError?.message}`)
+    throw new Error(`Failed to upsert package "${pkg.name}": ${pkgError?.message}`)
   }
 
   const packageId = pkgRow.id
 
   // Delete existing child rows for this package so re-runs never duplicate data.
-  const [delPhotos, delItinerary, delInclusions, delFaq] = await Promise.all([
+  const [delPhotos, delItinerary, delInclusions, delTravelDates] = await Promise.all([
     supabase.from('package_photos').delete().eq('package_id', packageId),
     supabase.from('itinerary_days').delete().eq('package_id', packageId),
     supabase.from('package_inclusions').delete().eq('package_id', packageId),
-    supabase.from('faq_facts').delete().eq('package_id', packageId),
+    supabase.from('package_travel_dates').delete().eq('package_id', packageId),
   ])
   for (const [label, res] of [
     ['package_photos', delPhotos],
     ['itinerary_days', delItinerary],
     ['package_inclusions', delInclusions],
-    ['faq_facts', delFaq],
+    ['package_travel_dates', delTravelDates],
   ] as const) {
-    if (res.error) throw new Error(`Failed to clear existing ${label} for ${pkg.slug}: ${res.error.message}`)
+    if (res.error) throw new Error(`Failed to clear existing ${label} for "${pkg.name}": ${res.error.message}`)
   }
 
   // Upload photos to Storage, then insert package_photos rows.
@@ -326,7 +352,7 @@ async function seedPackage(pkg: SeedPackage, destinationIdBySlug: Map<string, st
     })
 
     if (uploadError) {
-      throw new Error(`Failed to upload photo ${photo.file} for ${pkg.slug}: ${uploadError.message}`)
+      throw new Error(`Failed to upload photo ${photo.file} for "${pkg.name}": ${uploadError.message}`)
     }
 
     const { error: photoRowError } = await supabase.from('package_photos').insert({
@@ -337,7 +363,7 @@ async function seedPackage(pkg: SeedPackage, destinationIdBySlug: Map<string, st
     })
 
     if (photoRowError) {
-      throw new Error(`Failed to insert package_photos row for ${pkg.slug}: ${photoRowError.message}`)
+      throw new Error(`Failed to insert package_photos row for "${pkg.name}": ${photoRowError.message}`)
     }
   }
 
@@ -351,7 +377,7 @@ async function seedPackage(pkg: SeedPackage, destinationIdBySlug: Map<string, st
     }))
   )
   if (itineraryError) {
-    throw new Error(`Failed to insert itinerary_days for ${pkg.slug}: ${itineraryError.message}`)
+    throw new Error(`Failed to insert itinerary_days for "${pkg.name}": ${itineraryError.message}`)
   }
 
   // Inclusions / exclusions / bring items.
@@ -364,20 +390,22 @@ async function seedPackage(pkg: SeedPackage, destinationIdBySlug: Map<string, st
     }))
   )
   if (inclusionsError) {
-    throw new Error(`Failed to insert package_inclusions for ${pkg.slug}: ${inclusionsError.message}`)
+    throw new Error(`Failed to insert package_inclusions for "${pkg.name}": ${inclusionsError.message}`)
   }
 
-  // FAQ facts (exactly one row per package).
-  const { error: faqError } = await supabase.from('faq_facts').insert({
-    package_id: packageId,
-    best_time_to_go: pkg.faq.bestTimeToGo,
-    group_size: pkg.faq.groupSize,
-  })
-  if (faqError) {
-    throw new Error(`Failed to insert faq_facts for ${pkg.slug}: ${faqError.message}`)
+  // Travel dates (at least one per package).
+  const { error: travelDatesError } = await supabase.from('package_travel_dates').insert(
+    pkg.travelDates.map((date) => ({
+      package_id: packageId,
+      travel_date: date.date,
+      additional_fee: date.additionalFee ?? null,
+    }))
+  )
+  if (travelDatesError) {
+    throw new Error(`Failed to insert package_travel_dates for "${pkg.name}": ${travelDatesError.message}`)
   }
 
-  console.log(`  -> done (package_id=${packageId})`)
+  console.log(`  -> done (package_id=${packageId}, slug=${pkgRow.slug})`)
 }
 
 async function seed() {
