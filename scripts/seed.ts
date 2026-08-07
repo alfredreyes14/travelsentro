@@ -397,7 +397,8 @@ async function seedPackage(pkg: SeedPackage, destinationIdBySlug: Map<string, st
   const { error: travelDatesError } = await supabase.from('package_travel_dates').insert(
     pkg.travelDates.map((date) => ({
       package_id: packageId,
-      travel_date: date.date,
+      travel_date_from: date.date,
+      travel_date_to: date.date,
       additional_fee: date.additionalFee ?? null,
     }))
   )
