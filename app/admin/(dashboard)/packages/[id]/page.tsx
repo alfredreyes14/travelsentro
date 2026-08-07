@@ -5,6 +5,7 @@ import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { PackageForm } from "@/components/admin/package-form";
 import type { PackageFormValues } from "@/components/admin/package-form-schema";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
 import type { Database } from "@/types/database";
 
@@ -132,7 +133,15 @@ export default async function EditPackagePage({
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Edit Package" description={`${pkg.name} · ${pkg.slug}`} />
+      <PageHeader title="Edit Package" description={`${pkg.name} · ${pkg.slug}`}>
+        <Button
+          variant="outline"
+          size="lg"
+          render={<a href={`/admin/packages/${pkg.id}/pdf`} />}
+        >
+          Download PDF
+        </Button>
+      </PageHeader>
 
       <PackageForm
         packageId={pkg.id}
