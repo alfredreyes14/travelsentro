@@ -113,7 +113,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
           />
         </div>
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger render={<Button size="lg" />}>
+          <DialogTrigger render={<Button />}>
             Add Staff Account
           </DialogTrigger>
           <DialogContent className="sm:max-w-md">
