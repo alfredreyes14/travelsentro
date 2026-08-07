@@ -14,12 +14,11 @@ type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 /**
  * Atomically replaces a package's itinerary_days/package_inclusions/
- * faq_facts rows via the write_package_children() RPC (used by both
- * createPackage — against an empty set — and updatePackage). The RPC runs
- * the delete+reinsert sequence inside a single Postgres transaction, so a
- * failed insert can never leave the package's pre-existing content
- * partially deleted (02-REVIEW.md CR-02). day_number/kind/sort_order are
- * all derived from array position, never user-entered fields.
+ * package_travel_dates rows via the write_package_children() RPC. The RPC
+ * runs the delete+reinsert sequence inside a single Postgres transaction,
+ * so a failed insert can never leave the package's pre-existing content
+ * partially deleted. day_number/kind/sort_order are all derived from array
+ * position, never user-entered fields.
  */
 async function writePackageChildren(
   supabase: SupabaseServerClient,
@@ -52,8 +51,10 @@ async function writePackageChildren(
       description: day.description,
     })),
     p_inclusions: inclusionRows,
-    p_best_time_to_go: values.bestTimeToGo,
-    p_group_size: values.groupSize,
+    p_travel_dates: values.travelDates.map((item) => ({
+      travel_date: item.date,
+      additional_fee: item.additionalFee ?? null,
+    })),
   });
 
   if (error) {
@@ -64,14 +65,16 @@ async function writePackageChildren(
 }
 
 /**
- * Creates a new package as an unpublished draft (T-02-19) — is_published is
- * always explicitly set to false here, never left to the table's own
- * `default true`, so a half-finished package never appears on the public
- * site before an Admin explicitly publishes it via 02-04's list-page switch.
+ * Creates a brand-new package as a minimal unpublished draft -- just enough
+ * (a placeholder name, is_published: false) for a real package id to exist
+ * immediately. app/admin/(dashboard)/packages/new/page.tsx calls this
+ * directly and redirects to the edit page, so the Photos tab is usable
+ * right away. destination/duration/travel dates stay empty until the
+ * admin's first real Save, which is always updatePackage from here on.
  */
-export async function createPackage(
-  values: PackageFormValues
-): Promise<ActionResult & { id?: string }> {
+export async function createDraftPackage(): Promise<
+  ActionResult & { id?: string }
+> {
   // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
   // second independent layer (T-02-18).
   await requirePermission("can_manage_packages");
@@ -84,15 +87,11 @@ export async function createPackage(
     .select("id", { count: "exact", head: true })
     .is("deleted_at", null);
 
-  const { data: created, error: createError } = await supabase
+  const { data: created, error } = await supabase
     .from("packages")
     .insert({
-      name: values.name,
-      slug: values.slug,
-      from_price: values.fromPrice,
-      duration_days: values.durationDays,
-      duration_label: values.durationLabel || null,
-      destination_id: values.destinationId || null,
+      name: "Untitled Package",
+      price_per_pax: 0,
       is_published: false,
       is_featured: false,
       sort_order: count ?? 0,
@@ -100,30 +99,20 @@ export async function createPackage(
     .select("id")
     .single();
 
-  if (createError || !created) {
+  if (error || !created) {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
-  const childResult = await writePackageChildren(
-    supabase,
-    created.id,
-    values
-  );
-  if (!childResult.ok) {
-    return childResult;
-  }
-
-  // A draft package doesn't appear publicly yet, but the admin list needs
-  // the new row.
-  revalidatePath("/packages");
   revalidatePath("/admin/packages");
   return { ok: true, id: created.id };
 }
 
 /**
- * Updates a package's Details/Itinerary/Inclusions & FAQ content. Never
- * touches is_published/is_featured/sort_order — those are 02-04's concern
- * only (publish/feature switches, drag-reorder).
+ * Updates a package's full Details/Travel Dates/Itinerary/Inclusions
+ * content -- the only save path now that every package gets a real id at
+ * creation time (see createDraftPackage). Never touches
+ * is_published/is_featured/sort_order -- those stay 02-04's concern only
+ * (publish/feature switches, drag-reorder).
  */
 export async function updatePackage(
   id: string,
@@ -137,11 +126,11 @@ export async function updatePackage(
     .from("packages")
     .update({
       name: values.name,
-      slug: values.slug,
-      from_price: values.fromPrice,
-      duration_days: values.durationDays,
-      duration_label: values.durationLabel || null,
-      destination_id: values.destinationId || null,
+      price_per_pax: values.pricePerPax,
+      discount_amount: values.discountAmount ?? null,
+      duration_label: values.durationLabel,
+      destination_id: values.destinationId,
+      remarks: values.remarks || null,
     })
     .eq("id", id)
     .select("slug")
@@ -205,6 +194,14 @@ export async function publishPackage(
     .eq("id", id)
     .select("slug")
     .single();
+
+  // Postgres check_violation — packages_destination_required_if_published.
+  if (error?.code === "23514") {
+    return {
+      ok: false,
+      error: "Assign a destination to this package before publishing it.",
+    };
+  }
 
   if (error || !data) {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
