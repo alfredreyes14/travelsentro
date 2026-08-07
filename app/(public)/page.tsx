@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { HeroCarousel, type HeroSlideDisplay } from "@/components/homepage/hero-carousel";
 import { WhyChooseUs } from "@/components/homepage/why-choose-us";
 import { FeaturedPackagesGrid } from "@/components/homepage/featured-packages-grid";
+import { DestinationsSection } from "@/components/homepage/destinations-section";
 import { TestimonialsSection } from "@/components/homepage/testimonials-section";
 import { BrandPartners } from "@/components/homepage/brand-partners";
 import { CorporateClients } from "@/components/homepage/corporate-clients";
@@ -157,6 +158,40 @@ export default async function HomePage() {
     })
   );
 
+  // (4.5) Destinations -- admin-managed, split into Local/International
+  // groups. Public read RLS already scopes this to is_active = true, but
+  // the query-layer filter is kept too, matching every other homepage
+  // section's belt-and-suspenders pattern (e.g. packages' is_published).
+  const { data: destinationsData, error: destinationsError } = await supabase
+    .from("destinations")
+    .select("*")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  if (destinationsError) {
+    console.error("Failed to load destinations:", destinationsError.message);
+  }
+
+  const destinationTiles = (destinationsData ?? []).map(
+    (d: Database["public"]["Tables"]["destinations"]["Row"]) => ({
+      id: d.id,
+      name: d.name,
+      slug: d.slug,
+      region: d.region,
+      photoUrl: d.photo_storage_path
+        ? supabase.storage
+            .from("site-content")
+            .getPublicUrl(d.photo_storage_path).data.publicUrl
+        : null,
+    })
+  );
+  const localDestinations = destinationTiles.filter(
+    (d) => d.region === "local"
+  );
+  const internationalDestinations = destinationTiles.filter(
+    (d) => d.region === "international"
+  );
+
   // (5) Brand partners and (6) corporate clients -- two fully independent
   // queries/counts, one per partner_type, never a combined "any partner
   // exists" check (RESEARCH.md Pitfall 3 / D-07).
@@ -207,6 +242,10 @@ export default async function HomePage() {
       <HeroCarousel slides={slides} />
       <WhyChooseUs />
       <FeaturedPackagesGrid items={featuredItems} />
+      <DestinationsSection
+        local={localDestinations}
+        international={internationalDestinations}
+      />
       <TestimonialsSection testimonials={testimonials} />
 
       <section className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-16 sm:px-8">
