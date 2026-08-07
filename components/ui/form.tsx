@@ -154,6 +154,26 @@ function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
   )
 }
 
+function FormSection({
+  title,
+  className,
+  children,
+  ...props
+}: React.ComponentProps<"div"> & { title: string }) {
+  return (
+    <div
+      data-slot="form-section"
+      className={cn("flex flex-col gap-3", className)}
+      {...props}
+    >
+      <h3 className="font-heading text-[16px] leading-[1.2] font-semibold">
+        {title}
+      </h3>
+      <div className="flex flex-col gap-3">{children}</div>
+    </div>
+  )
+}
+
 export {
   useFormField,
   Form,
@@ -163,4 +183,5 @@ export {
   FormDescription,
   FormMessage,
   FormField,
+  FormSection,
 }
