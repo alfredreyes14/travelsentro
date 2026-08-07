@@ -36,6 +36,16 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { FormActionBar } from "@/components/admin/form-action-bar";
 
 const GENERIC_ERROR_MESSAGE =
@@ -132,6 +142,23 @@ export function PackageForm({
     control: form.control,
     name: "bringItems",
   });
+
+  const [pendingRemoval, setPendingRemoval] = useState<{
+    label: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  function requestRemove(
+    hasContent: boolean,
+    label: string,
+    onConfirm: () => void
+  ) {
+    if (hasContent) {
+      setPendingRemoval({ label, onConfirm });
+    } else {
+      onConfirm();
+    }
+  }
 
   async function onSubmit(values: PackageFormValues) {
     setIsSubmitting(true);
@@ -338,14 +365,36 @@ export function PackageForm({
             {itineraryArray.fields.map((field, index) => (
               <div
                 key={field.id}
-                className="flex flex-col gap-3 rounded-lg border border-input p-3"
+                className="flex flex-col gap-3 rounded-lg border border-input bg-muted/30 p-3"
               >
+                <div className="flex items-center justify-between">
+                  <span className="font-heading text-[16px] leading-[1.2] font-semibold">
+                    Day {index + 1}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    onClick={() =>
+                      requestRemove(
+                        Boolean(
+                          form.getValues(`itinerary.${index}.title`) ||
+                            form.getValues(`itinerary.${index}.description`)
+                        ),
+                        `Day ${index + 1}`,
+                        () => itineraryArray.remove(index)
+                      )
+                    }
+                  >
+                    Remove day
+                  </Button>
+                </div>
                 <FormField
                   control={form.control}
                   name={`itinerary.${index}.title`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Day {index + 1} Title</FormLabel>
+                      <FormLabel>Title</FormLabel>
                       <FormControl>
                         <Input {...field} type="text" />
                       </FormControl>
@@ -358,7 +407,7 @@ export function PackageForm({
                   name={`itinerary.${index}.description`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Day {index + 1} Description</FormLabel>
+                      <FormLabel>Description</FormLabel>
                       <FormControl>
                         <Textarea {...field} rows={3} />
                       </FormControl>
@@ -366,15 +415,6 @@ export function PackageForm({
                     </FormItem>
                   )}
                 />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="self-start"
-                  onClick={() => itineraryArray.remove(index)}
-                >
-                  Remove day
-                </Button>
               </div>
             ))}
             <Button
@@ -418,6 +458,9 @@ export function PackageForm({
               </h3>
               {inclusionsArray.fields.map((field, index) => (
                 <div key={field.id} className="flex items-end gap-2">
+                  <span className="pb-1.5 text-sm text-muted-foreground">
+                    {index + 1}.
+                  </span>
                   <FormField
                     control={form.control}
                     name={`inclusions.${index}.label`}
@@ -432,9 +475,15 @@ export function PackageForm({
                   />
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
-                    onClick={() => inclusionsArray.remove(index)}
+                    onClick={() =>
+                      requestRemove(
+                        Boolean(form.getValues(`inclusions.${index}.label`)),
+                        `Included item ${index + 1}`,
+                        () => inclusionsArray.remove(index)
+                      )
+                    }
                   >
                     Remove
                   </Button>
@@ -457,6 +506,9 @@ export function PackageForm({
               </h3>
               {exclusionsArray.fields.map((field, index) => (
                 <div key={field.id} className="flex items-end gap-2">
+                  <span className="pb-1.5 text-sm text-muted-foreground">
+                    {index + 1}.
+                  </span>
                   <FormField
                     control={form.control}
                     name={`exclusions.${index}.label`}
@@ -471,9 +523,15 @@ export function PackageForm({
                   />
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
-                    onClick={() => exclusionsArray.remove(index)}
+                    onClick={() =>
+                      requestRemove(
+                        Boolean(form.getValues(`exclusions.${index}.label`)),
+                        `Excluded item ${index + 1}`,
+                        () => exclusionsArray.remove(index)
+                      )
+                    }
                   >
                     Remove
                   </Button>
@@ -496,6 +554,9 @@ export function PackageForm({
               </h3>
               {bringItemsArray.fields.map((field, index) => (
                 <div key={field.id} className="flex items-end gap-2">
+                  <span className="pb-1.5 text-sm text-muted-foreground">
+                    {index + 1}.
+                  </span>
                   <FormField
                     control={form.control}
                     name={`bringItems.${index}.label`}
@@ -510,9 +571,15 @@ export function PackageForm({
                   />
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="destructive"
                     size="sm"
-                    onClick={() => bringItemsArray.remove(index)}
+                    onClick={() =>
+                      requestRemove(
+                        Boolean(form.getValues(`bringItems.${index}.label`)),
+                        `Item to bring ${index + 1}`,
+                        () => bringItemsArray.remove(index)
+                      )
+                    }
                   >
                     Remove
                   </Button>
@@ -558,6 +625,33 @@ export function PackageForm({
             />
           </TabsContent>
         </Tabs>
+
+        <AlertDialog
+          open={pendingRemoval !== null}
+          onOpenChange={(open) => !open && setPendingRemoval(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Remove {pendingRemoval?.label}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will delete its content. This can&apos;t be undone once
+                you save the package.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                variant="destructive"
+                onClick={() => {
+                  pendingRemoval?.onConfirm();
+                  setPendingRemoval(null);
+                }}
+              >
+                Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
 
         <FormActionBar>
           <Button type="submit" size="lg" disabled={isSubmitting}>
