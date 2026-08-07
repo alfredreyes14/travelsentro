@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requirePermission } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { uploadObject, deleteObject } from "@/lib/storage/r2-client";
 import type { ActionResult } from "@/lib/action-result";
 
 const GENERIC_ERROR_MESSAGE =
@@ -76,15 +77,11 @@ export async function uploadPhotos(
   for (const [index, file] of files.entries()) {
     const buffer = Buffer.from(file.base64, "base64");
     const extension = extensionFromMimeType(file.type);
-    const storagePath = `${packageId}/photo-${Date.now()}-${index}.${extension}`;
+    const storagePath = `packages/${packageId}/photo-${Date.now()}-${index}.${extension}`;
 
-    const { error: uploadError } = await supabase.storage.from("package-photos").upload(
-      storagePath,
-      buffer,
-      { contentType: file.type, upsert: false }
-    );
-
-    if (uploadError) {
+    try {
+      await uploadObject(storagePath, buffer, file.type);
+    } catch {
       return { ok: false, error: GENERIC_ERROR_MESSAGE };
     }
 
@@ -147,11 +144,9 @@ export async function deletePhoto(photoId: string): Promise<ActionResult> {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
-  const { error: removeError } = await supabase.storage
-    .from("package-photos")
-    .remove([photo.storage_path]);
-
-  if (removeError) {
+  try {
+    await deleteObject(photo.storage_path);
+  } catch {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
