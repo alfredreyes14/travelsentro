@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { createClient } from "@/lib/supabase/server";
+import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { HeroCarousel, type HeroSlideDisplay } from "@/components/homepage/hero-carousel";
 import { WhyChooseUs } from "@/components/homepage/why-choose-us";
 import { FeaturedPackagesGrid } from "@/components/homepage/featured-packages-grid";
@@ -42,19 +43,12 @@ type HeroSlideRow = Database["public"]["Tables"]["hero_slides"]["Row"] & {
     | null;
 };
 
-/** Resolves the first photo (by display_order) to a public Storage URL. */
-function firstPhotoUrl(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  bucket: string,
-  photos: PackagePhotoRef[]
-): string | null {
+/** Resolves the first photo (by display_order) to a public image URL. */
+function firstPhotoUrl(photos: PackagePhotoRef[]): string | null {
   const [firstPhoto] = [...photos].sort(
     (a, b) => a.display_order - b.display_order
   );
-  return firstPhoto
-    ? supabase.storage.from(bucket).getPublicUrl(firstPhoto.storage_path).data
-        .publicUrl
-    : null;
+  return firstPhoto ? getPublicImageUrl(firstPhoto.storage_path) : null;
 }
 
 export default async function HomePage() {
@@ -83,11 +77,7 @@ export default async function HomePage() {
         return {
           id: slide.id,
           slideType: "package",
-          imageUrl: firstPhotoUrl(
-            supabase,
-            "package-photos",
-            slide.packages.package_photos
-          ),
+          imageUrl: firstPhotoUrl(slide.packages.package_photos),
           headline: slide.packages.name,
           subheading: slide.subheading,
           ctaLabel: "View Package",
@@ -96,9 +86,7 @@ export default async function HomePage() {
       }
 
       const imageUrl = slide.image_storage_path
-        ? supabase.storage
-            .from("site-content")
-            .getPublicUrl(slide.image_storage_path).data.publicUrl
+        ? getPublicImageUrl(slide.image_storage_path)
         : null;
 
       return {
@@ -130,7 +118,7 @@ export default async function HomePage() {
   const featuredItems = ((featuredData ?? []) as PackageWithPhotos[]).map(
     (pkg) => ({
       pkg,
-      photoUrl: firstPhotoUrl(supabase, "package-photos", pkg.package_photos),
+      photoUrl: firstPhotoUrl(pkg.package_photos),
     })
   );
 
@@ -151,9 +139,7 @@ export default async function HomePage() {
       quote: testimonial.quote,
       rating: testimonial.rating,
       photoUrl: testimonial.photo_storage_path
-        ? supabase.storage
-            .from("site-content")
-            .getPublicUrl(testimonial.photo_storage_path).data.publicUrl
+        ? getPublicImageUrl(testimonial.photo_storage_path)
         : null,
     })
   );
@@ -179,9 +165,7 @@ export default async function HomePage() {
       slug: d.slug,
       region: d.region,
       photoUrl: d.photo_storage_path
-        ? supabase.storage
-            .from("site-content")
-            .getPublicUrl(d.photo_storage_path).data.publicUrl
+        ? getPublicImageUrl(d.photo_storage_path)
         : null,
     })
   );
@@ -207,9 +191,7 @@ export default async function HomePage() {
   const brandPartners = (brandPartnersData ?? []).map(
     (partner: Database["public"]["Tables"]["partners"]["Row"]) => ({
       id: partner.id,
-      logoUrl: supabase.storage
-        .from("site-content")
-        .getPublicUrl(partner.logo_storage_path).data.publicUrl,
+      logoUrl: getPublicImageUrl(partner.logo_storage_path),
       linkUrl: partner.link_url,
     })
   );
@@ -230,9 +212,7 @@ export default async function HomePage() {
   const corporateClients = (corporateClientsData ?? []).map(
     (client: Database["public"]["Tables"]["partners"]["Row"]) => ({
       id: client.id,
-      logoUrl: supabase.storage
-        .from("site-content")
-        .getPublicUrl(client.logo_storage_path).data.publicUrl,
+      logoUrl: getPublicImageUrl(client.logo_storage_path),
       linkUrl: client.link_url,
     })
   );

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { getPublicImageUrl } from "@/lib/storage/image-url";
 import {
   DestinationsList,
   type DestinationListItem,
@@ -45,9 +46,7 @@ export default async function AdminDestinationsPage() {
     isActive: row.is_active,
     sortOrder: row.sort_order,
     photoUrl: row.photo_storage_path
-      ? supabase.storage
-          .from("site-content")
-          .getPublicUrl(row.photo_storage_path).data.publicUrl
+      ? getPublicImageUrl(row.photo_storage_path)
       : null,
   }));
 

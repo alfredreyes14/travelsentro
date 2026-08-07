@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { getPublicImageUrl } from "@/lib/storage/image-url";
 import {
   HeroSlidesList,
   type HeroSlideListItem,
@@ -125,15 +126,9 @@ export default async function AdminContentPage() {
         const [firstPhoto] = [...row.packages.package_photos].sort(
           (a, b) => a.display_order - b.display_order
         );
-        imageUrl = firstPhoto
-          ? supabase.storage
-              .from("package-photos")
-              .getPublicUrl(firstPhoto.storage_path).data.publicUrl
-          : null;
+        imageUrl = firstPhoto ? getPublicImageUrl(firstPhoto.storage_path) : null;
       } else if (row.image_storage_path) {
-        imageUrl = supabase.storage
-          .from("site-content")
-          .getPublicUrl(row.image_storage_path).data.publicUrl;
+        imageUrl = getPublicImageUrl(row.image_storage_path);
       }
 
       return {
@@ -163,9 +158,7 @@ export default async function AdminContentPage() {
       id: row.id,
       logoStoragePath: row.logo_storage_path,
       linkUrl: row.link_url,
-      logoUrl: supabase.storage
-        .from("site-content")
-        .getPublicUrl(row.logo_storage_path).data.publicUrl,
+      logoUrl: getPublicImageUrl(row.logo_storage_path),
     };
   }
 

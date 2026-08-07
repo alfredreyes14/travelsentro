@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { createDraftPackage } from "@/actions/packages";
 import { SortablePackageList } from "@/components/admin/sortable-package-list";
 import { PageHeader } from "@/components/admin/page-header";
@@ -55,9 +56,7 @@ export default async function AdminPackagesPage() {
       (a, b) => a.display_order - b.display_order
     );
     const photoUrl = firstPhoto
-      ? supabase.storage
-          .from("package-photos")
-          .getPublicUrl(firstPhoto.storage_path).data.publicUrl
+      ? getPublicImageUrl(firstPhoto.storage_path)
       : null;
 
     return {
