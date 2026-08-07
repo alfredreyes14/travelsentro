@@ -378,21 +378,24 @@ export type Database = {
           created_at: string
           id: string
           package_id: string
-          travel_date: string
+          travel_date_from: string
+          travel_date_to: string
         }
         Insert: {
           additional_fee?: number | null
           created_at?: string
           id?: string
           package_id: string
-          travel_date: string
+          travel_date_from: string
+          travel_date_to: string
         }
         Update: {
           additional_fee?: number | null
           created_at?: string
           id?: string
           package_id?: string
-          travel_date?: string
+          travel_date_from?: string
+          travel_date_to?: string
         }
         Relationships: [
           {
