@@ -59,7 +59,7 @@ const SEED_ASSETS_DIR = join(process.cwd(), 'supabase', 'seed-assets')
 type SeedInclusion = { kind: 'included' | 'excluded' | 'bring'; label: string; sortOrder: number }
 type SeedItineraryDay = { dayNumber: number; title: string; description: string }
 type SeedPhoto = { file: string; altText: string; displayOrder: number }
-type SeedTravelDate = { date: string; additionalFee?: number }
+type SeedTravelDate = { dateFrom: string; dateTo: string; additionalFee?: number }
 
 type SeedPackage = {
   name: string
@@ -149,9 +149,9 @@ const SEED_PACKAGES: SeedPackage[] = [
       { kind: 'bring', label: 'Swimwear and quick-dry clothing', sortOrder: 2 },
     ],
     travelDates: [
-      { date: '2026-09-12' },
-      { date: '2026-10-17', additionalFee: 1500 },
-      { date: '2026-11-21' },
+      { dateFrom: '2026-09-12', dateTo: '2026-09-14' },
+      { dateFrom: '2026-10-17', dateTo: '2026-10-19', additionalFee: 1500 },
+      { dateFrom: '2026-11-21', dateTo: '2026-11-23' },
     ],
   },
   {
@@ -204,8 +204,8 @@ const SEED_PACKAGES: SeedPackage[] = [
       { kind: 'bring', label: 'Cash for incidentals (limited ATMs)', sortOrder: 2 },
     ],
     travelDates: [
-      { date: '2026-09-05' },
-      { date: '2026-10-03' },
+      { dateFrom: '2026-09-05', dateTo: '2026-09-08' },
+      { dateFrom: '2026-10-03', dateTo: '2026-10-06' },
     ],
   },
   {
@@ -252,7 +252,7 @@ const SEED_PACKAGES: SeedPackage[] = [
       { kind: 'bring', label: 'Cash (limited card acceptance)', sortOrder: 2 },
     ],
     travelDates: [
-      { date: '2026-11-14' },
+      { dateFrom: '2026-11-14', dateTo: '2026-11-16' },
     ],
   },
 ]
@@ -397,7 +397,8 @@ async function seedPackage(pkg: SeedPackage, destinationIdBySlug: Map<string, st
   const { error: travelDatesError } = await supabase.from('package_travel_dates').insert(
     pkg.travelDates.map((date) => ({
       package_id: packageId,
-      travel_date: date.date,
+      travel_date_from: date.dateFrom,
+      travel_date_to: date.dateTo,
       additional_fee: date.additionalFee ?? null,
     }))
   )

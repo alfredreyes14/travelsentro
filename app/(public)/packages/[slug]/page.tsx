@@ -85,7 +85,7 @@ export default async function PackageDetailPage({
       package_photos(storage_path, display_order, alt_text),
       itinerary_days(day_number, title, description),
       package_inclusions(kind, label, sort_order),
-      package_travel_dates(travel_date, additional_fee)`
+      package_travel_dates(travel_date_from, travel_date_to, additional_fee)`
     )
     .eq("slug", slug)
     .eq("is_published", true)
@@ -113,8 +113,10 @@ export default async function PackageDetailPage({
   const bringItems = pkg.package_inclusions
     .filter((item) => item.kind === "bring")
     .sort((a, b) => a.sort_order - b.sort_order);
-  const travelDates = [...pkg.package_travel_dates].sort((a, b) =>
-    a.travel_date.localeCompare(b.travel_date)
+  const travelDates = [...pkg.package_travel_dates].sort(
+    (a, b) =>
+      a.travel_date_from.localeCompare(b.travel_date_from) ||
+      a.travel_date_to.localeCompare(b.travel_date_to)
   );
 
   return (
@@ -204,25 +206,32 @@ export default async function PackageDetailPage({
         <section className={SECTION_CARD}>
           <SectionHeading icon={CalendarDays}>Travel Dates</SectionHeading>
           <ul className="flex flex-col gap-2">
-            {travelDates.map((date) => (
-              <li
-                key={date.travel_date}
-                className="flex items-center justify-between gap-2 text-[14px] leading-[1.4] text-foreground"
-              >
-                <span>
-                  {new Date(date.travel_date).toLocaleDateString("en-PH", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
-                {date.additional_fee ? (
-                  <Badge variant="outline">
-                    +&#8369;{date.additional_fee.toLocaleString("en-PH")}
-                  </Badge>
-                ) : null}
-              </li>
-            ))}
+            {travelDates.map((date) => {
+              const formatDate = (value: string) =>
+                new Date(value).toLocaleDateString("en-PH", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                });
+              const label =
+                date.travel_date_from === date.travel_date_to
+                  ? formatDate(date.travel_date_from)
+                  : `${formatDate(date.travel_date_from)} – ${formatDate(date.travel_date_to)}`;
+
+              return (
+                <li
+                  key={`${date.travel_date_from}-${date.travel_date_to}`}
+                  className="flex items-center justify-between gap-2 text-[14px] leading-[1.4] text-foreground"
+                >
+                  <span>{label}</span>
+                  {date.additional_fee ? (
+                    <Badge variant="outline">
+                      +&#8369;{date.additional_fee.toLocaleString("en-PH")}
+                    </Badge>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         </section>
       ) : null}

@@ -359,7 +359,8 @@ export function PackageForm({
                     onClick={() =>
                       requestRemove(
                         Boolean(
-                          form.getValues(`travelDates.${index}.date`) ||
+                          form.getValues(`travelDates.${index}.dateFrom`) ||
+                            form.getValues(`travelDates.${index}.dateTo`) ||
                             form.getValues(`travelDates.${index}.additionalFee`)
                         ),
                         `Date ${index + 1}`,
@@ -372,10 +373,23 @@ export function PackageForm({
                 </div>
                 <FormField
                   control={form.control}
-                  name={`travelDates.${index}.date`}
+                  name={`travelDates.${index}.dateFrom`}
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Date</FormLabel>
+                      <FormLabel>From</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="date" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`travelDates.${index}.dateTo`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>To</FormLabel>
                       <FormControl>
                         <Input {...field} type="date" />
                       </FormControl>
@@ -420,7 +434,11 @@ export function PackageForm({
               size="sm"
               className="self-start"
               onClick={() =>
-                travelDatesArray.append({ date: "", additionalFee: undefined })
+                travelDatesArray.append({
+                  dateFrom: "",
+                  dateTo: "",
+                  additionalFee: undefined,
+                })
               }
             >
               Add travel date

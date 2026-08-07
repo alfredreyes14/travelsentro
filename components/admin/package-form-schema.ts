@@ -19,17 +19,25 @@ const inclusionItemSchema = z.object({
 });
 
 /**
- * `date` is a plain "YYYY-MM-DD" string from a native <input type="date">
- * — no date library needed. additionalFee is the optional per-date
- * surcharge (e.g. a peak-season upcharge).
+ * dateFrom/dateTo are plain "YYYY-MM-DD" strings from native
+ * <input type="date"> fields — no date library needed, and "YYYY-MM-DD"
+ * strings compare correctly with plain >=/<=. additionalFee is the
+ * optional surcharge for this whole date range (e.g. a peak-season
+ * upcharge).
  */
-const travelDateSchema = z.object({
-  date: z.string().min(1, "Please pick a date"),
-  additionalFee: z
-    .number({ error: "Fee must be a positive number" })
-    .positive("Fee must be a positive number")
-    .optional(),
-});
+const travelDateSchema = z
+  .object({
+    dateFrom: z.string().min(1, "Please pick a start date"),
+    dateTo: z.string().min(1, "Please pick an end date"),
+    additionalFee: z
+      .number({ error: "Fee must be a positive number" })
+      .positive("Fee must be a positive number")
+      .optional(),
+  })
+  .refine((value) => value.dateTo >= value.dateFrom, {
+    message: "End date must be on or after the start date",
+    path: ["dateTo"],
+  });
 
 export const packageFormSchema = z
   .object({

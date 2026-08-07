@@ -49,7 +49,7 @@ export default async function EditPackagePage({
           package_photos(id, storage_path, display_order, alt_text),
           itinerary_days(id, day_number, title, description),
           package_inclusions(id, kind, label, sort_order),
-          package_travel_dates(id, travel_date, additional_fee),
+          package_travel_dates(id, travel_date_from, travel_date_to, additional_fee),
           destinations(id, name)`
         )
         .eq("id", id)
@@ -86,9 +86,14 @@ export default async function EditPackagePage({
     .map((item) => ({ label: item.label }));
 
   const travelDates = [...pkg.package_travel_dates]
-    .sort((a, b) => a.travel_date.localeCompare(b.travel_date))
+    .sort(
+      (a, b) =>
+        a.travel_date_from.localeCompare(b.travel_date_from) ||
+        a.travel_date_to.localeCompare(b.travel_date_to)
+    )
     .map((date) => ({
-      date: date.travel_date,
+      dateFrom: date.travel_date_from,
+      dateTo: date.travel_date_to,
       additionalFee: date.additional_fee ?? undefined,
     }));
 
