@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { createDraftPackage } from "@/actions/packages";
 import { SortablePackageList } from "@/components/admin/sortable-package-list";
 import { Button } from "@/components/ui/button";
 import type { Database } from "@/types/database";
@@ -82,13 +82,11 @@ export default async function AdminPackagesPage() {
             on the public site immediately.
           </p>
         </div>
-        <Button
-          size="lg"
-          render={<Link href="/admin/packages/new" />}
-          nativeButton={false}
-        >
-          Add Package
-        </Button>
+        <form action={createDraftPackage}>
+          <Button type="submit" size="lg">
+            Add Package
+          </Button>
+        </form>
       </div>
 
       {items.length === 0 ? (
@@ -99,9 +97,9 @@ export default async function AdminPackagesPage() {
           <p className="text-base leading-[1.5] text-muted-foreground">
             Create your first tour package to get it live on the public site.
           </p>
-          <Button render={<Link href="/admin/packages/new" />} nativeButton={false}>
-            Add Package
-          </Button>
+          <form action={createDraftPackage}>
+            <Button type="submit">Add Package</Button>
+          </form>
         </div>
       ) : (
         <SortablePackageList initialItems={items} />

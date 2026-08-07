@@ -45,10 +45,12 @@ alter table packages add constraint packages_destination_required_if_published
 drop table faq_facts;
 
 -- ============================================================================
--- 5. package_travel_dates -- at-least-one-row-per-package is enforced at the
--- app layer (write_package_children below), same as itinerary_days always
--- has been -- not a DB constraint, since a freshly auto-created draft
--- package has zero travel dates until its first real save.
+-- 5. package_travel_dates -- at-least-one-row-per-package is enforced by
+-- packageFormSchema (components/admin/package-form-schema.ts) and
+-- re-validated server-side in updatePackage (actions/packages.ts) before
+-- write_package_children runs -- not a DB constraint, since a freshly
+-- auto-created draft package has zero travel dates until its first real
+-- save, same as itinerary_days always has been.
 -- ============================================================================
 create table package_travel_dates (
   id uuid primary key default gen_random_uuid(),

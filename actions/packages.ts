@@ -1,11 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { requirePermission } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
-import type { PackageFormValues } from "@/components/admin/package-form-schema";
+import {
+  packageFormSchema,
+  type PackageFormValues,
+} from "@/components/admin/package-form-schema";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -67,14 +71,18 @@ async function writePackageChildren(
 /**
  * Creates a brand-new package as a minimal unpublished draft -- just enough
  * (a placeholder name, is_published: false) for a real package id to exist
- * immediately. app/admin/(dashboard)/packages/new/page.tsx calls this
- * directly and redirects to the edit page, so the Photos tab is usable
- * right away. destination/duration/travel dates stay empty until the
- * admin's first real Save, which is always updatePackage from here on.
+ * immediately -- then redirects straight to its edit page, so the Photos
+ * tab is usable right away. destination/duration/travel dates stay empty
+ * until the admin's first real Save, which is always updatePackage from
+ * here on.
+ *
+ * This MUST be invoked as a real Server Action (e.g. a <form action={...}>
+ * submit, not called directly during a Server Component's render) --
+ * revalidatePath/redirect are only legal in Next's "action" phase, not
+ * during render. See app/admin/(dashboard)/packages/page.tsx for the
+ * calling <form>.
  */
-export async function createDraftPackage(): Promise<
-  ActionResult & { id?: string }
-> {
+export async function createDraftPackage(): Promise<void> {
   // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
   // second independent layer (T-02-18).
   await requirePermission("can_manage_packages");
@@ -100,11 +108,11 @@ export async function createDraftPackage(): Promise<
     .single();
 
   if (error || !created) {
-    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+    throw new Error(GENERIC_ERROR_MESSAGE);
   }
 
   revalidatePath("/admin/packages");
-  return { ok: true, id: created.id };
+  redirect(`/admin/packages/${created.id}`);
 }
 
 /**
@@ -120,17 +128,22 @@ export async function updatePackage(
 ): Promise<ActionResult> {
   await requirePermission("can_manage_packages");
 
+  const parsed = packageFormSchema.safeParse(values);
+  if (!parsed.success) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
   const supabase = await createClient();
 
   const { data: updated, error: updateError } = await supabase
     .from("packages")
     .update({
-      name: values.name,
-      price_per_pax: values.pricePerPax,
-      discount_amount: values.discountAmount ?? null,
-      duration_label: values.durationLabel,
-      destination_id: values.destinationId,
-      remarks: values.remarks || null,
+      name: parsed.data.name,
+      price_per_pax: parsed.data.pricePerPax,
+      discount_amount: parsed.data.discountAmount ?? null,
+      duration_label: parsed.data.durationLabel,
+      destination_id: parsed.data.destinationId,
+      remarks: parsed.data.remarks || null,
     })
     .eq("id", id)
     .select("slug")
@@ -140,7 +153,7 @@ export async function updatePackage(
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
-  const childResult = await writePackageChildren(supabase, id, values);
+  const childResult = await writePackageChildren(supabase, id, parsed.data);
   if (!childResult.ok) {
     return childResult;
   }

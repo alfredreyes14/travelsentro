@@ -97,9 +97,10 @@ const TAB_FIELD_MAP: Array<{
 /**
  * Tabbed edit form for a package's Details, Travel Dates, Itinerary,
  * Photos, and Inclusions content. Every package that reaches this form
- * already has a real id (see app/admin/(dashboard)/packages/new/page.tsx,
- * which creates a minimal draft and redirects here) — there is no separate
- * create mode, submit always calls updatePackage.
+ * already has a real id (see createDraftPackage in actions/packages.ts,
+ * invoked as a form action from the packages list page, which creates a
+ * minimal draft and redirects here) — there is no separate create mode,
+ * submit always calls updatePackage.
  */
 export function PackageForm({
   packageId,
@@ -424,6 +425,11 @@ export function PackageForm({
             >
               Add travel date
             </Button>
+            {form.formState.errors.travelDates?.message ? (
+              <p className="text-sm text-destructive">
+                {form.formState.errors.travelDates.message}
+              </p>
+            ) : null}
           </TabsContent>
 
           <TabsContent

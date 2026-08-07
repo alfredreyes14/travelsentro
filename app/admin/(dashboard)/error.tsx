@@ -5,10 +5,10 @@ import { useEffect } from "react";
 /**
  * Route-segment error boundary for app/admin/(dashboard)/**. Every
  * render-time throw currently reachable under this segment (packages/page.tsx,
- * packages/new/page.tsx, packages/[id]/page.tsx, users/page.tsx, all via
- * lib/auth/dal.ts's requirePermission()/requireAdmin()) is exclusively a
- * permission-gate Forbidden throw, so this boundary renders the UI-SPEC's
- * fixed denial copy unconditionally rather than branching on error content.
+ * packages/[id]/page.tsx, users/page.tsx, all via lib/auth/dal.ts's
+ * requirePermission()/requireAdmin()) is exclusively a permission-gate
+ * Forbidden throw, so this boundary renders the UI-SPEC's fixed denial copy
+ * unconditionally rather than branching on error content.
  * This also ensures the denial never leaks *why* access was denied — the
  * underlying error details are never rendered to the user.
  */
