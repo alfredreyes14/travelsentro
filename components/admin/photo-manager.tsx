@@ -28,7 +28,7 @@ import {
   uploadPhotos,
 } from "@/actions/package-photos";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { createClient } from "@/lib/supabase/client";
+import { getPublicImageUrl } from "@/lib/storage/image-url";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -149,7 +149,6 @@ export function PhotoManager({
   packageId: string;
   initialPhotos: PhotoManagerPhoto[];
 }) {
-  const supabase = createClient();
   const [photos, setPhotos] = useState<PhotoManagerPhoto[]>(
     [...initialPhotos].sort((a, b) => a.displayOrder - b.displayOrder)
   );
@@ -162,11 +161,6 @@ export function PhotoManager({
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
-
-  function urlFor(storagePath: string): string {
-    return supabase.storage.from("package-photos").getPublicUrl(storagePath)
-      .data.publicUrl;
-  }
 
   async function handleFilesSelected(event: ChangeEvent<HTMLInputElement>) {
     const fileList = event.target.files;
@@ -305,7 +299,7 @@ export function PhotoManager({
                 <PhotoThumbnail
                   key={photo.id}
                   photo={photo}
-                  url={urlFor(photo.storagePath)}
+                  url={getPublicImageUrl(photo.storagePath)}
                   onDelete={handleDelete}
                   isDeleting={deletingId === photo.id}
                 />

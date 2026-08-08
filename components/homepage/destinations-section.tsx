@@ -19,8 +19,10 @@ function DestinationCard({ destination }: { destination: DestinationTile }) {
     >
       <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-primary/10">
         {destination.photoUrl ? (
-          // Plain <img>, not next/image -- site-content isn't in
-          // next.config.ts's Image Optimizer remotePatterns.
+          // Plain <img>, not next/image -- R2's hostname is allow-listed in
+          // next.config.ts's remotePatterns now, but this thumbnail doesn't
+          // need next/image's optimization/lazy-loading; kept as a plain
+          // <img> intentionally, not a leftover constraint.
           <img
             src={destination.photoUrl}
             alt={destination.name}

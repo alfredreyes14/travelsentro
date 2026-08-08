@@ -10,6 +10,7 @@
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "seed:admin": "tsx --env-file=.env.local scripts/seed-admin.ts",
     "verify:permission-denial": "tsx --env-file=.env.local scripts/verify-permission-denial.ts",
+    "verify:r2-storage": "tsx --env-file=.env.local scripts/verify-r2-storage.ts",
     "verify:auth-confirm": "tsx --env-file=.env.local scripts/verify-auth-confirm-reachable.ts",
     "verify:password-reset-redirect": "tsx --env-file=.env.local scripts/verify-password-reset-redirect.ts",
     "verify:semaphore-error-handling": "tsx scripts/verify-semaphore-error-handling.ts",
@@ -20,6 +21,7 @@
     "verify:admin-package-pdf": "tsx --env-file=.env.local scripts/verify-admin-package-pdf.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1105.0",
     "@base-ui/react": "^1.6.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",

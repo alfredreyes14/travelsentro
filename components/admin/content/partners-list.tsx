@@ -183,10 +183,10 @@ function PartnerSubSection({
               className="flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4"
             >
               <div className="relative flex h-16 w-full items-center justify-center overflow-hidden rounded-md bg-secondary/10">
-                {/* Plain <img>, not next/image -- the site-content Storage
-                    bucket isn't in next.config.ts's Image Optimizer
-                    remotePatterns (scoped only to package-photos), matching
-                    hero-slides-list.tsx's precedent. */}
+                {/* Plain <img>, not next/image -- R2's hostname is
+                    allow-listed in next.config.ts's remotePatterns now, but
+                    this admin thumbnail doesn't need next/image's
+                    optimization; matching hero-slides-list.tsx's precedent. */}
                 <img
                   src={item.logoUrl}
                   alt=""

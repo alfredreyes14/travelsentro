@@ -54,15 +54,21 @@ async function main() {
     // packages_destination_required_if_published check constraint.
     const { data: pkgRow, error: pkgError } = await supabase
       .from("packages")
-      .insert({
-        name: "Verify PDF Smoke Test Package",
-        is_published: false,
-        price_per_pax: 12000,
-        discount_amount: 1000,
-        duration_label: "3 days, 2 nights",
-        remarks:
-          "Verification-only package, safe to ignore if seen in the admin list.",
-      })
+      .insert(
+        // Cast: a BEFORE INSERT trigger fills `slug` before the NOT NULL
+        // constraint is checked, so omitting it here is correct at runtime
+        // even though the generated Insert type (no SQL-level DEFAULT on
+        // the column) marks it required -- codegen doesn't model triggers.
+        {
+          name: "Verify PDF Smoke Test Package",
+          is_published: false,
+          price_per_pax: 12000,
+          discount_amount: 1000,
+          duration_label: "3 days, 2 nights",
+          remarks:
+            "Verification-only package, safe to ignore if seen in the admin list.",
+        } as Database["public"]["Tables"]["packages"]["Insert"]
+      )
       .select("id, slug")
       .single();
 

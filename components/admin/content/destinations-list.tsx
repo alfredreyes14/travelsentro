@@ -249,9 +249,10 @@ function DestinationRow({
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
-      {/* Plain <img>, not next/image -- site-content isn't in
-          next.config.ts's Image Optimizer remotePatterns (mirrors
-          hero-slides-list.tsx's identical thumbnail convention). */}
+      {/* Plain <img>, not next/image -- R2's hostname is allow-listed in
+          next.config.ts's remotePatterns now, but this admin thumbnail
+          doesn't need next/image's optimization; mirrors
+          hero-slides-list.tsx's identical thumbnail convention. */}
       {item.photoUrl ? (
         <div className="relative size-16 shrink-0 overflow-hidden rounded-md bg-secondary/10">
           <img

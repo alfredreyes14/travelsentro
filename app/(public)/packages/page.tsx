@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { createClient } from "@/lib/supabase/server";
+import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { PackageCard } from "@/components/packages/package-card";
 import type { Database } from "@/types/database";
 
@@ -117,9 +118,7 @@ export default async function PackagesPage({
               (a, b) => a.display_order - b.display_order
             );
             const photoUrl = firstPhoto
-              ? supabase.storage
-                  .from("package-photos")
-                  .getPublicUrl(firstPhoto.storage_path).data.publicUrl
+              ? getPublicImageUrl(firstPhoto.storage_path)
               : null;
 
             return <PackageCard key={pkg.id} pkg={pkg} photoUrl={photoUrl} />;

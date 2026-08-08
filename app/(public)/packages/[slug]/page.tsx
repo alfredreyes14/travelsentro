@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Checklist } from "@/components/packages/checklist";
@@ -99,9 +100,7 @@ export default async function PackageDetailPage({
   const photos = [...pkg.package_photos]
     .sort((a, b) => a.display_order - b.display_order)
     .map((photo) => ({
-      url: supabase.storage
-        .from("package-photos")
-        .getPublicUrl(photo.storage_path).data.publicUrl,
+      url: getPublicImageUrl(photo.storage_path),
       alt: photo.alt_text ?? pkg.name,
     }));
 

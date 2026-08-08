@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requirePermission } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { uploadObject, deleteObject } from "@/lib/storage/r2-client";
 import type { ActionResult } from "@/lib/action-result";
 
 const GENERIC_ERROR_MESSAGE =
@@ -32,15 +33,19 @@ function extensionFromMimeType(type: string): string {
  * package_photos row insert per file — mirrors scripts/seed.ts lines
  * 265-289), appending after the current max display_order. Unlike the seed
  * script's fixed `photo-N.jpg` naming, each upload gets a unique path
- * (`${packageId}/photo-${timestamp}-${index}.${ext}`) since photos are added
- * incrementally here, not all at once.
+ * (`packages/${packageId}/photo-${timestamp}-${index}.${ext}`) since photos
+ * are added incrementally here, not all at once.
  */
 export async function uploadPhotos(
   packageId: string,
   files: UploadPhotoInput[]
 ): Promise<ActionResult & { photos?: UploadedPhoto[] }> {
-  // AUTH-05 — gate independent of D-13's nav hiding; storage.objects RLS
-  // (02-01 migration) is the second independent layer (T-02-21).
+  // AUTH-05 — gate independent of D-13's nav hiding. This is now the sole
+  // authorization check on this write path: images live on R2, accessed via
+  // a single full-access credential rather than per-request Storage RLS, so
+  // there is no second independent layer (the storage.objects RLS policies
+  // this used to pair with were dropped when Supabase Storage buckets were
+  // removed in favor of R2).
   await requirePermission("can_manage_packages");
 
   if (files.length === 0) {
@@ -76,15 +81,11 @@ export async function uploadPhotos(
   for (const [index, file] of files.entries()) {
     const buffer = Buffer.from(file.base64, "base64");
     const extension = extensionFromMimeType(file.type);
-    const storagePath = `${packageId}/photo-${Date.now()}-${index}.${extension}`;
+    const storagePath = `packages/${packageId}/photo-${Date.now()}-${index}.${extension}`;
 
-    const { error: uploadError } = await supabase.storage.from("package-photos").upload(
-      storagePath,
-      buffer,
-      { contentType: file.type, upsert: false }
-    );
-
-    if (uploadError) {
+    try {
+      await uploadObject(storagePath, buffer, file.type);
+    } catch {
       return { ok: false, error: GENERIC_ERROR_MESSAGE };
     }
 
@@ -147,11 +148,9 @@ export async function deletePhoto(photoId: string): Promise<ActionResult> {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
-  const { error: removeError } = await supabase.storage
-    .from("package-photos")
-    .remove([photo.storage_path]);
-
-  if (removeError) {
+  try {
+    await deleteObject(photo.storage_path);
+  } catch {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
