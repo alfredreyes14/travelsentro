@@ -55,8 +55,15 @@ async function writePackageChildren(
       description: day.description,
     })),
     p_inclusions: inclusionRows,
+    // Compatibility stopgap: package_travel_dates was renamed to
+    // travel_date_from/travel_date_to columns by a separate migration, but
+    // the admin form only collects a single date per entry pending the
+    // dedicated From/To range UI (see
+    // docs/superpowers/plans/2026-08-08-travel-dates-range.md) -- send the
+    // same value for both columns until that lands.
     p_travel_dates: values.travelDates.map((item) => ({
-      travel_date: item.date,
+      travel_date_from: item.date,
+      travel_date_to: item.date,
       additional_fee: item.additionalFee ?? null,
     })),
   });

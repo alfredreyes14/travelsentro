@@ -3,7 +3,7 @@
  * lib/storage/image-url.ts work end-to-end against a real R2 bucket:
  * uploads a disposable test object, fetches its public URL and checks the
  * bytes round-trip correctly, deletes it, then confirms the delete took
- * effect. Always attempts cleanup in a finally block, mirroring
+ * effect. Always attempts cleanup on any failure path, mirroring
  * scripts/verify-permission-denial.ts's disposable-resource convention.
  *
  * Run via `npm run verify:r2-storage` (-> `tsx --env-file=.env.local

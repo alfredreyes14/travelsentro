@@ -7,6 +7,19 @@ import type { ActionResult } from "@/lib/action-result";
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
+// Server Action arguments aren't runtime-type-checked at the network
+// boundary -- a client can POST any string here regardless of what the
+// exported function's TypeScript signature says. All site-content images
+// share a single R2 bucket with no per-folder RLS (that protection was
+// Supabase Storage-specific and no longer exists), so this allow-list is the
+// only thing keeping these functions scoped to their own folders.
+const ALLOWED_FOLDERS = [
+  "hero-slides",
+  "testimonials",
+  "partners",
+  "destinations",
+] as const;
+
 export type UploadImageInput = {
   name: string;
   type: string;
@@ -34,6 +47,10 @@ export async function uploadSiteContentImage(
 ): Promise<ActionResult & { storagePath?: string }> {
   await requirePermission("can_manage_packages");
 
+  if (!ALLOWED_FOLDERS.includes(folder)) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
   const buffer = Buffer.from(file.base64, "base64");
   const extension = extensionFromMimeType(file.type);
   const storagePath = `${folder}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${extension}`;
@@ -59,6 +76,14 @@ export async function deleteSiteContentImage(
   storagePath: string
 ): Promise<ActionResult> {
   await requirePermission("can_manage_packages");
+
+  const isWithinAllowedFolder = ALLOWED_FOLDERS.some((folder) =>
+    storagePath.startsWith(`${folder}/`)
+  );
+
+  if (!isWithinAllowedFolder) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
 
   try {
     await deleteObject(storagePath);

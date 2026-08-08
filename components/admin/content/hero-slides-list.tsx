@@ -315,11 +315,10 @@ function HeroSlideRow({
         <TooltipContent>Drag to reorder</TooltipContent>
       </Tooltip>
 
-      {/* Plain <img>, not next/image -- the site-content Storage bucket
-          isn't in next.config.ts's Image Optimizer remotePatterns (scoped
-          only to package-photos), and extending that allowlist is out of
-          this plan's file scope; a raw <img> thumbnail needs no such
-          allowlisting and is fine for this admin-only list row. */}
+      {/* Plain <img>, not next/image -- R2's hostname is allow-listed in
+          next.config.ts's remotePatterns now, but this admin-only list row
+          thumbnail doesn't need next/image's optimization/lazy-loading, so
+          it's kept as a plain <img> intentionally. */}
       {item.imageUrl ? (
         <div className="relative size-16 shrink-0 overflow-hidden rounded-md bg-secondary/10">
           <img src={item.imageUrl} alt="" className="size-full object-cover" />

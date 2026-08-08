@@ -5,5 +5,8 @@
  * upload, before any server refetch.
  */
 export function getPublicImageUrl(key: string): string {
-  return `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${key}`;
+  // Strip a trailing slash so a dashboard-copied base URL (which sometimes
+  // includes one) doesn't produce a broken double-slash URL.
+  const base = process.env.NEXT_PUBLIC_R2_PUBLIC_URL!.replace(/\/$/, "");
+  return `${base}/${key}`;
 }

@@ -316,9 +316,17 @@ async function seedPackage(pkg: SeedPackage, destinationIdBySlug: Map<string, st
     destination_id: destinationIdBySlug.get(pkg.destinationSlug) ?? null,
   }
 
+  // Cast to the generated Insert type: codegen marks `slug` required since it
+  // has no SQL-level DEFAULT, but it doesn't model the BEFORE INSERT trigger
+  // that fills `slug` before the NOT NULL constraint is checked (see comment
+  // above) -- this is a type-only fix, not a runtime change.
   const { data: pkgRow, error: pkgError } = existing
     ? await supabase.from('packages').update(payload).eq('id', existing.id).select().single()
-    : await supabase.from('packages').insert(payload).select().single()
+    : await supabase
+        .from('packages')
+        .insert(payload as Database['public']['Tables']['packages']['Insert'])
+        .select()
+        .single()
 
   if (pkgError || !pkgRow) {
     throw new Error(`Failed to upsert package "${pkg.name}": ${pkgError?.message}`)

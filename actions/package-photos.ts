@@ -33,15 +33,19 @@ function extensionFromMimeType(type: string): string {
  * package_photos row insert per file — mirrors scripts/seed.ts lines
  * 265-289), appending after the current max display_order. Unlike the seed
  * script's fixed `photo-N.jpg` naming, each upload gets a unique path
- * (`${packageId}/photo-${timestamp}-${index}.${ext}`) since photos are added
- * incrementally here, not all at once.
+ * (`packages/${packageId}/photo-${timestamp}-${index}.${ext}`) since photos
+ * are added incrementally here, not all at once.
  */
 export async function uploadPhotos(
   packageId: string,
   files: UploadPhotoInput[]
 ): Promise<ActionResult & { photos?: UploadedPhoto[] }> {
-  // AUTH-05 — gate independent of D-13's nav hiding; storage.objects RLS
-  // (02-01 migration) is the second independent layer (T-02-21).
+  // AUTH-05 — gate independent of D-13's nav hiding. This is now the sole
+  // authorization check on this write path: images live on R2, accessed via
+  // a single full-access credential rather than per-request Storage RLS, so
+  // there is no second independent layer (the storage.objects RLS policies
+  // this used to pair with were dropped when Supabase Storage buckets were
+  // removed in favor of R2).
   await requirePermission("can_manage_packages");
 
   if (files.length === 0) {
