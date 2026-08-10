@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { HeroCarousel, type HeroSlideDisplay } from "@/components/homepage/hero-carousel";
+import { HeroSearchBar } from "@/components/homepage/hero-search-bar";
 import { WhyChooseUs } from "@/components/homepage/why-choose-us";
 import { FeaturedPackagesGrid } from "@/components/homepage/featured-packages-grid";
 import { DestinationsSection } from "@/components/homepage/destinations-section";
@@ -219,7 +220,17 @@ export default async function HomePage() {
 
   return (
     <>
-      <HeroCarousel slides={slides} />
+      <div className="relative">
+        <HeroCarousel slides={slides} />
+        <div className="pointer-events-none absolute inset-x-0 top-4 z-20 px-4 sm:top-6 sm:px-8">
+          <div className="pointer-events-auto mx-auto max-w-4xl">
+            <HeroSearchBar
+              local={localDestinations}
+              international={internationalDestinations}
+            />
+          </div>
+        </div>
+      </div>
       <WhyChooseUs />
       <FeaturedPackagesGrid items={featuredItems} />
       <DestinationsSection
