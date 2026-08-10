@@ -38,9 +38,11 @@ const GENERIC_ERROR_MESSAGE =
 export function InquiryForm({
   packageName,
   packageId,
+  defaultMessage,
 }: {
   packageName?: string;
   packageId?: string;
+  defaultMessage?: string;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Stable across a rapid double-click (only rotated after a successful
@@ -56,7 +58,7 @@ export function InquiryForm({
       name: "",
       email: "",
       phone: "",
-      message: "",
+      message: defaultMessage ?? "",
       _gotcha: "",
     },
   });
