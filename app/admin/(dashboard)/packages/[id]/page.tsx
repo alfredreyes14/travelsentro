@@ -139,7 +139,7 @@ export default async function EditPackagePage({
           size="lg"
           render={<a href={`/admin/packages/${pkg.id}/pdf`} download />}
         >
-          Download PDF
+          Download Full Itinerary
         </Button>
       </PageHeader>
 

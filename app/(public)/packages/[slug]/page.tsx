@@ -159,7 +159,7 @@ export default async function PackageDetailPage({
 
       <PackageGallery photos={photos} />
 
-      <section className="flex flex-col gap-6 rounded-xl bg-secondary p-6 text-secondary-foreground shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+      <section className="flex flex-col gap-6 rounded-xl bg-secondary p-6 text-secondary-foreground shadow-sm">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2.5">
             <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
@@ -174,7 +174,7 @@ export default async function PackageDetailPage({
             usually reply within minutes.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-3 sm:shrink-0">
+        <div className="flex flex-wrap items-center gap-3">
           <WhatsAppCta packageName={pkg.name} variant="icon-label" />
           <FacebookCta packageName={pkg.name} variant="icon-label" />
           <PackagePdfCta slug={pkg.slug} variant="icon-label" />

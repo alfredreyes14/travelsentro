@@ -196,7 +196,7 @@ export function PackageListRow({
               <DropdownMenuItem
                 render={<a href={`/admin/packages/${item.id}/pdf`} download />}
               >
-                Download PDF
+                Download Full Itinerary
               </DropdownMenuItem>
               <DropdownMenuItem
                 variant="destructive"

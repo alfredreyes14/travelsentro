@@ -23,14 +23,14 @@ export function PackagePdfCta({
     <a
       href={`/packages/${slug}/pdf`}
       download
-      aria-label="Download PDF itinerary"
+      aria-label="Download Full Itinerary"
       className={cn(
         "relative z-10 inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 focus-visible:ring-3 focus-visible:ring-primary/50 focus-visible:outline-none",
         className
       )}
     >
       <FileDown className="size-5" aria-hidden="true" />
-      {variant === "icon-label" && <span>Download PDF</span>}
+      {variant === "icon-label" && <span>Download Full Itinerary</span>}
     </a>
   );
 }
