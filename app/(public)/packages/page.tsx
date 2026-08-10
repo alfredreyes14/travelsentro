@@ -187,6 +187,7 @@ export default async function PackagesPage({
             </p>
           </div>
           <InquiryForm
+            key={searchDescription ?? "all"}
             defaultMessage={
               searchDescription
                 ? `I couldn't find ${searchDescription} — I'd like to ask about a custom itinerary.`

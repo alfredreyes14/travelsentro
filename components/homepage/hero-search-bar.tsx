@@ -83,7 +83,7 @@ export function HeroSearchBar({
   return (
     <div
       className={cn(
-        "flex flex-col gap-4 rounded-2xl border-2 border-primary bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-0 sm:divide-x sm:divide-primary/25 sm:p-2",
+        "flex flex-col gap-4 rounded-2xl border-2 border-secondary bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:gap-0 sm:divide-x sm:divide-secondary/25 sm:p-2",
         className
       )}
     >
@@ -97,12 +97,12 @@ export function HeroSearchBar({
         >
           <ComboboxInputGroup className="h-auto rounded-none border-0 bg-transparent p-0 focus-within:ring-0">
             <MapPinIcon
-              className="size-4 shrink-0 text-secondary"
+              className="size-4 shrink-0 text-primary"
               aria-hidden="true"
             />
             <ComboboxInput
               placeholder="Destination"
-              className="p-0 text-sm font-semibold text-secondary placeholder:font-normal placeholder:text-muted-foreground"
+              className="p-0 text-sm font-semibold text-primary placeholder:font-normal placeholder:text-muted-foreground"
             />
           </ComboboxInputGroup>
 
@@ -136,9 +136,9 @@ export function HeroSearchBar({
           value={month ?? ""}
           onValueChange={(value) => setMonth(value || null)}
         >
-          <SelectTrigger className="h-auto w-full gap-1.5 rounded-none border-0 bg-transparent p-0 text-sm font-semibold text-secondary data-placeholder:font-normal data-placeholder:text-muted-foreground">
+          <SelectTrigger className="h-auto w-full gap-1.5 rounded-none border-0 bg-transparent p-0 text-sm font-semibold text-primary data-placeholder:font-normal data-placeholder:text-muted-foreground">
             <CalendarIcon
-              className="size-4 shrink-0 text-secondary"
+              className="size-4 shrink-0 text-primary"
               aria-hidden="true"
             />
             <SelectValue placeholder="Month" />
@@ -159,9 +159,9 @@ export function HeroSearchBar({
           value={year ?? ""}
           onValueChange={(value) => setYear(value || null)}
         >
-          <SelectTrigger className="h-auto w-full gap-1.5 rounded-none border-0 bg-transparent p-0 text-sm font-semibold text-secondary data-placeholder:font-normal data-placeholder:text-muted-foreground">
+          <SelectTrigger className="h-auto w-full gap-1.5 rounded-none border-0 bg-transparent p-0 text-sm font-semibold text-primary data-placeholder:font-normal data-placeholder:text-muted-foreground">
             <CalendarIcon
-              className="size-4 shrink-0 text-secondary"
+              className="size-4 shrink-0 text-primary"
               aria-hidden="true"
             />
             <SelectValue placeholder="Year" />
@@ -179,7 +179,7 @@ export function HeroSearchBar({
       <button
         type="button"
         onClick={handleSearch}
-        className="flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-secondary/70 transition-colors hover:text-secondary sm:ml-1"
+        className="flex h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold text-primary/70 transition-colors hover:text-primary sm:ml-1"
       >
         <SearchIcon className="size-4" aria-hidden="true" />
         Search
