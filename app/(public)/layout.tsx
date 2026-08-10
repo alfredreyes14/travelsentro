@@ -20,7 +20,7 @@ export default function PublicLayout({
         {children}
       </main>
 
-      <footer className="bg-secondary text-secondary-foreground">
+      <footer className="bg-primary text-primary-foreground">
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-6 py-8 text-sm sm:px-8">
           <p className="font-heading font-semibold">TravelSentro</p>
           <p>

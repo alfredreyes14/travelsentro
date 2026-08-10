@@ -159,17 +159,17 @@ export default async function PackageDetailPage({
 
       <PackageGallery photos={photos} />
 
-      <section className="flex flex-col gap-6 rounded-xl bg-secondary p-6 text-secondary-foreground shadow-sm">
+      <section className="flex flex-col gap-6 rounded-xl bg-primary p-6 text-primary-foreground shadow-sm">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2.5">
-            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-white/10">
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/15 text-secondary">
               <Send className="size-4" aria-hidden="true" />
             </span>
             <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
               Ready to Book This Trip?
             </h2>
           </div>
-          <p className="max-w-sm text-[14px] leading-[1.5] text-secondary-foreground/70">
+          <p className="max-w-sm text-[14px] leading-[1.5] text-primary-foreground/70">
             Message us on WhatsApp or Facebook about the {pkg.name} — we
             usually reply within minutes.
           </p>
