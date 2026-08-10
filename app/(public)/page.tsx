@@ -222,8 +222,8 @@ export default async function HomePage() {
     <>
       <div className="relative">
         <HeroCarousel slides={slides} />
-        <div className="pointer-events-none absolute inset-x-0 top-4 z-20 px-4 sm:top-6 sm:px-8">
-          <div className="pointer-events-auto mx-auto max-w-4xl">
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center px-4 sm:px-8">
+          <div className="pointer-events-auto w-full max-w-4xl">
             <HeroSearchBar
               local={localDestinations}
               international={internationalDestinations}
