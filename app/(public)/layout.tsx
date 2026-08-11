@@ -7,6 +7,15 @@ export default function PublicLayout({
 }>) {
   return (
     <>
+      {/* Reveal (components/motion/reveal.tsx) starts content at
+          opacity-0 until an IntersectionObserver confirms it's in view --
+          that initial hidden state is baked into the server-rendered HTML,
+          so a visitor without JavaScript would otherwise never see it
+          revealed. This forces it visible whenever scripting is off. */}
+      <noscript>
+        <style>{`.reveal { opacity: 1 !important; transform: none !important; }`}</style>
+      </noscript>
+
       <a
         href="#main-content"
         className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-2 focus-visible:left-2 focus-visible:z-50 focus-visible:rounded-md focus-visible:bg-primary focus-visible:px-4 focus-visible:py-2 focus-visible:text-sm focus-visible:font-medium focus-visible:text-primary-foreground"
