@@ -18,9 +18,9 @@ export default function HomeLoading() {
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }, (_, i) => (
               <div key={i} className="flex flex-col gap-3">
-                <Skeleton className="size-12 rounded-full" />
-                <Skeleton className="h-5 w-3/4" />
-                <Skeleton className="h-4 w-full" />
+                <Skeleton className="size-12 rounded-full ring-1 ring-foreground/10" />
+                <Skeleton className="h-5 w-3/4 ring-1 ring-foreground/10" />
+                <Skeleton className="h-4 w-full ring-1 ring-foreground/10" />
               </div>
             ))}
           </div>

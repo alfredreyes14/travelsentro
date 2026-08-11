@@ -54,11 +54,11 @@ export function FeaturedPackagesGrid({
           <PackageCard key={item.pkg.id} pkg={item.pkg} photoUrl={item.photoUrl} />
         ))}
       </div>
-      <div>
+      <div className="flex justify-center">
         <Button
           render={<Link href="/packages" />}
           nativeButton={false}
-          variant="outline"
+          variant="default"
           size="lg"
         >
           View All Packages

@@ -72,7 +72,10 @@ export function PackageCard({
       />
 
       {pkg.is_featured && (
-        <Badge className="pointer-events-none relative col-start-1 row-start-1 m-3 self-start justify-self-start shadow-sm">
+        <Badge
+          variant="secondary"
+          className="pointer-events-none relative col-start-1 row-start-1 m-3 self-start justify-self-start shadow-sm"
+        >
           Featured
         </Badge>
       )}
@@ -93,7 +96,7 @@ export function PackageCard({
                 ₱{pkg.price_per_pax.toLocaleString("en-PH")}
               </span>
             ) : null}
-            <Badge>
+            <Badge variant="secondary">
               ₱
               {(
                 pkg.price_per_pax - (pkg.discount_amount ?? 0)
