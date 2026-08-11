@@ -99,6 +99,7 @@ export function TestimonialsSection({
                 <AvatarImage
                   src={testimonial.photoUrl}
                   alt={testimonial.customerName}
+                  className="transition-opacity duration-300 data-starting-style:opacity-0"
                 />
               ) : (
                 <AvatarFallback>
