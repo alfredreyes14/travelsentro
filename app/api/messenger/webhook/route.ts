@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     return new Response("Forbidden", { status: 403 });
   }
 
-  const payload = JSON.parse(rawBody) as {
+  type WebhookPayload = {
     entry?: Array<{
       messaging?: Array<{
         sender?: { id?: string };
@@ -66,6 +66,14 @@ export async function POST(request: Request) {
       }>;
     }>;
   };
+
+  let payload: WebhookPayload;
+  try {
+    payload = JSON.parse(rawBody) as WebhookPayload;
+  } catch (err) {
+    console.error("Messenger webhook: malformed JSON body", err);
+    return Response.json({ ok: true });
+  }
 
   for (const entry of payload.entry ?? []) {
     for (const event of entry.messaging ?? []) {
