@@ -3,6 +3,7 @@ import { MapPin } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FadeImg } from "@/components/motion/fade-image";
 
 export type DestinationTile = {
   id: string;
@@ -22,11 +23,13 @@ function DestinationCard({ destination }: { destination: DestinationTile }) {
           // Plain <img>, not next/image -- R2's hostname is allow-listed in
           // next.config.ts's remotePatterns now, but this thumbnail doesn't
           // need next/image's optimization/lazy-loading; kept as a plain
-          // <img> intentionally, not a leftover constraint.
-          <img
+          // <img> intentionally, not a leftover constraint. FadeImg
+          // (components/motion/fade-image.tsx) mirrors that same
+          // plain-<img> choice while adding a load-fade-in.
+          <FadeImg
             src={destination.photoUrl}
             alt={destination.name}
-            className="size-full object-cover transition-transform group-hover:scale-105"
+            className="size-full object-cover group-hover:scale-105"
           />
         ) : (
           <div className="flex size-full items-center justify-center">
