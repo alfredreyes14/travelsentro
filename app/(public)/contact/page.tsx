@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ViewTransition } from "react";
 
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
@@ -12,30 +13,32 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-12 sm:px-8 lg:py-16">
-      <div className="flex flex-col gap-2">
-        <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
-          Contact Us
-        </h1>
-        <p className="text-base leading-[1.5] text-muted-foreground">
-          Have a question that isn&apos;t about a specific package? Send us a
-          message and we&apos;ll get back to you soon — or reach out directly
-          on WhatsApp or Facebook.
-        </p>
-      </div>
+    <ViewTransition enter="slide-up" default="none">
+      <div className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-12 sm:px-8 lg:py-16">
+        <div className="flex flex-col gap-2">
+          <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
+            Contact Us
+          </h1>
+          <p className="text-base leading-[1.5] text-muted-foreground">
+            Have a question that isn&apos;t about a specific package? Send us
+            a message and we&apos;ll get back to you soon — or reach out
+            directly on WhatsApp or Facebook.
+          </p>
+        </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <WhatsAppCta variant="icon-label" />
-        <FacebookCta variant="icon-label" />
-      </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <WhatsAppCta variant="icon-label" />
+          <FacebookCta variant="icon-label" />
+        </div>
 
-      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-        <div className="h-px flex-1 bg-border" />
-        or send us a message
-        <div className="h-px flex-1 bg-border" />
-      </div>
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="h-px flex-1 bg-border" />
+          or send us a message
+          <div className="h-px flex-1 bg-border" />
+        </div>
 
-      <InquiryForm />
-    </div>
+        <InquiryForm />
+      </div>
+    </ViewTransition>
   );
 }
