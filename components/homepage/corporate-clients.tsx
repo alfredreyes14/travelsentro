@@ -1,4 +1,4 @@
-import Image from "next/image";
+import { FadeImage } from "@/components/motion/fade-image";
 
 export type ClientDisplay = {
   id: string;
@@ -37,7 +37,7 @@ export function CorporateClients({ clients }: { clients: ClientDisplay[] }) {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <Image
+                <FadeImage
                   src={client.logoUrl}
                   alt=""
                   width={120}
@@ -46,7 +46,7 @@ export function CorporateClients({ clients }: { clients: ClientDisplay[] }) {
                 />
               </a>
             ) : (
-              <Image
+              <FadeImage
                 key={client.id}
                 src={client.logoUrl}
                 alt=""
