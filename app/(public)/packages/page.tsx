@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ViewTransition } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
@@ -151,8 +152,9 @@ export default async function PackagesPage({
   const hasAnyFilter = Boolean(destinationSlug) || hasDateFilter;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8 lg:py-16">
-      <div className="flex flex-col gap-2">
+    <ViewTransition enter="slide-up" default="none">
+      <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8 lg:py-16">
+        <div className="flex flex-col gap-2">
         <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
           {searchDescription
             ? `Packages for ${searchDescription}`
@@ -209,6 +211,7 @@ export default async function PackagesPage({
           })}
         </div>
       )}
-    </div>
+      </div>
+    </ViewTransition>
   );
 }
