@@ -19,7 +19,8 @@
     "verify:package-pdf": "tsx --env-file=.env.local scripts/verify-package-pdf.ts",
     "verify:public-package-pdf": "tsx --env-file=.env.local scripts/verify-public-package-pdf.ts",
     "verify:admin-package-pdf": "tsx --env-file=.env.local scripts/verify-admin-package-pdf.ts",
-    "verify:messenger-link": "tsx scripts/verify-messenger-link.ts"
+    "verify:messenger-link": "tsx scripts/verify-messenger-link.ts",
+    "verify:messenger-webhook": "tsx scripts/verify-messenger-webhook.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1105.0",
