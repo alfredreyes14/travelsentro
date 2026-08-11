@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -39,10 +39,12 @@ export function InquiryForm({
   packageName,
   packageId,
   defaultMessage,
+  heading,
 }: {
   packageName?: string;
   packageId?: string;
   defaultMessage?: string;
+  heading?: ReactNode;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Stable across a rapid double-click (only rotated after a successful
@@ -94,6 +96,8 @@ export function InquiryForm({
         className="flex flex-col gap-4 rounded-xl border border-foreground/10 bg-card p-6 shadow-sm"
         noValidate
       >
+        {heading}
+
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}

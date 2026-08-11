@@ -225,8 +225,13 @@ export default async function HomePage() {
       <div>
         <div className="relative">
           <HeroCarousel slides={slides} />
-          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4 sm:px-8">
-            <div className="pointer-events-auto w-full max-w-4xl">
+          {/* Below md, the hero is a tall aspect-[4/5] image and the search
+              card stacks into a taller column — centering it as an overlay
+              covers the bottom-anchored headline. So it flows in normal
+              document order on mobile and only becomes an absolute overlay
+              once the hero switches to the short aspect-video layout. */}
+          <div className="px-4 py-4 sm:px-8 sm:py-6 md:pointer-events-none md:absolute md:inset-0 md:z-20 md:flex md:items-center md:justify-center md:p-8">
+            <div className="mx-auto w-full max-w-4xl md:pointer-events-auto">
               <HeroSearchBar
                 local={localDestinations}
                 international={internationalDestinations}

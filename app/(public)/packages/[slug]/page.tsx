@@ -12,13 +12,12 @@ import {
   Mail,
   Route,
   Send,
-  type LucideIcon,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { Checklist } from "@/components/packages/checklist";
 import { ItineraryAccordion } from "@/components/packages/itinerary-accordion";
 import { PackageGallery } from "@/components/packages/package-gallery";
@@ -32,34 +31,6 @@ import type { Database } from "@/types/database";
 
 const SECTION_CARD =
   "flex flex-col gap-4 rounded-xl border border-foreground/10 bg-card p-6 shadow-sm";
-
-function SectionHeading({
-  icon: Icon,
-  tone = "secondary",
-  children,
-}: {
-  icon: LucideIcon;
-  tone?: "secondary" | "destructive";
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <span
-        className={cn(
-          "flex size-8 shrink-0 items-center justify-center rounded-lg",
-          tone === "destructive"
-            ? "bg-destructive/10 text-destructive"
-            : "bg-secondary/10 text-secondary"
-        )}
-      >
-        <Icon className="size-4" aria-hidden="true" />
-      </span>
-      <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
-        {children}
-      </h2>
-    </div>
-  );
-}
 
 type PackageDetail = Database["public"]["Tables"]["packages"]["Row"] & {
   package_photos: Database["public"]["Tables"]["package_photos"]["Row"][];

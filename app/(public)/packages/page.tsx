@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Mail, SearchX } from "lucide-react";
 import { ViewTransition } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { PackageCard } from "@/components/packages/package-card";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { MONTH_OPTIONS } from "@/lib/months";
 import type { Database } from "@/types/database";
@@ -154,63 +156,74 @@ export default async function PackagesPage({
   return (
     <ViewTransition enter="slide-up" default="none">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8 lg:py-16">
-        <div className="flex flex-col gap-2">
-        <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
-          {searchDescription
-            ? `Packages for ${searchDescription}`
-            : "Tour Packages"}
-        </h1>
-        <p className="max-w-xl text-base leading-[1.5] text-muted-foreground">
-          Browse our tour packages and reach out on WhatsApp or Facebook to
-          start planning your trip.
-        </p>
-        {hasAnyFilter ? (
-          <Link
-            href="/packages"
-            className="w-fit text-sm text-primary underline underline-offset-2"
-          >
-            Clear filter
-          </Link>
-        ) : null}
-      </div>
-
-      {rows.length === 0 ? (
-        <div className="flex flex-col gap-4 rounded-xl bg-card p-8 ring-1 ring-foreground/10">
-          <div className="flex flex-col gap-2 text-center">
-            <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
+        {rows.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
               {searchDescription
-                ? `No packages found for ${searchDescription}`
-                : "No packages available right now"}
-            </h2>
-            <p className="text-base leading-[1.5] text-muted-foreground">
-              {searchDescription
-                ? "We don't have a ready-made package matching that search, but we'd love to build one for you — send us the details below."
-                : "Check back soon, or send us a message below and we'll help you plan your trip."}
+                ? `Packages for ${searchDescription}`
+                : "Tour Packages"}
+            </h1>
+            <p className="max-w-xl text-base leading-[1.5] text-muted-foreground">
+              Browse our tour packages and reach out on WhatsApp or Facebook
+              to start planning your trip.
             </p>
+            {hasAnyFilter ? (
+              <Link
+                href="/packages"
+                className="w-fit text-sm text-primary underline underline-offset-2"
+              >
+                Clear filter
+              </Link>
+            ) : null}
           </div>
-          <InquiryForm
-            key={searchDescription ?? "all"}
-            defaultMessage={
-              searchDescription
-                ? `I couldn't find ${searchDescription} — I'd like to ask about a custom itinerary.`
-                : undefined
-            }
-          />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {rows.map((pkg) => {
-            const [firstPhoto] = [...pkg.package_photos].sort(
-              (a, b) => a.display_order - b.display_order
-            );
-            const photoUrl = firstPhoto
-              ? getPublicImageUrl(firstPhoto.storage_path)
-              : null;
+        ) : null}
 
-            return <PackageCard key={pkg.id} pkg={pkg} photoUrl={photoUrl} />;
-          })}
-        </div>
-      )}
+        {rows.length === 0 ? (
+          <div className="flex flex-col gap-8">
+            <div className="flex flex-col items-center gap-3 text-center">
+              <span className="flex size-14 items-center justify-center rounded-full bg-secondary/10 text-secondary">
+                <SearchX className="size-7" aria-hidden="true" />
+              </span>
+              <div className="flex flex-col gap-2">
+                <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
+                  {searchDescription
+                    ? `No packages found for ${searchDescription}`
+                    : "No packages available right now"}
+                </h2>
+                <p className="text-base leading-[1.5] text-muted-foreground">
+                  {searchDescription
+                    ? "We don't have a ready-made package matching that search, but we'd love to build one for you — send us the details below."
+                    : "Check back soon, or send us a message below and we'll help you plan your trip."}
+                </p>
+              </div>
+            </div>
+
+            <InquiryForm
+              key={searchDescription ?? "all"}
+              heading={
+                <SectionHeading icon={Mail}>Send us the details</SectionHeading>
+              }
+              defaultMessage={
+                searchDescription
+                  ? `I couldn't find ${searchDescription} — I'd like to ask about a custom itinerary.`
+                  : undefined
+              }
+            />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {rows.map((pkg) => {
+              const [firstPhoto] = [...pkg.package_photos].sort(
+                (a, b) => a.display_order - b.display_order
+              );
+              const photoUrl = firstPhoto
+                ? getPublicImageUrl(firstPhoto.storage_path)
+                : null;
+
+              return <PackageCard key={pkg.id} pkg={pkg} photoUrl={photoUrl} />;
+            })}
+          </div>
+        )}
       </div>
     </ViewTransition>
   );
