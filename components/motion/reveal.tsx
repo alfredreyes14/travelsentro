@@ -25,16 +25,21 @@ export function Reveal({
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [isVisible, setIsVisible] = useState(false);
+  // Reduced-motion is read as useState's lazy initializer, not via a
+  // setState call inside the effect below -- doing it there would run
+  // synchronously during the effect body, which both triggers an avoidable
+  // extra render and trips this codebase's react-hooks/set-state-in-effect
+  // lint rule (see Deviations section: this was a bug in the plan's
+  // original example code, caught by `npm run lint` during Task 2).
+  const [isVisible, setIsVisible] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 
   useEffect(() => {
     const node = ref.current;
-    if (!node) return;
-
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setIsVisible(true);
-      return;
-    }
+    if (!node || isVisible) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -48,7 +53,7 @@ export function Reveal({
     observer.observe(node);
 
     return () => observer.disconnect();
-  }, []);
+  }, [isVisible]);
 
   return (
     <div
