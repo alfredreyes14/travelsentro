@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 
 import {
   Carousel,
@@ -11,6 +10,7 @@ import {
   CarouselPrevious,
 } from "@/components/ui/carousel";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { FadeImage } from "@/components/motion/fade-image";
 import { cn } from "@/lib/utils";
 
 type GalleryPhoto = { url: string; alt: string | null };
@@ -88,7 +88,7 @@ export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
                 hasHeroTile && index === 0 && "col-span-2 row-span-2"
               )}
             >
-              <Image
+              <FadeImage
                 src={photo.url}
                 alt={photo.alt ?? "Package photo"}
                 fill
@@ -102,7 +102,7 @@ export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
                         : "50vw"
                 }
                 preload={index === 0}
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                className="object-cover group-hover:scale-105"
               />
               {showMoreOverlay && (
                 <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-[15px] font-semibold text-white">
@@ -125,7 +125,7 @@ export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
               {photos.map((photo, index) => (
                 <CarouselItem key={photo.url}>
                   <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg">
-                    <Image
+                    <FadeImage
                       src={photo.url}
                       alt={photo.alt ?? `Photo ${index + 1}`}
                       fill
