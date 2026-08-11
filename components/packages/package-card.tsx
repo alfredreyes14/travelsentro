@@ -1,8 +1,8 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { FadeImage } from "@/components/motion/fade-image";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
 import type { Database } from "@/types/database";
@@ -47,12 +47,12 @@ export function PackageCard({
   return (
     <Card className="relative grid aspect-[4/5] overflow-hidden p-0 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-lg has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50">
       {photoUrl ? (
-        <Image
+        <FadeImage
           src={photoUrl}
           alt={pkg.name}
           fill
           sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-          className="col-start-1 row-start-1 object-cover transition-transform duration-300 ease-out motion-reduce:transition-none group-hover/card:scale-105"
+          className="col-start-1 row-start-1 object-cover ease-out motion-reduce:transition-none group-hover/card:scale-105"
         />
       ) : (
         <div className="col-start-1 row-start-1 flex items-center justify-center bg-secondary/10 text-sm text-muted-foreground">
