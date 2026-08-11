@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ViewTransition } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
@@ -10,6 +11,7 @@ import { DestinationsSection } from "@/components/homepage/destinations-section"
 import { TestimonialsSection } from "@/components/homepage/testimonials-section";
 import { BrandPartners } from "@/components/homepage/brand-partners";
 import { CorporateClients } from "@/components/homepage/corporate-clients";
+import { Reveal } from "@/components/motion/reveal";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
@@ -219,55 +221,70 @@ export default async function HomePage() {
   );
 
   return (
-    <>
-      <div className="relative">
-        <HeroCarousel slides={slides} />
-        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4 sm:px-8">
-          <div className="pointer-events-auto w-full max-w-4xl">
-            <HeroSearchBar
-              local={localDestinations}
-              international={internationalDestinations}
-            />
+    <ViewTransition enter="slide-up" default="none">
+      <div>
+        <div className="relative">
+          <HeroCarousel slides={slides} />
+          <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-4 sm:px-8">
+            <div className="pointer-events-auto w-full max-w-4xl">
+              <HeroSearchBar
+                local={localDestinations}
+                international={internationalDestinations}
+              />
+            </div>
           </div>
         </div>
+        <Reveal>
+          <WhyChooseUs />
+        </Reveal>
+        <Reveal>
+          <FeaturedPackagesGrid items={featuredItems} />
+        </Reveal>
+        <Reveal>
+          <DestinationsSection
+            local={localDestinations}
+            international={internationalDestinations}
+          />
+        </Reveal>
+        <Reveal>
+          <TestimonialsSection testimonials={testimonials} />
+        </Reveal>
+
+        <section className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-16 sm:px-8">
+          <div className="flex flex-col gap-2">
+            <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
+              We&apos;d Love to Hear From You
+            </span>
+            <h2 className="font-heading text-[28px] leading-[1.2] font-semibold">
+              Get in Touch
+            </h2>
+            <p className="text-base leading-[1.5] text-muted-foreground">
+              Message us directly for a fast reply, or send the details
+              below.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <WhatsAppCta variant="icon-label" />
+            <FacebookCta variant="icon-label" />
+          </div>
+
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <div className="h-px flex-1 bg-border" />
+            or send us a message
+            <div className="h-px flex-1 bg-border" />
+          </div>
+
+          <InquiryForm />
+        </section>
+
+        <Reveal>
+          <BrandPartners partners={brandPartners} />
+        </Reveal>
+        <Reveal>
+          <CorporateClients clients={corporateClients} />
+        </Reveal>
       </div>
-      <WhyChooseUs />
-      <FeaturedPackagesGrid items={featuredItems} />
-      <DestinationsSection
-        local={localDestinations}
-        international={internationalDestinations}
-      />
-      <TestimonialsSection testimonials={testimonials} />
-
-      <section className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-16 sm:px-8">
-        <div className="flex flex-col gap-2">
-          <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
-            We&apos;d Love to Hear From You
-          </span>
-          <h2 className="font-heading text-[28px] leading-[1.2] font-semibold">
-            Get in Touch
-          </h2>
-          <p className="text-base leading-[1.5] text-muted-foreground">
-            Message us directly for a fast reply, or send the details below.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
-          <WhatsAppCta variant="icon-label" />
-          <FacebookCta variant="icon-label" />
-        </div>
-
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
-          <div className="h-px flex-1 bg-border" />
-          or send us a message
-          <div className="h-px flex-1 bg-border" />
-        </div>
-
-        <InquiryForm />
-      </section>
-
-      <BrandPartners partners={brandPartners} />
-      <CorporateClients clients={corporateClients} />
-    </>
+    </ViewTransition>
   );
 }
