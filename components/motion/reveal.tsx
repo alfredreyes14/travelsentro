@@ -6,16 +6,21 @@ import { cn } from "@/lib/utils";
 
 /**
  * Fades + slides children up into view the first time they scroll into the
- * viewport (fires once, then stops observing). Renders children immediately
- * visible -- no observer, no animation classes -- when the visitor has
- * `prefers-reduced-motion: reduce` set.
+ * viewport (fires once, then stops observing). The `prefers-reduced-motion`
+ * override lives in app/globals.css (targeting the stable `reveal` class
+ * below), not here -- a JS-side check was tried and reverted: reading
+ * `matchMedia` via useState's lazy initializer made SSR and a
+ * reduced-motion client's first render disagree on className, a React
+ * hydration mismatch, and didn't actually suppress the animation class
+ * either. CSS handles it correctly and without that risk.
  *
- * The stable `reveal` class name is a hook for the no-JS safety net in
- * app/(public)/layout.tsx's <noscript> block, which forces full visibility
- * when scripting is disabled -- this component's hidden-until-observed
- * state is otherwise baked into the server-rendered HTML (it reflects
- * useState's initial value before any effect runs), so a visitor without
- * JavaScript would otherwise never see the content revealed.
+ * The stable `reveal` class name is also the hook for the no-JS safety net
+ * in app/(public)/layout.tsx's <noscript> block, which forces full
+ * visibility when scripting is disabled -- this component's
+ * hidden-until-observed state is otherwise baked into the server-rendered
+ * HTML (it reflects useState's initial value before any effect runs), so a
+ * visitor without JavaScript would otherwise never see the content
+ * revealed.
  */
 export function Reveal({
   children,
@@ -25,21 +30,11 @@ export function Reveal({
   className?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
-  // Reduced-motion is read as useState's lazy initializer, not via a
-  // setState call inside the effect below -- doing it there would run
-  // synchronously during the effect body, which both triggers an avoidable
-  // extra render and trips this codebase's react-hooks/set-state-in-effect
-  // lint rule (see Deviations section: this was a bug in the plan's
-  // original example code, caught by `npm run lint` during Task 2).
-  const [isVisible, setIsVisible] = useState(
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     const node = ref.current;
-    if (!node || isVisible) return;
+    if (!node) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -53,7 +48,7 @@ export function Reveal({
     observer.observe(node);
 
     return () => observer.disconnect();
-  }, [isVisible]);
+  }, []);
 
   return (
     <div

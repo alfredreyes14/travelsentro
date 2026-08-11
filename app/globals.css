@@ -187,3 +187,18 @@
     animation-delay: 0s !important;
   }
 }
+
+/* Reveal (components/motion/reveal.tsx) and FadeImage/FadeImg
+   (components/motion/fade-image.tsx) start their animated content at
+   opacity-0 until JS (IntersectionObserver / image load) flips it visible.
+   For reduced-motion users, skip the animation entirely and force the
+   fully-visible end state instead of just speeding it up. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .fade-image {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}

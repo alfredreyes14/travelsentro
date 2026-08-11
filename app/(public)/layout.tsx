@@ -7,13 +7,15 @@ export default function PublicLayout({
 }>) {
   return (
     <>
-      {/* Reveal (components/motion/reveal.tsx) starts content at
-          opacity-0 until an IntersectionObserver confirms it's in view --
-          that initial hidden state is baked into the server-rendered HTML,
-          so a visitor without JavaScript would otherwise never see it
-          revealed. This forces it visible whenever scripting is off. */}
+      {/* Reveal (components/motion/reveal.tsx) and FadeImage/FadeImg
+          (components/motion/fade-image.tsx) both start content at
+          opacity-0 until client-side JS (an IntersectionObserver, or an
+          image load event) confirms it's ready -- that initial hidden
+          state is baked into the server-rendered HTML, so a visitor
+          without JavaScript would otherwise never see it revealed. This
+          forces both visible whenever scripting is off. */}
       <noscript>
-        <style>{`.reveal { opacity: 1 !important; transform: none !important; }`}</style>
+        <style>{`.reveal, .fade-image { opacity: 1 !important; transform: none !important; }`}</style>
       </noscript>
 
       <a

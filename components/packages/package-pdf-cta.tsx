@@ -26,7 +26,7 @@ export function PackagePdfCta({
       download
       aria-label="Download Full Itinerary"
       className={cn(
-        "relative z-10 inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-secondary px-2.5 text-sm font-medium text-secondary-foreground transition-opacity hover:opacity-90 focus-visible:ring-3 focus-visible:ring-secondary/50 focus-visible:outline-none",
+        "relative z-10 inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-secondary px-2.5 text-sm font-medium text-secondary-foreground transition-[opacity,transform] duration-150 hover:opacity-90 active:scale-[0.98] focus-visible:ring-3 focus-visible:ring-secondary/50 focus-visible:outline-none",
         className
       )}
     >
