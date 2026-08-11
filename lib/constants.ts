@@ -3,6 +3,15 @@
 export const FACEBOOK_URL =
   "https://web.facebook.com/profile.php?id=61567102791951";
 
+// D-04 follow-up: the Page's Messenger vanity username, used to build
+// m.me deep links (numeric page IDs aren't a documented m.me format).
+export const FACEBOOK_PAGE_USERNAME = "travelsentroph";
+
+// Numeric Page ID — same page as FACEBOOK_URL/FACEBOOK_PAGE_USERNAME,
+// needed by the Graph API (which addresses the page by ID, not username)
+// for both sending messages and the one-time webhook subscription call.
+export const FACEBOOK_PAGE_ID = "61567102791951";
+
 // Package PDF export — business contact info for the printable itinerary's
 // footer, sourced verbatim from the official letterhead template
 // (public/Letter Head (TravelSentro).docx). No email/address constant

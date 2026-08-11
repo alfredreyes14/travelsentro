@@ -150,7 +150,11 @@ export default async function PackageDetailPage({
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <WhatsAppCta packageName={pkg.name} variant="icon-label" />
-          <FacebookCta packageName={pkg.name} variant="icon-label" />
+          <FacebookCta
+            packageName={pkg.name}
+            packageSlug={pkg.slug}
+            variant="icon-label"
+          />
           <PackagePdfCta slug={pkg.slug} variant="icon-label" />
         </div>
       </section>
@@ -239,7 +243,7 @@ export default async function PackageDetailPage({
         <InquiryForm packageName={pkg.name} packageId={pkg.id} />
       </div>
 
-        <StickyCtaBar packageName={pkg.name} />
+        <StickyCtaBar packageName={pkg.name} packageSlug={pkg.slug} />
       </div>
     </ViewTransition>
   );

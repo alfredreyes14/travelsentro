@@ -13,14 +13,24 @@ import { FacebookCta } from "@/components/packages/facebook-cta";
  * these icons mean; aria-label (set in each *Cta component) covers screen
  * readers here.
  */
-export function StickyCtaBar({ packageName }: { packageName: string }) {
+export function StickyCtaBar({
+  packageName,
+  packageSlug,
+}: {
+  packageName: string;
+  packageSlug: string;
+}) {
   return (
     <div
       className="fixed inset-x-0 bottom-0 z-20 flex items-center gap-2 border-t border-foreground/10 bg-background/95 p-3 backdrop-blur-sm sm:hidden"
       style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
     >
       <WhatsAppCta packageName={packageName} className="flex-1" />
-      <FacebookCta packageName={packageName} className="flex-1" />
+      <FacebookCta
+        packageName={packageName}
+        packageSlug={packageSlug}
+        className="flex-1"
+      />
     </div>
   );
 }

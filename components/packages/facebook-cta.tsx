@@ -1,9 +1,11 @@
-import { FACEBOOK_URL } from "@/lib/constants";
+import { buildMessengerLink } from "@/lib/messenger/link";
 import { cn } from "@/lib/utils";
 
 /**
- * Outbound-only link to TravelSentro's Facebook page (D-04). Plain anchor,
- * same shape as WhatsAppCta.
+ * Opens a direct Messenger chat with TravelSentro via m.me link (D-04 follow-up).
+ * Plain anchor, same shape as WhatsAppCta. The packageSlug is encoded as the
+ * `ref` query param so the webhook can look up which package the customer
+ * is inquiring about — the slug is never shown to the user.
  *
  * Unlike wa.me, Messenger's m.me links have no equivalent of WhatsApp's
  * `?text=` param — there's no way to pre-fill the chat composer with the
@@ -26,10 +28,12 @@ import { cn } from "@/lib/utils";
  */
 export function FacebookCta({
   packageName,
+  packageSlug,
   variant = "icon-only",
   className,
 }: {
   packageName?: string;
+  packageSlug?: string;
   variant?: "icon-only" | "icon-label";
   className?: string;
 }) {
@@ -39,12 +43,12 @@ export function FacebookCta({
 
   return (
     <a
-      href={FACEBOOK_URL}
+      href={buildMessengerLink(packageSlug)}
       target="_blank"
       rel="noopener noreferrer"
       aria-label={ariaLabel}
       className={cn(
-        "relative z-10 inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-[#1877F2] px-2.5 text-sm font-medium text-white transition-[opacity,transform] duration-150 hover:opacity-90 active:scale-[0.98] focus-visible:ring-3 focus-visible:ring-[#1877F2]/50 focus-visible:outline-none",
+        "relative z-10 inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-lg bg-[#1877F2] px-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90 focus-visible:ring-3 focus-visible:ring-[#1877F2]/50 focus-visible:outline-none",
         className
       )}
     >
