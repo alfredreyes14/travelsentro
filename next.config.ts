@@ -45,6 +45,12 @@ const nextConfig: NextConfig = {
       // single request never carries more than one photo's payload.
       bodySizeLimit: "10mb",
     },
+    // Enables React's <ViewTransition> (imported from "react") for the
+    // loading-skeleton -> content handoff and page-to-page crossfade -- see
+    // docs/superpowers/specs/2026-08-11-public-site-loading-error-motion-design.md.
+    // Progressive enhancement: browsers without View Transitions API
+    // support simply skip the animation, navigation still works normally.
+    viewTransition: true,
   },
   serverExternalPackages: ["@react-pdf/renderer"],
 };

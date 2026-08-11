@@ -137,3 +137,53 @@
     @apply font-sans;
   }
 }
+
+/* View Transitions (next.config.ts's experimental.viewTransition) -- the
+   string passed to <ViewTransition exit="..."/enter="..."> (React, imported
+   from "react") becomes a CSS class on the browser's
+   ::view-transition-old()/::view-transition-new() pseudo-elements. Used for
+   the loading.tsx skeleton -> real page content handoff, and (since Next.js
+   route navigations are themselves transitions) as the site's page-to-page
+   crossfade. See
+   docs/superpowers/specs/2026-08-11-public-site-loading-error-motion-design.md. */
+:root {
+  --vt-duration-exit: 150ms;
+  --vt-duration-enter: 210ms;
+}
+
+::view-transition-old(.slide-down) {
+  animation:
+    var(--vt-duration-exit) ease-out both vt-fade reverse,
+    var(--vt-duration-exit) ease-out both vt-slide-y reverse;
+}
+::view-transition-new(.slide-up) {
+  animation:
+    var(--vt-duration-enter) ease-in var(--vt-duration-exit) both vt-fade,
+    400ms ease-in-out both vt-slide-y;
+}
+
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes vt-slide-y {
+  from {
+    transform: translateY(10px);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
