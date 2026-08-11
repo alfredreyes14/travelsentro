@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { ViewTransition } from "react";
 import {
   ArrowLeft,
   Backpack,
@@ -25,6 +26,7 @@ import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
 import { PackagePdfCta } from "@/components/packages/package-pdf-cta";
 import { StickyCtaBar } from "@/components/packages/sticky-cta-bar";
+import { Reveal } from "@/components/motion/reveal";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import type { Database } from "@/types/database";
 
@@ -120,8 +122,9 @@ export default async function PackageDetailPage({
   );
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-10 px-6 pt-8 pb-28 sm:px-8 sm:pb-12 lg:pt-12 lg:pb-16">
-      <Link
+    <ViewTransition enter="slide-up" default="none">
+      <div className="mx-auto flex max-w-4xl flex-col gap-10 px-6 pt-8 pb-28 sm:px-8 sm:pb-12 lg:pt-12 lg:pb-16">
+        <Link
         href="/packages"
         className="inline-flex w-fit items-center gap-1.5 rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
       >
@@ -181,69 +184,83 @@ export default async function PackageDetailPage({
         </div>
       </section>
 
-      <section className={SECTION_CARD}>
-        <SectionHeading icon={ListChecks}>What&apos;s Included</SectionHeading>
-        <Checklist items={inclusions} kind="included" />
-      </section>
+        <Reveal>
+          <section className={SECTION_CARD}>
+            <SectionHeading icon={ListChecks}>
+              What&apos;s Included
+            </SectionHeading>
+            <Checklist items={inclusions} kind="included" />
+          </section>
+        </Reveal>
 
-      <section className={SECTION_CARD}>
-        <SectionHeading icon={ListX} tone="destructive">
-          What&apos;s Not Included
-        </SectionHeading>
-        <Checklist items={exclusions} kind="excluded" />
-      </section>
+        <Reveal>
+          <section className={SECTION_CARD}>
+            <SectionHeading icon={ListX} tone="destructive">
+              What&apos;s Not Included
+            </SectionHeading>
+            <Checklist items={exclusions} kind="excluded" />
+          </section>
+        </Reveal>
 
-      <section className={SECTION_CARD}>
-        <SectionHeading icon={Route}>Itinerary</SectionHeading>
-        <ItineraryAccordion days={pkg.itinerary_days} />
-      </section>
+        <Reveal>
+          <section className={SECTION_CARD}>
+            <SectionHeading icon={Route}>Itinerary</SectionHeading>
+            <ItineraryAccordion days={pkg.itinerary_days} />
+          </section>
+        </Reveal>
 
-      <section className={SECTION_CARD}>
-        <SectionHeading icon={Backpack}>What to Bring</SectionHeading>
-        <Checklist items={bringItems} kind="bring" />
-      </section>
+        <Reveal>
+          <section className={SECTION_CARD}>
+            <SectionHeading icon={Backpack}>What to Bring</SectionHeading>
+            <Checklist items={bringItems} kind="bring" />
+          </section>
+        </Reveal>
 
       {travelDates.length > 0 ? (
-        <section className={SECTION_CARD}>
-          <SectionHeading icon={CalendarDays}>Travel Dates</SectionHeading>
-          <ul className="flex flex-col gap-2">
-            {travelDates.map((date) => {
-              const formatDate = (value: string) =>
-                new Date(value).toLocaleDateString("en-PH", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                });
-              const label =
-                date.travel_date_from === date.travel_date_to
-                  ? formatDate(date.travel_date_from)
-                  : `${formatDate(date.travel_date_from)} – ${formatDate(date.travel_date_to)}`;
+        <Reveal>
+          <section className={SECTION_CARD}>
+            <SectionHeading icon={CalendarDays}>Travel Dates</SectionHeading>
+            <ul className="flex flex-col gap-2">
+              {travelDates.map((date) => {
+                const formatDate = (value: string) =>
+                  new Date(value).toLocaleDateString("en-PH", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  });
+                const label =
+                  date.travel_date_from === date.travel_date_to
+                    ? formatDate(date.travel_date_from)
+                    : `${formatDate(date.travel_date_from)} – ${formatDate(date.travel_date_to)}`;
 
-              return (
-                <li
-                  key={`${date.travel_date_from}-${date.travel_date_to}`}
-                  className="flex items-center justify-between gap-2 text-[14px] leading-[1.4] text-foreground"
-                >
-                  <span>{label}</span>
-                  {date.additional_fee ? (
-                    <Badge variant="outline">
-                      +&#8369;{date.additional_fee.toLocaleString("en-PH")}
-                    </Badge>
-                  ) : null}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+                return (
+                  <li
+                    key={`${date.travel_date_from}-${date.travel_date_to}`}
+                    className="flex items-center justify-between gap-2 text-[14px] leading-[1.4] text-foreground"
+                  >
+                    <span>{label}</span>
+                    {date.additional_fee ? (
+                      <Badge variant="outline">
+                        +&#8369;{date.additional_fee.toLocaleString("en-PH")}
+                      </Badge>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        </Reveal>
       ) : null}
 
       {pkg.remarks ? (
-        <section className={SECTION_CARD}>
-          <SectionHeading icon={Info}>Remarks</SectionHeading>
-          <p className="whitespace-pre-line text-base leading-[1.5] text-muted-foreground">
-            {pkg.remarks}
-          </p>
-        </section>
+        <Reveal>
+          <section className={SECTION_CARD}>
+            <SectionHeading icon={Info}>Remarks</SectionHeading>
+            <p className="whitespace-pre-line text-base leading-[1.5] text-muted-foreground">
+              {pkg.remarks}
+            </p>
+          </section>
+        </Reveal>
       ) : null}
 
       <div className="flex flex-col gap-4">
@@ -251,7 +268,8 @@ export default async function PackageDetailPage({
         <InquiryForm packageName={pkg.name} packageId={pkg.id} />
       </div>
 
-      <StickyCtaBar packageName={pkg.name} />
-    </div>
+        <StickyCtaBar packageName={pkg.name} />
+      </div>
+    </ViewTransition>
   );
 }
