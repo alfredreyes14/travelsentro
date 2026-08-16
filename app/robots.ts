@@ -20,8 +20,19 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
 
   // proxy.ts rewrites every route to the same coming-soon placeholder while
   // this is on, so every path would look like duplicate content to a
-  // crawler — block indexing entirely until the real site is live.
-  if (process.env.COMING_SOON_MODE === "true") return DISALLOW_ALL;
+  // crawler — block indexing entirely until the real site is live. The one
+  // exception is /privacy-policy: proxy.ts keeps it reachable regardless of
+  // this flag (Facebook app review needs it live), so it should stay
+  // crawlable too rather than being lumped in with the placeholder pages.
+  if (process.env.COMING_SOON_MODE === "true") {
+    return {
+      rules: {
+        userAgent: "*",
+        allow: "/privacy-policy",
+        disallow: "/",
+      },
+    };
+  }
 
   return {
     rules: {

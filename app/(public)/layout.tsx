@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { SiteHeader } from "@/components/layout/site-header";
 
 export default function PublicLayout({
@@ -38,6 +39,12 @@ export default function PublicLayout({
             &copy; {new Date().getFullYear()} TravelSentro. All rights
             reserved.
           </p>
+          <Link
+            href="/privacy-policy"
+            className="w-fit text-primary-foreground/80 underline underline-offset-2 hover:text-primary-foreground"
+          >
+            Privacy Policy
+          </Link>
         </div>
       </footer>
     </>

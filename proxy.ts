@@ -8,9 +8,13 @@ import { updateSession } from "@/lib/supabase/proxy";
 // ruleset while this flag is on, but only if the proxy doesn't rewrite the
 // request to the coming-soon HTML page before it gets there (which would
 // otherwise leave /robots.txt and /sitemap.xml serving unparseable HTML
-// instead of an actual disallow rule).
+// instead of an actual disallow rule). /privacy-policy also stays reachable
+// and crawlable — app/robots.ts explicitly allows it while this flag is on —
+// since it needs to be live for Facebook app review regardless of launch
+// status.
 const COMING_SOON_PATH = "/coming-soon";
 const SEO_FILE_PATHS = ["/robots.txt", "/sitemap.xml"];
+const ALWAYS_REACHABLE_PATHS = ["/privacy-policy"];
 
 export async function proxy(request: NextRequest) {
   if (process.env.COMING_SOON_MODE === "true") {
@@ -19,7 +23,8 @@ export async function proxy(request: NextRequest) {
       pathname === COMING_SOON_PATH ||
       pathname.startsWith("/admin") ||
       pathname.startsWith("/api") ||
-      SEO_FILE_PATHS.includes(pathname);
+      SEO_FILE_PATHS.includes(pathname) ||
+      ALWAYS_REACHABLE_PATHS.includes(pathname);
 
     if (!isExempt) {
       return NextResponse.rewrite(new URL(COMING_SOON_PATH, request.url));
