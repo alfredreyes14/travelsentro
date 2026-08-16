@@ -83,11 +83,26 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   }
 
+  // TEMPORARY DIAGNOSTIC (remove once live delivery shape is confirmed):
+  // logs the raw event shape so we can see exactly what Meta sends for a
+  // real click/message, since dashboard "Test" tools have proven unreliable
+  // as a stand-in for real delivery.
+  console.log("Messenger webhook raw payload:", rawBody);
+
   for (const entry of payload.entry ?? []) {
     for (const event of entry.messaging ?? []) {
       const senderId = event.sender?.id;
       const referral =
         event.referral ?? event.postback?.referral ?? event.message?.referral;
+
+      // TEMPORARY DIAGNOSTIC (remove once live delivery shape is confirmed):
+      console.log("Messenger webhook event:", {
+        senderId,
+        hasReferral: Boolean(referral),
+        ref: referral?.ref,
+        hasMessage: Boolean(event.message),
+        hasPostback: Boolean(event.postback),
+      });
 
       if (!senderId || !referral) {
         continue;
