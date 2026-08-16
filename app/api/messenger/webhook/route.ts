@@ -40,13 +40,20 @@ async function lookupPackageName(slug: string): Promise<string | null> {
 
 /**
  * Handles Messenger click/message events. Only ever reacts to the
- * referral itself (the m.me click, or -- for a visitor's very first-ever
- * interaction with the Page -- the "Get Started" postback that carries
- * the same referral data) -- never to anything typed afterward, per this
- * feature's "greeting only" scope decision. Meta requires a 200 response
- * within 5 seconds, so the actual send is deferred via after() -- ack
- * first, send second, matching app/api/inquiries/route.ts's D-02
- * discipline of never blocking the response on a side effect.
+ * referral itself -- the m.me click on a brand-new thread (delivered as a
+ * bare `referral` event), the "Get Started" postback for a visitor's
+ * very first-ever interaction (`postback.referral`), or, confirmed via
+ * live testing, a regular message sent in an *already-existing*
+ * conversation shortly after a fresh m.me click, which Meta delivers as
+ * a normal message event carrying `message.referral` instead of a
+ * standalone referral event. All three shapes are treated identically;
+ * anything with no referral in any of these three locations is still
+ * silently ignored, so a plain typed message with no referral context
+ * never gets a reply, per this feature's "greeting only" scope decision.
+ * Meta requires a 200 response within 5 seconds, so the actual send is
+ * deferred via after() -- ack first, send second, matching
+ * app/api/inquiries/route.ts's D-02 discipline of never blocking the
+ * response on a side effect.
  */
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -63,6 +70,7 @@ export async function POST(request: Request) {
         sender?: { id?: string };
         referral?: { ref?: string };
         postback?: { referral?: { ref?: string } };
+        message?: { referral?: { ref?: string } };
       }>;
     }>;
   };
@@ -78,7 +86,8 @@ export async function POST(request: Request) {
   for (const entry of payload.entry ?? []) {
     for (const event of entry.messaging ?? []) {
       const senderId = event.sender?.id;
-      const referral = event.referral ?? event.postback?.referral;
+      const referral =
+        event.referral ?? event.postback?.referral ?? event.message?.referral;
 
       if (!senderId || !referral) {
         continue;
