@@ -13,10 +13,16 @@ export const FACEBOOK_URL =
 // m.me deep links (numeric page IDs aren't a documented m.me format).
 export const FACEBOOK_PAGE_USERNAME = "travelsentroph";
 
-// Numeric Page ID — same page as FACEBOOK_URL/FACEBOOK_PAGE_USERNAME,
-// needed by the Graph API (which addresses the page by ID, not username)
-// for both sending messages and the one-time webhook subscription call.
-export const FACEBOOK_PAGE_ID = "61567102791951";
+// Numeric Page ID, needed by the Graph API (which addresses the page by ID,
+// not username) for both sending messages and the one-time webhook
+// subscription call. NOTE: confirmed via the Meta App Dashboard's "Generate
+// access tokens" panel to be the Page actually connected to the Messenger
+// app -- this differs from the ID embedded in FACEBOOK_URL above
+// (61567102791951), which predates this bot and was never itself verified
+// against the Graph API. That discrepancy is unresolved -- see conversation
+// notes; worth checking separately whether FACEBOOK_URL points at the
+// right Page.
+export const FACEBOOK_PAGE_ID = "446521218543410";
 
 // Package PDF export — business contact info for the printable itinerary's
 // footer, sourced verbatim from the official letterhead template
