@@ -1,3 +1,9 @@
+// Canonical production origin — SEO metadata (metadataBase, sitemap, robots,
+// JSON-LD, canonical URLs) all resolve against this so the domain lives in
+// exactly one place. staging.travelsentro.com is a separate, non-canonical
+// host and must never appear here.
+export const SITE_URL = "https://travelsentro.com";
+
 // D-04: TravelSentro's Facebook page — centralized here so every CTA and
 // future call site shares one constant instead of inlining the URL.
 export const FACEBOOK_URL =

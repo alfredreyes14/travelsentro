@@ -1,6 +1,7 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ViewTransition } from "react";
+import { ViewTransition, cache } from "react";
 import {
   ArrowLeft,
   Backpack,
@@ -27,6 +28,7 @@ import { PackagePdfCta } from "@/components/packages/package-pdf-cta";
 import { StickyCtaBar } from "@/components/packages/sticky-cta-bar";
 import { Reveal } from "@/components/motion/reveal";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
+import { SITE_URL } from "@/lib/constants";
 import type { Database } from "@/types/database";
 
 const SECTION_CARD =
@@ -39,18 +41,10 @@ type PackageDetail = Database["public"]["Tables"]["packages"]["Row"] & {
   package_travel_dates: Database["public"]["Tables"]["package_travel_dates"]["Row"][];
 };
 
-/**
- * Package detail page (PUBL-02/03/04/08, plus PUBL-05/06/07 wiring). Full
- * RSC query with joins, same `.eq('is_published', true)` server-side filter
- * as the list page (T-01-15) — an unpublished slug is indistinguishable
- * from a nonexistent one, both 404 identically via notFound().
- */
-export default async function PackageDetailPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
-  const { slug } = await params;
+// Shared between generateMetadata and the page component (both need the
+// same row) — React's cache() memoizes it per-request so the query only
+// runs once, same pattern the Next.js docs recommend for this exact split.
+const getPackageBySlug = cache(async (slug: string) => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -66,9 +60,72 @@ export default async function PackageDetailPage({
     .eq("is_published", true)
     .single();
 
-  if (error || !data) notFound();
+  if (error || !data) return null;
+  return data as PackageDetail;
+});
 
-  const pkg = data as PackageDetail;
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const pkg = await getPackageBySlug(slug);
+  if (!pkg) return {};
+
+  const price = pkg.price_per_pax - (pkg.discount_amount ?? 0);
+  const description = [
+    pkg.duration_label,
+    `from ₱${price.toLocaleString("en-PH")} per pax`,
+    pkg.remarks,
+  ]
+    .filter(Boolean)
+    .join(" — ")
+    .slice(0, 160);
+  const [firstPhoto] = [...pkg.package_photos].sort(
+    (a, b) => a.display_order - b.display_order
+  );
+  const imageUrl = firstPhoto
+    ? getPublicImageUrl(firstPhoto.storage_path)
+    : undefined;
+  const canonicalPath = `/packages/${pkg.slug}`;
+
+  return {
+    title: pkg.name,
+    description,
+    alternates: { canonical: canonicalPath },
+    openGraph: {
+      title: pkg.name,
+      description,
+      url: canonicalPath,
+      images: imageUrl
+        ? [{ url: imageUrl, alt: firstPhoto?.alt_text ?? pkg.name }]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: pkg.name,
+      description,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+  };
+}
+
+/**
+ * Package detail page (PUBL-02/03/04/08, plus PUBL-05/06/07 wiring). Full
+ * RSC query with joins, same `.eq('is_published', true)` server-side filter
+ * as the list page (T-01-15) — an unpublished slug is indistinguishable
+ * from a nonexistent one, both 404 identically via notFound().
+ */
+export default async function PackageDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const pkg = await getPackageBySlug(slug);
+
+  if (!pkg) notFound();
 
   const photos = [...pkg.package_photos]
     .sort((a, b) => a.display_order - b.display_order)
@@ -92,9 +149,38 @@ export default async function PackageDetailPage({
       a.travel_date_to.localeCompare(b.travel_date_to)
   );
 
+  // TouristTrip structured data (https://schema.org/TouristTrip) — lets
+  // search engines show price/availability directly in results for this
+  // specific package, on top of the site-wide TravelAgency JSON-LD in
+  // app/layout.tsx.
+  const packageJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TouristTrip",
+    name: pkg.name,
+    description: pkg.remarks || pkg.name,
+    image: photos.map((photo) => photo.url),
+    url: `${SITE_URL}/packages/${pkg.slug}`,
+    provider: {
+      "@type": "TravelAgency",
+      name: "TravelSentro",
+      url: SITE_URL,
+    },
+    offers: {
+      "@type": "Offer",
+      price: pkg.price_per_pax - (pkg.discount_amount ?? 0),
+      priceCurrency: "PHP",
+      availability: "https://schema.org/InStock",
+      url: `${SITE_URL}/packages/${pkg.slug}`,
+    },
+  };
+
   return (
     <ViewTransition enter="slide-up" default="none">
       <div className="mx-auto flex max-w-4xl flex-col gap-10 px-6 pt-8 pb-28 sm:px-8 sm:pb-12 lg:pt-12 lg:pb-16">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(packageJsonLd) }}
+        />
         <Link
         href="/packages"
         className="inline-flex w-fit items-center gap-1.5 rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
