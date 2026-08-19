@@ -62,7 +62,6 @@ export function HeroCarousel({ slides }: { slides: HeroSlideDisplay[] }) {
           priority
           className="object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-secondary/80 via-secondary/20 to-transparent" />
       </div>
     );
   }

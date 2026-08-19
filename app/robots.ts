@@ -20,17 +20,21 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
 
   // proxy.ts rewrites every route to the same coming-soon placeholder while
   // this is on, so every path would look like duplicate content to a
-  // crawler — block indexing entirely until the real site is live. The one
-  // exception is /privacy-policy: proxy.ts keeps it reachable regardless of
-  // this flag (Facebook app review needs it live), so it should stay
-  // crawlable too rather than being lumped in with the placeholder pages.
+  // crawler — block indexing entirely until the real site is live. Two
+  // exceptions: /privacy-policy (proxy.ts keeps it reachable regardless of
+  // this flag for Facebook app review) stays crawlable, and /sitemap.xml
+  // must stay allowed too — Search Console fetches the sitemap file itself
+  // before it can queue submitted URLs, so blocking it makes sitemap
+  // submission fail outright ("Invalid sitemap address") rather than just
+  // deferring indexing of what's inside it.
   if (process.env.COMING_SOON_MODE === "true") {
     return {
       rules: {
         userAgent: "*",
-        allow: "/privacy-policy",
+        allow: ["/privacy-policy", "/sitemap.xml"],
         disallow: "/",
       },
+      sitemap: `${SITE_URL}/sitemap.xml`,
     };
   }
 
