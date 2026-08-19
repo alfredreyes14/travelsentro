@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { ViewTransition } from "react";
 
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { HeroCarousel, type HeroSlideDisplay } from "@/components/homepage/hero-carousel";
 import { HeroSearchBar } from "@/components/homepage/hero-search-bar";
@@ -22,6 +22,14 @@ export const metadata: Metadata = {
   description:
     "Discover the Philippines with TravelSentro -- browse tour packages and reach out on WhatsApp, Facebook, or our inquiry form in under a minute.",
 };
+
+// Homepage content (hero slides, featured packages, testimonials,
+// destinations, partners) is identical for every visitor and admin-managed,
+// not per-request -- ISR lets it serve from cache instead of re-querying
+// Supabase 6x on every single request. Paired with lib/supabase/public.ts
+// (no cookies() call) so this route is actually eligible for static
+// rendering rather than being forced dynamic.
+export const revalidate = 60;
 
 type PackagePhotoRef = Pick<
   Database["public"]["Tables"]["package_photos"]["Row"],
@@ -55,19 +63,66 @@ function firstPhotoUrl(photos: PackagePhotoRef[]): string | null {
 }
 
 export default async function HomePage() {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
-  // (1) Hero slides -- package-linked or promo. hero_slides has
-  // unconditional public-read RLS but packages does not, so a package-type
-  // slide whose linked package has since been unpublished/soft-deleted
-  // comes back with `packages: null` under RLS -- filtered out below
-  // before render, never rendered broken (RESEARCH.md Pitfall 1).
-  const { data: rawSlides, error: slidesError } = await supabase
-    .from("hero_slides")
-    .select(
-      "*, packages(id, slug, name, is_published, deleted_at, package_photos(storage_path, display_order))"
-    )
-    .order("sort_order", { ascending: true });
+  // All six sections are independent reads (no query depends on another's
+  // result), so they run concurrently instead of as a 6-request waterfall.
+  const [
+    { data: rawSlides, error: slidesError },
+    { data: featuredData, error: featuredError },
+    { data: testimonialsData, error: testimonialsError },
+    { data: destinationsData, error: destinationsError },
+    { data: brandPartnersData, error: brandPartnersError },
+    { data: corporateClientsData, error: corporateClientsError },
+  ] = await Promise.all([
+    // (1) Hero slides -- package-linked or promo. hero_slides has
+    // unconditional public-read RLS but packages does not, so a
+    // package-type slide whose linked package has since been
+    // unpublished/soft-deleted comes back with `packages: null` under
+    // RLS -- filtered out below before render, never rendered broken
+    // (RESEARCH.md Pitfall 1).
+    supabase
+      .from("hero_slides")
+      .select(
+        "*, packages(id, slug, name, is_published, deleted_at, package_photos(storage_path, display_order))"
+      )
+      .order("sort_order", { ascending: true }),
+    // (3) Featured packages -- byte-identical query shape to
+    // app/(public)/packages/page.tsx, reusing the existing is_featured
+    // flag (D-04) as the only addition. Zero new curation mechanism.
+    supabase
+      .from("packages")
+      .select("*, package_photos(storage_path, display_order)")
+      .eq("is_published", true)
+      .eq("is_featured", true)
+      .order("sort_order", { ascending: true })
+      .limit(6),
+    // (4) Testimonials
+    supabase.from("testimonials").select("*").order("sort_order", { ascending: true }),
+    // (4.5) Destinations -- admin-managed, split into Local/International
+    // groups. Public read RLS already scopes this to is_active = true,
+    // but the query-layer filter is kept too, matching every other
+    // homepage section's belt-and-suspenders pattern (e.g. packages'
+    // is_published).
+    supabase
+      .from("destinations")
+      .select("*")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+    // (5) Brand partners and (6) corporate clients -- two fully
+    // independent queries/counts, one per partner_type, never a combined
+    // "any partner exists" check (RESEARCH.md Pitfall 3 / D-07).
+    supabase
+      .from("partners")
+      .select("*")
+      .eq("partner_type", "brand_partner")
+      .order("sort_order", { ascending: true }),
+    supabase
+      .from("partners")
+      .select("*")
+      .eq("partner_type", "corporate_client")
+      .order("sort_order", { ascending: true }),
+  ]);
 
   if (slidesError) {
     console.error("Failed to load hero slides:", slidesError.message);
@@ -103,17 +158,6 @@ export default async function HomePage() {
       };
     });
 
-  // (3) Featured packages -- byte-identical query shape to
-  // app/(public)/packages/page.tsx, reusing the existing is_featured flag
-  // (D-04) as the only addition. Zero new curation mechanism.
-  const { data: featuredData, error: featuredError } = await supabase
-    .from("packages")
-    .select("*, package_photos(storage_path, display_order)")
-    .eq("is_published", true)
-    .eq("is_featured", true)
-    .order("sort_order", { ascending: true })
-    .limit(6);
-
   if (featuredError) {
     console.error("Failed to load featured packages:", featuredError.message);
   }
@@ -124,12 +168,6 @@ export default async function HomePage() {
       photoUrl: firstPhotoUrl(pkg.package_photos),
     })
   );
-
-  // (4) Testimonials
-  const { data: testimonialsData, error: testimonialsError } = await supabase
-    .from("testimonials")
-    .select("*")
-    .order("sort_order", { ascending: true });
 
   if (testimonialsError) {
     console.error("Failed to load testimonials:", testimonialsError.message);
@@ -146,16 +184,6 @@ export default async function HomePage() {
         : null,
     })
   );
-
-  // (4.5) Destinations -- admin-managed, split into Local/International
-  // groups. Public read RLS already scopes this to is_active = true, but
-  // the query-layer filter is kept too, matching every other homepage
-  // section's belt-and-suspenders pattern (e.g. packages' is_published).
-  const { data: destinationsData, error: destinationsError } = await supabase
-    .from("destinations")
-    .select("*")
-    .eq("is_active", true)
-    .order("sort_order", { ascending: true });
 
   if (destinationsError) {
     console.error("Failed to load destinations:", destinationsError.message);
@@ -179,14 +207,6 @@ export default async function HomePage() {
     (d) => d.region === "international"
   );
 
-  // (5) Brand partners and (6) corporate clients -- two fully independent
-  // queries/counts, one per partner_type, never a combined "any partner
-  // exists" check (RESEARCH.md Pitfall 3 / D-07).
-  const { data: brandPartnersData, error: brandPartnersError } = await supabase
-    .from("partners").select("*")
-    .eq("partner_type", "brand_partner")
-    .order("sort_order", { ascending: true });
-
   if (brandPartnersError) {
     console.error("Failed to load brand partners:", brandPartnersError.message);
   }
@@ -198,12 +218,6 @@ export default async function HomePage() {
       linkUrl: partner.link_url,
     })
   );
-
-  const { data: corporateClientsData, error: corporateClientsError } =
-    await supabase
-      .from("partners").select("*")
-      .eq("partner_type", "corporate_client")
-      .order("sort_order", { ascending: true });
 
   if (corporateClientsError) {
     console.error(

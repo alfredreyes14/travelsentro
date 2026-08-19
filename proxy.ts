@@ -31,6 +31,16 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // updateSession() calls supabase.auth.getUser() -- a network round-trip
+  // to Supabase's Auth servers. Only /admin/* needs the session-refresh +
+  // unauthenticated-redirect behavior it provides, but the matcher below
+  // also runs this proxy for every public page request. Skipping it there
+  // saves a full auth round-trip for every anonymous visitor to the public
+  // site.
+  if (!request.nextUrl.pathname.startsWith("/admin")) {
+    return NextResponse.next();
+  }
+
   return updateSession(request);
 }
 
