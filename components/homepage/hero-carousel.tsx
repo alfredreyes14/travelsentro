@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/carousel";
 import { Button } from "@/components/ui/button";
 
-const DEFAULT_HERO_IMAGE = "/default-hero.PNG";
+const DEFAULT_HERO_IMAGE = "/default-hero.jpg";
 
 export type HeroSlideDisplay = {
   id: string;
@@ -53,7 +53,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlideDisplay[] }) {
 
   if (slides.length === 0) {
     return (
-      <div className="relative aspect-[4/5] w-full overflow-hidden md:aspect-video">
+      <div className="relative h-72 w-full overflow-hidden sm:h-96 lg:h-112">
         <Image
           src={DEFAULT_HERO_IMAGE}
           alt="TravelSentro"
