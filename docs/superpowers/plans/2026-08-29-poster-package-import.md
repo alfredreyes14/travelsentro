@@ -13,6 +13,7 @@
 ## Global Constraints
 
 - **Never invent data.** The model returns `null` for anything not printed on the poster. Every mapping rule prefers a flagged gap over a plausible guess.
+- **Nothing is dropped silently.** When a list row is discarded (a travel date with no year, an itinerary day missing its description), that field is flagged even if other rows survived. A partial import that looks complete is the feature's worst failure mode.
 - **Pricing direction is load-bearing.** The public site renders `price_per_pax - discount_amount` with `price_per_pax` struck through. A poster showing ~~₱6,999~~ ₱5,999 maps to `pricePerPax: 6999, discountAmount: 1000`. Inverting this misprices a live package.
 - **Nothing is written to the database by the import.** It fills the in-memory form only; `updatePackage` remains the sole write path.
 - **Add-only gate:** the button renders only when `pkg.destination_id === null` (never successfully saved). No migration, no new column, no URL param.
@@ -712,10 +713,14 @@ export function mapPosterToFormValues(
   if (remarks !== null) values.remarks = remarks;
 
   const travelDates: PackageFormValues["travelDates"] = [];
+  let droppedDateRows = 0;
   for (const row of raw.travelDates) {
     const from = row.dateFrom;
     const to = row.dateTo;
-    if (!isValidIsoDate(from) || !isValidIsoDate(to) || to < from) continue;
+    if (!isValidIsoDate(from) || !isValidIsoDate(to) || to < from) {
+      droppedDateRows += 1;
+      continue;
+    }
     const fee = row.additionalFee !== null ? Math.round(row.additionalFee) : null;
     travelDates.push({
       dateFrom: from,
@@ -725,6 +730,17 @@ export function mapPosterToFormValues(
   }
   if (travelDates.length > 0) {
     values.travelDates = travelDates;
+    // A partial drop is the case the banner exists for: some dates imported,
+    // others vanished. Staying silent here loses a departure the poster
+    // actually printed.
+    if (droppedDateRows > 0) {
+      flag(
+        "travelDates",
+        "Travel dates",
+        "travel-dates",
+        `${droppedDateRows} of ${raw.travelDates.length} date ranges on the poster couldn't be used (most often a missing year) and ${droppedDateRows === 1 ? "was" : "were"} dropped. Check the Travel Dates tab.`
+      );
+    }
   } else {
     flag(
       "travelDates",
@@ -744,6 +760,18 @@ export function mapPosterToFormValues(
     .filter((day) => day.title.length > 0 && day.description.length > 0);
   if (itinerary.length > 0) {
     values.itinerary = itinerary;
+    const droppedDays = raw.itinerary.length - itinerary.length;
+    // Same partial-drop reasoning as travel dates: an itinerary day missing
+    // its title or description silently vanishing is worse than a visible
+    // flag the admin can act on.
+    if (droppedDays > 0) {
+      flag(
+        "itinerary",
+        "Itinerary",
+        "itinerary",
+        `${droppedDays} day${droppedDays === 1 ? "" : "s"} on the poster ${droppedDays === 1 ? "was" : "were"} missing a title or description and ${droppedDays === 1 ? "was" : "were"} dropped. Check the Itinerary tab.`
+      );
+    }
   } else {
     flag(
       "itinerary",
@@ -1406,6 +1434,10 @@ const TAB_LABELS: Record<string, string> = {
  * packages empty state rather than the destructive palette -- an incomplete
  * import is a to-do list, not an error. The brand accent (--secondary) is
  * reserved for CTAs and badges, so it is deliberately not used here.
+ *
+ * The copy says "need your attention" rather than "couldn't be read":
+ * an entry can also mean a field was PARTLY read (2 of 3 travel dates
+ * imported), which "couldn't be read" would misdescribe.
  */
 export function PosterImportBanner() {
   const { extraction, isDismissed, dismiss } = usePosterImport();
@@ -1425,12 +1457,12 @@ export function PosterImportBanner() {
           <TriangleAlertIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <div className="flex flex-col gap-1">
             <h2 className="font-heading text-base leading-[1.3] font-semibold">
-              {count} field{count === 1 ? "" : "s"} couldn&apos;t be read from the
-              poster
+              {count} item{count === 1 ? "" : "s"} need{count === 1 ? "s" : ""} your
+              attention
             </h2>
             <p className="text-sm leading-[1.5] text-muted-foreground">
-              Everything else has been filled in below. Review it, complete the
-              items listed here, then save.
+              Everything the poster did supply has been filled in below. Review
+              it, then handle the items listed here before saving.
             </p>
           </div>
         </div>

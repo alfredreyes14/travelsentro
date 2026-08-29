@@ -111,10 +111,11 @@ Each rule below encodes a constraint `packageFormSchema` already enforces, so th
 - **Destination** — normalize (lowercase, trim, collapse whitespace) both sides, then: exact match → substring match (poster "Coron, Palawan" vs. row "Coron") → first comma-segment exact match. No match, or 2+ ambiguous matches, leaves `destinationId: ""` and flags the field, carrying the raw poster text in `reason` (e.g. *poster says "Coron, Palawan" — no matching destination; pick one or add it under Packages → Destinations*).
 - **Price per pax** — `Math.round()`, must be `> 0` (schema requires `.int().positive()`). Absent, zero, or negative → flagged.
 - **Discount** — derived as `originalPricePerPax - pricePerPax`, kept only when the result is `> 0` **and** `< pricePerPax` (the schema requires `.positive()` and refines `discountAmount < pricePerPax`). A non-positive result — which is what an inverted or equal pair of prices produces — is dropped and flagged.
-- **Travel dates** — a row survives only with both `dateFrom` and `dateTo` as valid `YYYY-MM-DD` and `dateTo >= dateFrom` (the schema's `.refine()`). All rows dropped → flagged.
+- **Travel dates** — a row survives only with both `dateFrom` and `dateTo` as valid `YYYY-MM-DD` and `dateTo >= dateFrom` (the schema's `.refine()`). Flagged whenever **any** row is dropped, not only when all of them are: a poster listing three departures that quietly imports two is exactly the loss the banner exists to prevent.
 - **Name / Duration** — trimmed; empty or null → flagged.
 - **Remarks** — trimmed; optional in the schema and **never flagged**, since most posters have no remarks-equivalent and flagging it would be noise in every single import.
-- **Itinerary / Inclusions / Exclusions / Bring items** — blank strings dropped; entries missing a title or description dropped; resulting empty array → flagged.
+- **Itinerary** — days missing a title or description are dropped; flagged whenever any day is dropped or none survive, for the same reason as travel dates.
+- **Inclusions / Exclusions / Bring items** — blank strings dropped; resulting empty array → flagged.
 
 ### Missing year on travel dates
 
