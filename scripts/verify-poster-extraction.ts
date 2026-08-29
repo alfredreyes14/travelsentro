@@ -413,4 +413,82 @@ function main(): void {
   if (failed > 0) process.exit(1);
 }
 
-main();
+/**
+ * Optional live check: `npm run verify:poster-extraction:live -- <path>`.
+ * Costs one real API call. Proves the SDK wiring, the prompt, and
+ * zodOutputFormat's Zod 4 compatibility -- none of which the offline checks
+ * above can reach. Requires ANTHROPIC_API_KEY, which the :live npm script
+ * supplies via `tsx --env-file=.env.local`.
+ */
+async function runLiveCheck(posterPath: string): Promise<void> {
+  const { readFile } = await import("node:fs/promises");
+  const Anthropic = (await import("@anthropic-ai/sdk")).default;
+  const { zodOutputFormat } = await import("@anthropic-ai/sdk/helpers/zod");
+  const { PosterExtractionSchema, buildPosterSystemPrompt } = await import(
+    "../lib/packages/poster-prompt"
+  );
+
+  const extension = posterPath.split(".").pop()?.toLowerCase();
+  const mediaType =
+    extension === "png"
+      ? "image/png"
+      : extension === "webp"
+        ? "image/webp"
+        : "image/jpeg";
+
+  const base64 = (await readFile(posterPath)).toString("base64");
+  const client = new Anthropic();
+
+  const response = await client.messages.parse({
+    model: process.env.POSTER_EXTRACTION_MODEL || "claude-opus-5",
+    max_tokens: 16000,
+    system: buildPosterSystemPrompt(DESTINATIONS.map((d) => d.name)),
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+          {
+            type: "text",
+            text: "Transcribe this tour package poster into the required structure.",
+          },
+        ],
+      },
+    ],
+    output_config: { format: zodOutputFormat(PosterExtractionSchema) },
+  });
+
+  if (!response.parsed_output) {
+    console.error("FAIL  Live extraction returned no parsed output.");
+    process.exit(1);
+  }
+
+  console.log("\nRaw extraction:\n");
+  console.log(JSON.stringify(response.parsed_output, null, 2));
+
+  const mapped = mapPosterToFormValues(response.parsed_output, DESTINATIONS);
+  console.log("\nMapped form values:\n");
+  console.log(JSON.stringify(mapped.values, null, 2));
+  console.log("\nUnmapped fields:\n");
+  for (const entry of mapped.unmapped) {
+    console.log(`  - ${entry.label} (${entry.tab}): ${entry.reason}`);
+  }
+  console.log(
+    `\nTokens: ${response.usage.input_tokens} in / ${response.usage.output_tokens} out\n`
+  );
+}
+
+const liveIndex = process.argv.indexOf("--live");
+if (liveIndex !== -1) {
+  const posterPath = process.argv[liveIndex + 1];
+  if (!posterPath) {
+    console.error("Usage: npm run verify:poster-extraction:live -- <poster-image-path>");
+    process.exit(1);
+  }
+  runLiveCheck(posterPath).catch((error) => {
+    console.error("Live check failed:", error);
+    process.exit(1);
+  });
+} else {
+  main();
+}
