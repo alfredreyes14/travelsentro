@@ -87,11 +87,6 @@ function matchDestination(
     };
   }
 
-  // "Coron / Palawan" where only the first segment is configured.
-  const firstSegment = normalize(needle.split(/[,/|]/)[0] ?? "");
-  const segment = destinations.filter((d) => normalize(d.name) === firstSegment);
-  if (segment.length === 1) return { id: segment[0].id };
-
   return {
     reason: `The poster says "${text}", which doesn't match any destination. Pick one on the Details tab, or add it under Packages -> Destinations.`,
   };
@@ -256,7 +251,9 @@ export function mapPosterToFormValues(
       "itinerary",
       "Itinerary",
       "itinerary",
-      "The poster doesn't show a day-by-day itinerary. Add days on the Itinerary tab."
+      raw.itinerary.length > 0
+        ? "The poster's itinerary days are missing a title or description, so they couldn't be used. Add them on the Itinerary tab."
+        : "The poster doesn't show a day-by-day itinerary. Add days on the Itinerary tab."
     );
   }
 

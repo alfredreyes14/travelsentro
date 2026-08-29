@@ -7,7 +7,10 @@
  *
  * Run via `npm run verify:poster-extraction`.
  */
-import { packageFormSchema } from "../components/admin/package-form-schema";
+import {
+  packageFormSchema,
+  EMPTY_DEFAULTS,
+} from "../components/admin/package-form-schema";
 import type { PosterExtraction } from "../lib/packages/poster-prompt";
 import { mapPosterToFormValues } from "../lib/packages/poster-mapping";
 
@@ -320,6 +323,33 @@ function checkPartialDrops(): void {
   );
 }
 
+// --- 7c. Itinerary banner distinguishes "absent" from "present but unusable"
+function checkItineraryPresentButUnusable(): void {
+  const { values, unmapped } = mapPosterToFormValues(
+    poster({
+      itinerary: [
+        { title: "Day 1", description: "" },
+        { title: "", description: "x" },
+      ],
+    }),
+    DESTINATIONS
+  );
+
+  const entry = unmapped.find((item) => item.field === "itinerary");
+  const pass =
+    values.itinerary === undefined &&
+    entry !== undefined &&
+    entry.reason.includes("missing a title or description") &&
+    !entry.reason.includes("doesn't show a day-by-day itinerary");
+  record(
+    "An itinerary whose every day is incomplete is flagged as unusable, not as absent",
+    pass,
+    pass
+      ? `reason: "${entry?.reason}"`
+      : `itinerary: ${JSON.stringify(values.itinerary)}, reason: "${entry?.reason ?? "(not flagged)"}"`
+  );
+}
+
 // --- 8. Remarks is optional and never flagged -----------------------------
 function checkRemarksNeverFlagged(): void {
   const { unmapped } = mapPosterToFormValues(emptyPoster(), DESTINATIONS);
@@ -356,23 +386,9 @@ function checkSchemaInvariant(): void {
     },
   ];
 
-  const EMPTY_FORM = {
-    name: "",
-    pricePerPax: 0,
-    discountAmount: undefined,
-    durationLabel: "",
-    destinationId: "",
-    remarks: "",
-    travelDates: [],
-    itinerary: [],
-    inclusions: [],
-    exclusions: [],
-    bringItems: [],
-  };
-
   for (const fixture of fixtures) {
     const { values, unmapped } = mapPosterToFormValues(fixture.value, DESTINATIONS);
-    const parsed = packageFormSchema.safeParse({ ...EMPTY_FORM, ...values });
+    const parsed = packageFormSchema.safeParse({ ...EMPTY_DEFAULTS, ...values });
     const failingFields = parsed.success
       ? []
       : [...new Set(parsed.error.issues.map((issue) => String(issue.path[0])))];
@@ -400,6 +416,7 @@ function main(): void {
   checkTravelDates();
   checkLists();
   checkPartialDrops();
+  checkItineraryPresentButUnusable();
   checkRemarksNeverFlagged();
   checkSchemaInvariant();
 

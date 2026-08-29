@@ -84,8 +84,32 @@ export async function extractPackageFromPoster(input: {
 
   const destinations = destinationRows ?? [];
 
+  // `new Anthropic()` with no key doesn't throw at construction, and the
+  // SDK's request-time failure is a plain Error (neither AuthenticationError
+  // nor APIError), so it would otherwise fall through to the generic catch
+  // branch below and produce a misleading "try again" message. Check first
+  // so a missing key on a fresh deploy (the single most likely first-deploy
+  // failure) surfaces the real cause.
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error(
+      "Poster extraction attempted with no ANTHROPIC_API_KEY configured."
+    );
+    return {
+      ok: false,
+      error:
+        "Poster import isn't configured yet. Please contact your administrator.",
+    };
+  }
+
   try {
-    const client = new Anthropic();
+    const client = new Anthropic({
+      // Bound wall-clock time: the SDK's default is a 10-minute timeout with
+      // maxRetries: 2, i.e. worst case ~30 minutes with the button stuck on
+      // "Reading poster..." and no cancel. Paired with maxDuration on the
+      // page this Server Action is invoked from.
+      timeout: 60_000,
+      maxRetries: 1,
+    });
 
     // No `thinking` and no `output_config.effort`: both are rejected by
     // claude-haiku-4-5, which POSTER_EXTRACTION_MODEL must stay able to
@@ -117,6 +141,13 @@ export async function extractPackageFromPoster(input: {
     });
 
     if (!response.parsed_output) {
+      // Genuinely reachable: e.g. a response whose only block is `thinking`
+      // (adaptive thinking hitting max_tokens: 16000). Without this
+      // breadcrumb, the "try a clearer image" copy misdirects an admin
+      // toward image quality when the real cause is a token cap.
+      console.error(
+        `Poster extraction produced no parsed_output (stop_reason: ${response.stop_reason})`
+      );
       return {
         ok: false,
         error:

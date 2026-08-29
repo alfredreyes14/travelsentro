@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { updatePackage } from "@/actions/packages";
 import {
   packageFormSchema,
+  EMPTY_DEFAULTS,
   type PackageFormValues,
 } from "./package-form-schema";
 import { PhotoManager, type PhotoManagerPhoto } from "./photo-manager";
@@ -54,20 +55,6 @@ const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
 export type PackageDestinationOption = { id: string; name: string };
-
-const EMPTY_DEFAULTS: PackageFormValues = {
-  name: "",
-  pricePerPax: 0,
-  discountAmount: undefined,
-  durationLabel: "",
-  destinationId: "",
-  remarks: "",
-  travelDates: [],
-  itinerary: [],
-  inclusions: [],
-  exclusions: [],
-  bringItems: [],
-};
 
 /**
  * Maps each tab's string value to the PackageFormValues field names rendered
@@ -175,9 +162,17 @@ export function PackageForm({
    * is different -- it mutates react-hook-form's internal store and
    * notifies subscribers -- so it alone stays in the effect below.
    */
+  // Read unconditionally (not just inside the branch below) so react-hook-form
+  // subscribes to isDirty at mount. RHF only computes isDirty once something
+  // has read it through the formState proxy -- if the first read happened
+  // inside the `importSeq !== 0` branch, the very first import would run
+  // before the subscription existed and form.formState.isDirty would still
+  // read stale/false, silently skipping the confirmation dialog.
+  const isFormDirty = form.formState.isDirty;
+
   if (importSeq !== 0 && importSeq !== handledImportSeq && extraction !== null) {
     setHandledImportSeq(importSeq);
-    if (form.formState.isDirty) {
+    if (isFormDirty) {
       setPendingImport({ ...EMPTY_DEFAULTS, ...extraction.values });
     } else {
       setActiveTab("details");
@@ -186,7 +181,7 @@ export function PackageForm({
 
   useEffect(() => {
     if (importSeq === 0 || extraction === null) return;
-    if (form.formState.isDirty) return; // handled above, during render
+    if (isFormDirty) return; // handled above, during render
 
     form.reset({ ...EMPTY_DEFAULTS, ...extraction.values });
     // form and extraction are stable for a given importSeq; re-running on

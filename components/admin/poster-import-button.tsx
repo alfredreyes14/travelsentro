@@ -59,24 +59,38 @@ export function PosterImportButton() {
         return;
       }
 
+      const filledCount = Object.keys(result.values ?? {}).length;
+      const missingCount = result.unmapped?.length ?? 0;
+
+      if (filledCount === 0) {
+        // Spec: a successful call that yields nothing usable is not an
+        // error -- the form is left untouched. Don't call applyExtraction
+        // at all here: with values === {}, PackageForm's
+        // form.reset({ ...EMPTY_DEFAULTS, ...values }) would reset to
+        // EMPTY_DEFAULTS and wipe out createDraftPackage's "Untitled
+        // Package" (and anything the admin had typed) for nothing.
+        toast.warning(
+          "Nothing could be read from that poster. Try a clearer image, or fill the form in manually."
+        );
+        return;
+      }
+
       applyExtraction({
         values: result.values ?? {},
         unmapped: result.unmapped ?? [],
       });
 
-      const filledCount = Object.keys(result.values ?? {}).length;
-      const missingCount = result.unmapped?.length ?? 0;
-
-      if (filledCount === 0) {
-        toast.warning(
-          "Nothing could be read from that poster. Try a clearer image, or fill the form in manually."
-        );
-      } else if (missingCount > 0) {
+      if (missingCount > 0) {
+        // Wording is true whether or not a confirmation dialog is about to
+        // gate applying these values (dirty-form path) -- "Filled" would be
+        // a lie if the admin then cancels the replace-confirmation dialog.
         toast.success(
-          `Filled ${filledCount} field${filledCount === 1 ? "" : "s"} — ${missingCount} still need${missingCount === 1 ? "s" : ""} your attention.`
+          `Read ${filledCount} field${filledCount === 1 ? "" : "s"} from the poster — ${missingCount} still need${missingCount === 1 ? "s" : ""} your attention.`
         );
       } else {
-        toast.success(`Filled ${filledCount} fields from the poster.`);
+        toast.success(
+          `Read ${filledCount} field${filledCount === 1 ? "" : "s"} from the poster.`
+        );
       }
     } catch {
       toast.error(GENERIC_ERROR_MESSAGE);

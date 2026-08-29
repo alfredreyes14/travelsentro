@@ -16,6 +16,12 @@ export const metadata: Metadata = {
   title: "Edit Package | TravelSentro Admin",
 };
 
+// A Server Action inherits the route segment config of the page it's
+// invoked from. extractPackageFromPoster (actions/package-poster.ts) calls
+// the Anthropic API with a 60s client timeout and up to 1 retry, so this
+// caps the whole request at 2 minutes instead of the platform default.
+export const maxDuration = 120;
+
 type PackageDetail = Database["public"]["Tables"]["packages"]["Row"] & {
   package_photos: Database["public"]["Tables"]["package_photos"]["Row"][];
   itinerary_days: Database["public"]["Tables"]["itinerary_days"]["Row"][];
