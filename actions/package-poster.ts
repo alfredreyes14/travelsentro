@@ -1,0 +1,156 @@
+"use server";
+
+import Anthropic from "@anthropic-ai/sdk";
+import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+
+import { requirePermission } from "@/lib/auth/dal";
+import { createClient } from "@/lib/supabase/server";
+import type { ActionResult } from "@/lib/action-result";
+import type { PackageFormValues } from "@/components/admin/package-form-schema";
+import {
+  PosterExtractionSchema,
+  buildPosterSystemPrompt,
+} from "@/lib/packages/poster-prompt";
+import {
+  mapPosterToFormValues,
+  type UnmappedField,
+} from "@/lib/packages/poster-mapping";
+import {
+  MAX_POSTER_BYTES,
+  isAcceptedMimeType,
+  OVERSIZED_POSTER_MESSAGE,
+  UNSUPPORTED_POSTER_MESSAGE,
+} from "@/lib/packages/poster-upload-limits";
+
+const GENERIC_ERROR_MESSAGE =
+  "Something went wrong reading that poster. Please try again.";
+
+// Only async functions may be exported from a "use server" module. A type
+// alias is erased at compile time, so this one is fine.
+export type PosterExtractionResult = ActionResult & {
+  values?: Partial<PackageFormValues>;
+  unmapped?: UnmappedField[];
+};
+
+/**
+ * Reads a marketing poster image and returns package form values plus the
+ * fields the poster didn't supply. Writes nothing -- the caller fills the
+ * in-memory form and the admin still saves through updatePackage.
+ *
+ * The Anthropic client is constructed per call rather than at module scope
+ * (same reasoning as lib/storage/r2-client.ts): a missing ANTHROPIC_API_KEY
+ * then surfaces as a handled request-time error instead of breaking the
+ * build for every page that transitively imports this module.
+ */
+export async function extractPackageFromPoster(input: {
+  base64: string;
+  mimeType: string;
+}): Promise<PosterExtractionResult> {
+  // AUTH-05 — same gate as every other package write path.
+  await requirePermission("can_manage_packages");
+
+  const mimeType = input.mimeType;
+  if (!isAcceptedMimeType(mimeType)) {
+    return { ok: false, error: UNSUPPORTED_POSTER_MESSAGE };
+  }
+
+  // base64 length -> decoded byte count, without allocating the buffer.
+  const padding = input.base64.endsWith("==")
+    ? 2
+    : input.base64.endsWith("=")
+      ? 1
+      : 0;
+  const decodedBytes = Math.floor((input.base64.length * 3) / 4) - padding;
+
+  if (decodedBytes <= 0) {
+    return { ok: false, error: "That file looks empty. Please pick another." };
+  }
+
+  if (decodedBytes > MAX_POSTER_BYTES) {
+    return { ok: false, error: OVERSIZED_POSTER_MESSAGE };
+  }
+
+  const supabase = await createClient();
+  const { data: destinationRows, error: destinationsError } = await supabase
+    .from("destinations")
+    .select("id, name")
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+
+  if (destinationsError) {
+    console.error("Failed to load destinations:", destinationsError.message);
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  const destinations = destinationRows ?? [];
+
+  try {
+    const client = new Anthropic();
+
+    // No `thinking` and no `output_config.effort`: both are rejected by
+    // claude-haiku-4-5, which POSTER_EXTRACTION_MODEL must stay able to
+    // select. Opus 5 runs adaptive thinking by default when omitted.
+    const response = await client.messages.parse({
+      model: process.env.POSTER_EXTRACTION_MODEL || "claude-opus-5",
+      max_tokens: 16000,
+      system: buildPosterSystemPrompt(destinations.map((d) => d.name)),
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: mimeType,
+                data: input.base64,
+              },
+            },
+            {
+              type: "text",
+              text: "Transcribe this tour package poster into the required structure.",
+            },
+          ],
+        },
+      ],
+      output_config: { format: zodOutputFormat(PosterExtractionSchema) },
+    });
+
+    if (!response.parsed_output) {
+      return {
+        ok: false,
+        error:
+          "Couldn't read this poster. Try a clearer image, or fill the form in manually.",
+      };
+    }
+
+    const { values, unmapped } = mapPosterToFormValues(
+      response.parsed_output,
+      destinations
+    );
+
+    return { ok: true, values, unmapped };
+  } catch (error) {
+    // Most specific first — never string-match SDK error messages.
+    if (error instanceof Anthropic.AuthenticationError) {
+      console.error("Anthropic auth failed for poster extraction");
+      return {
+        ok: false,
+        error:
+          "Poster import isn't configured yet. Please contact your administrator.",
+      };
+    }
+    if (error instanceof Anthropic.RateLimitError) {
+      return {
+        ok: false,
+        error: "The extraction service is busy. Please try again in a moment.",
+      };
+    }
+    if (error instanceof Anthropic.APIError) {
+      console.error(`Anthropic API error ${error.status}:`, error.message);
+      return { ok: false, error: GENERIC_ERROR_MESSAGE };
+    }
+    console.error("Poster extraction failed:", error);
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+}
