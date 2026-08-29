@@ -1,0 +1,372 @@
+/**
+ * Offline proof for lib/packages/poster-mapping.ts. Mirrors
+ * scripts/verify-unsubscribe-token-secret.ts's structure (CheckResult type,
+ * structured PASS/FAIL summary, process.exit(1) on any failure) but needs no
+ * Supabase client, no network, and no ANTHROPIC_API_KEY -- every check runs
+ * the pure mapper against a hand-written PosterExtraction fixture.
+ *
+ * Run via `npm run verify:poster-extraction`.
+ */
+import { packageFormSchema } from "../components/admin/package-form-schema";
+import type { PosterExtraction } from "../lib/packages/poster-prompt";
+import { mapPosterToFormValues } from "../lib/packages/poster-mapping";
+
+type CheckResult = { name: string; pass: boolean; detail: string };
+
+const DESTINATIONS = [
+  { id: "dest-coron", name: "Coron" },
+  { id: "dest-elnido", name: "El Nido" },
+  { id: "dest-baguio", name: "Baguio" },
+];
+
+/** A poster where every single field is absent -- the "flag everything" base. */
+function emptyPoster(): PosterExtraction {
+  return {
+    name: null,
+    destinationName: null,
+    pricePerPax: null,
+    originalPricePerPax: null,
+    durationLabel: null,
+    remarks: null,
+    travelDates: [],
+    itinerary: [],
+    inclusions: [],
+    exclusions: [],
+    bringItems: [],
+  };
+}
+
+function poster(overrides: Partial<PosterExtraction>): PosterExtraction {
+  return { ...emptyPoster(), ...overrides };
+}
+
+function flaggedFields(unmapped: { field: string }[]): string[] {
+  return unmapped.map((entry) => entry.field);
+}
+
+const results: CheckResult[] = [];
+
+function record(name: string, pass: boolean, detail: string): void {
+  results.push({ name, pass, detail });
+}
+
+// --- 1. Struck-through pricing (the inversion guard) ---------------------
+function checkStruckThroughPricing(): void {
+  const { values } = mapPosterToFormValues(
+    poster({ pricePerPax: 5999, originalPricePerPax: 6999 }),
+    DESTINATIONS
+  );
+  const pass = values.pricePerPax === 6999 && values.discountAmount === 1000;
+  record(
+    "Struck-through price maps to pre-discount pricePerPax + discountAmount",
+    pass,
+    pass
+      ? "6999 / 1000 (renders as struck 6999, pay 5999)"
+      : `expected 6999/1000, got ${values.pricePerPax}/${values.discountAmount}`
+  );
+}
+
+// --- 2. Single price leaves discount unset -------------------------------
+function checkSinglePrice(): void {
+  const { values } = mapPosterToFormValues(
+    poster({ pricePerPax: 5999 }),
+    DESTINATIONS
+  );
+  const pass = values.pricePerPax === 5999 && values.discountAmount === undefined;
+  record(
+    "Single printed price leaves discountAmount unset",
+    pass,
+    pass ? "5999 / undefined" : `got ${values.pricePerPax}/${values.discountAmount}`
+  );
+}
+
+// --- 3. Non-positive discount is dropped and flagged ---------------------
+function checkInvertedDiscount(): void {
+  const { values, unmapped } = mapPosterToFormValues(
+    poster({ pricePerPax: 6999, originalPricePerPax: 5999 }),
+    DESTINATIONS
+  );
+  const pass =
+    values.discountAmount === undefined &&
+    values.pricePerPax === 6999 &&
+    flaggedFields(unmapped).includes("discountAmount");
+  record(
+    "A 'was' price lower than the current price is dropped and flagged",
+    pass,
+    pass
+      ? "discountAmount undefined and flagged"
+      : `got ${values.discountAmount}, flags: ${flaggedFields(unmapped).join(",")}`
+  );
+}
+
+// --- 4. Unusable prices are flagged --------------------------------------
+function checkUnusablePrice(): void {
+  for (const [label, value] of [
+    ["null", null],
+    ["zero", 0],
+    ["negative", -100],
+  ] as const) {
+    const { values, unmapped } = mapPosterToFormValues(
+      poster({ pricePerPax: value }),
+      DESTINATIONS
+    );
+    const pass =
+      values.pricePerPax === undefined &&
+      flaggedFields(unmapped).includes("pricePerPax");
+    record(
+      `A ${label} price is left unset and flagged`,
+      pass,
+      pass ? "flagged" : `got ${values.pricePerPax}, flags: ${flaggedFields(unmapped).join(",")}`
+    );
+  }
+}
+
+// --- 5. Destination matching ---------------------------------------------
+function checkDestinationMatching(): void {
+  const cases: { poster: string; expectId: string | null; label: string }[] = [
+    { poster: "Coron", expectId: "dest-coron", label: "exact match" },
+    { poster: "  el nido  ", expectId: "dest-elnido", label: "case/whitespace-insensitive match" },
+    { poster: "Coron, Palawan", expectId: "dest-coron", label: "substring match" },
+    { poster: "Siargao", expectId: null, label: "no match" },
+  ];
+
+  for (const testCase of cases) {
+    const { values, unmapped } = mapPosterToFormValues(
+      poster({ destinationName: testCase.poster }),
+      DESTINATIONS
+    );
+    const flagged = flaggedFields(unmapped).includes("destinationId");
+    const pass =
+      testCase.expectId === null
+        ? values.destinationId === undefined && flagged
+        : values.destinationId === testCase.expectId && !flagged;
+    record(
+      `Destination ${testCase.label}: "${testCase.poster}"`,
+      pass,
+      pass ? `-> ${values.destinationId ?? "flagged"}` : `got ${values.destinationId}, flagged=${flagged}`
+    );
+  }
+
+  // An unmatched destination must surface the raw poster text for the admin.
+  const { unmapped } = mapPosterToFormValues(
+    poster({ destinationName: "Siargao" }),
+    DESTINATIONS
+  );
+  const reason = unmapped.find((entry) => entry.field === "destinationId")?.reason ?? "";
+  const pass = reason.includes("Siargao");
+  record(
+    "An unmatched destination quotes the raw poster text in its reason",
+    pass,
+    pass ? `reason: "${reason}"` : `reason did not mention the poster text: "${reason}"`
+  );
+
+  // Ambiguity must flag rather than silently pick one.
+  const ambiguous = mapPosterToFormValues(
+    poster({ destinationName: "Coron Island and El Nido Hopping" }),
+    DESTINATIONS
+  );
+  const ambiguousPass =
+    ambiguous.values.destinationId === undefined &&
+    flaggedFields(ambiguous.unmapped).includes("destinationId");
+  record(
+    "A poster naming two known destinations is flagged, not silently resolved",
+    ambiguousPass,
+    ambiguousPass ? "flagged" : `got ${ambiguous.values.destinationId}`
+  );
+}
+
+// --- 6. Travel dates ------------------------------------------------------
+function checkTravelDates(): void {
+  const valid = mapPosterToFormValues(
+    poster({
+      travelDates: [{ dateFrom: "2026-03-14", dateTo: "2026-03-16", additionalFee: 500 }],
+    }),
+    DESTINATIONS
+  );
+  const validPass =
+    valid.values.travelDates?.length === 1 &&
+    valid.values.travelDates[0].dateFrom === "2026-03-14" &&
+    valid.values.travelDates[0].additionalFee === 500;
+  record(
+    "A complete date range with a surcharge is kept",
+    validPass,
+    validPass ? "kept" : JSON.stringify(valid.values.travelDates)
+  );
+
+  const missingYear = mapPosterToFormValues(
+    poster({ travelDates: [{ dateFrom: null, dateTo: null, additionalFee: null }] }),
+    DESTINATIONS
+  );
+  const missingYearPass =
+    missingYear.values.travelDates === undefined &&
+    flaggedFields(missingYear.unmapped).includes("travelDates");
+  record(
+    "A date row with no year is dropped and Travel Dates is flagged",
+    missingYearPass,
+    missingYearPass ? "dropped + flagged" : JSON.stringify(missingYear.values.travelDates)
+  );
+
+  const reversed = mapPosterToFormValues(
+    poster({
+      travelDates: [{ dateFrom: "2026-03-16", dateTo: "2026-03-14", additionalFee: null }],
+    }),
+    DESTINATIONS
+  );
+  const reversedPass =
+    reversed.values.travelDates === undefined &&
+    flaggedFields(reversed.unmapped).includes("travelDates");
+  record(
+    "A range whose end precedes its start is dropped and flagged",
+    reversedPass,
+    reversedPass ? "dropped + flagged" : JSON.stringify(reversed.values.travelDates)
+  );
+
+  const garbage = mapPosterToFormValues(
+    poster({
+      travelDates: [{ dateFrom: "March 14", dateTo: "2026-02-30", additionalFee: null }],
+    }),
+    DESTINATIONS
+  );
+  const garbagePass = garbage.values.travelDates === undefined;
+  record(
+    "Non-ISO and calendar-invalid dates are dropped",
+    garbagePass,
+    garbagePass ? "dropped" : JSON.stringify(garbage.values.travelDates)
+  );
+}
+
+// --- 7. List cleaning -----------------------------------------------------
+function checkLists(): void {
+  const { values, unmapped } = mapPosterToFormValues(
+    poster({
+      inclusions: ["  Hotel  ", "", "   ", "Van transfers"],
+      exclusions: [],
+      bringItems: ["Sunblock"],
+      itinerary: [
+        { title: " Arrival ", description: " Check in " },
+        { title: "", description: "orphan" },
+        { title: "Departure", description: "" },
+      ],
+    }),
+    DESTINATIONS
+  );
+
+  const inclusionsPass =
+    values.inclusions?.length === 2 &&
+    values.inclusions[0].label === "Hotel" &&
+    values.inclusions[1].label === "Van transfers";
+  record(
+    "Blank and whitespace-only list entries are dropped, values trimmed",
+    inclusionsPass,
+    inclusionsPass ? "2 clean rows" : JSON.stringify(values.inclusions)
+  );
+
+  const itineraryPass =
+    values.itinerary?.length === 1 && values.itinerary[0].title === "Arrival";
+  record(
+    "Itinerary days missing a title or description are dropped",
+    itineraryPass,
+    itineraryPass ? "1 complete day" : JSON.stringify(values.itinerary)
+  );
+
+  const emptyListPass = flaggedFields(unmapped).includes("exclusions");
+  record(
+    "An empty list is flagged",
+    emptyListPass,
+    emptyListPass ? "exclusions flagged" : flaggedFields(unmapped).join(",")
+  );
+}
+
+// --- 8. Remarks is optional and never flagged -----------------------------
+function checkRemarksNeverFlagged(): void {
+  const { unmapped } = mapPosterToFormValues(emptyPoster(), DESTINATIONS);
+  const pass = !flaggedFields(unmapped).includes("remarks");
+  record(
+    "Remarks is never flagged (optional in the schema, absent from most posters)",
+    pass,
+    pass ? "not flagged" : "remarks was flagged"
+  );
+}
+
+// --- 9. The invariant tying the banner to real validation -----------------
+function checkSchemaInvariant(): void {
+  const fixtures: { label: string; value: PosterExtraction }[] = [
+    { label: "wholly empty poster", value: emptyPoster() },
+    {
+      label: "partial poster",
+      value: poster({ name: "Coron Escape", pricePerPax: 5999, destinationName: "Siargao" }),
+    },
+    {
+      label: "complete poster",
+      value: poster({
+        name: "Coron Island Escape",
+        destinationName: "Coron",
+        pricePerPax: 5999,
+        originalPricePerPax: 6999,
+        durationLabel: "3 days, 2 nights",
+        travelDates: [{ dateFrom: "2026-03-14", dateTo: "2026-03-16", additionalFee: null }],
+        itinerary: [{ title: "Arrival", description: "Check in and rest" }],
+        inclusions: ["Hotel"],
+        exclusions: ["Airfare"],
+        bringItems: ["Sunblock"],
+      }),
+    },
+  ];
+
+  const EMPTY_FORM = {
+    name: "",
+    pricePerPax: 0,
+    discountAmount: undefined,
+    durationLabel: "",
+    destinationId: "",
+    remarks: "",
+    travelDates: [],
+    itinerary: [],
+    inclusions: [],
+    exclusions: [],
+    bringItems: [],
+  };
+
+  for (const fixture of fixtures) {
+    const { values, unmapped } = mapPosterToFormValues(fixture.value, DESTINATIONS);
+    const parsed = packageFormSchema.safeParse({ ...EMPTY_FORM, ...values });
+    const failingFields = parsed.success
+      ? []
+      : [...new Set(parsed.error.issues.map((issue) => String(issue.path[0])))];
+    const flagged = flaggedFields(unmapped);
+    const unexplained = failingFields.filter((field) => !flagged.includes(field));
+    const pass = unexplained.length === 0;
+    record(
+      `Every schema failure is flagged in the banner (${fixture.label})`,
+      pass,
+      pass
+        ? parsed.success
+          ? "form is fully valid, nothing to explain"
+          : `all ${failingFields.length} invalid field(s) flagged`
+        : `unflagged invalid fields: ${unexplained.join(", ")}`
+    );
+  }
+}
+
+function main(): void {
+  checkStruckThroughPricing();
+  checkSinglePrice();
+  checkInvertedDiscount();
+  checkUnusablePrice();
+  checkDestinationMatching();
+  checkTravelDates();
+  checkLists();
+  checkRemarksNeverFlagged();
+  checkSchemaInvariant();
+
+  console.log("\nPoster extraction mapping checks\n");
+  for (const result of results) {
+    console.log(`${result.pass ? "PASS" : "FAIL"}  ${result.name}\n      ${result.detail}`);
+  }
+
+  const failed = results.filter((result) => !result.pass).length;
+  console.log(`\n${results.length - failed}/${results.length} checks passed.\n`);
+  if (failed > 0) process.exit(1);
+}
+
+main();
