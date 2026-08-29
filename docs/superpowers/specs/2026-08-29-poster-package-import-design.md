@@ -108,7 +108,7 @@ export type UnmappedField = {
 
 Each rule below encodes a constraint `packageFormSchema` already enforces, so the imported form can never be pre-filled into a state that fails validation:
 
-- **Destination** — normalize (lowercase, trim, collapse whitespace) both sides, then: exact match → substring match (poster "Coron, Palawan" vs. row "Coron") → first comma-segment exact match. No match, or 2+ ambiguous matches, leaves `destinationId: ""` and flags the field, carrying the raw poster text in `reason` (e.g. *poster says "Coron, Palawan" — no matching destination; pick one or add it under Packages → Destinations*).
+- **Destination** — normalize (lowercase, trim, collapse whitespace) both sides, then: exact match → substring match (poster "Coron, Palawan" contains the row "Coron"). No match, or 2+ ambiguous matches, leaves `destinationId` unset and flags the field, carrying the raw poster text in `reason` (e.g. *poster says "Coron, Palawan" — no matching destination; pick one or add it under Packages → Destinations*). An earlier draft added a third "first comma-segment" tier; it was removed as unreachable — a first segment is always a substring of the whole string, so the substring tier already matches anything it could.
 - **Price per pax** — `Math.round()`, must be `> 0` (schema requires `.int().positive()`). Absent, zero, or negative → flagged.
 - **Discount** — derived as `originalPricePerPax - pricePerPax`, kept only when the result is `> 0` **and** `< pricePerPax` (the schema requires `.positive()` and refines `discountAmount < pricePerPax`). A non-positive result — which is what an inverted or equal pair of prices produces — is dropped and flagged.
 - **Travel dates** — a row survives only with both `dateFrom` and `dateTo` as valid `YYYY-MM-DD` and `dateTo >= dateFrom` (the schema's `.refine()`). Flagged whenever **any** row is dropped, not only when all of them are: a poster listing three departures that quietly imports two is exactly the loss the banner exists to prevent.
@@ -161,7 +161,7 @@ No test framework exists in this repo; the convention is standalone `scripts/ver
 2. Single price → `discountAmount: undefined`.
 3. Discount `>= pricePerPax` → dropped and flagged.
 4. Zero/negative/null price → flagged.
-5. Destination exact, substring, and comma-segment matches resolve to the right id; no-match and ambiguous-match flag with the raw text preserved.
+5. Destination exact and substring matches resolve to the right id; no-match and ambiguous-match flag with the raw text preserved.
 6. A travel-date row with no year → dropped, Travel Dates flagged; `dateTo < dateFrom` → dropped.
 7. Empty/whitespace list entries dropped; fully empty list → flagged.
 8. **Every `values` object produced by the fixtures either passes `packageFormSchema` or has each failing field present in `unmapped`** — the invariant that ties the banner to real validation.

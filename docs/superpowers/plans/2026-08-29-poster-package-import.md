@@ -608,11 +608,6 @@ function matchDestination(
     };
   }
 
-  // "Coron / Palawan" where only the first segment is configured.
-  const firstSegment = normalize(needle.split(/[,/|]/)[0] ?? "");
-  const segment = destinations.filter((d) => normalize(d.name) === firstSegment);
-  if (segment.length === 1) return { id: segment[0].id };
-
   return {
     reason: `The poster says "${text}", which doesn't match any destination. Pick one on the Details tab, or add it under Packages -> Destinations.`,
   };
