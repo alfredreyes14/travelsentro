@@ -126,6 +126,7 @@ This is a deliberate choice of a visible gap over a silent wrong answer: a guess
 
 - **`lib/packages/poster-mapping.ts`** (new) — the pure mapper above, plus `UnmappedField`. No dependencies on the SDK or Supabase.
 - **`lib/packages/poster-prompt.ts`** (new) — the system prompt and `PosterExtractionSchema`, kept separate so prompt edits don't touch action code.
+- **`lib/packages/poster-upload-limits.ts`** (new) — `MAX_POSTER_BYTES`, the accepted MIME list, and their user-facing rejection messages. Separate from the action because a `"use server"` module may only export async functions, and the client button needs these same values to reject a file before uploading it.
 - **`actions/package-poster.ts`** (new) — `extractPackageFromPoster({ base64, mimeType })`. Permission gate, MIME/size validation, destination fetch, `messages.parse()`, mapper call. Returns `ActionResult & { values?, unmapped? }`, matching the repo's existing `ActionResult` convention (`lib/action-result.ts`).
 - **`components/admin/poster-import-context.tsx`** (new, client) — provider + `usePosterImport()`. One `useState<PosterExtraction | null>`.
 - **`components/admin/poster-import-button.tsx`** (new, client) — hidden `<input type="file">`, client-side size guard, pending state ("Reading poster…"), `toast` on success/failure. Reuses `lib/read-file-as-base64.ts`.
@@ -146,7 +147,7 @@ Every failure returns a `{ ok: false, error }` the button surfaces via `toast.er
 
 - Typed SDK catch chain, most specific first: `AuthenticationError` → "AI extraction isn't configured. Contact your administrator."; `RateLimitError` → "The extraction service is busy. Try again in a moment."; `APIError` → generic. Never string-match error messages.
 - `response.parsed_output === null` (schema parse failed) → "Couldn't read this poster. Try a clearer image, or fill the form in manually."
-- Rejected MIME type or a file over 5 MB → rejected client-side before the upload, and again server-side.
+- Rejected MIME type or an oversized file → rejected client-side before the upload, and again server-side. The cap is **3.5 MB on the raw file**, not 5 MB: base64 inflates payloads by ~33%, and the API's limit is 5 MB on the *encoded* image, so a 5 MB file would arrive as ~6.7 MB and be rejected by the API. The error names the limit and suggests resizing.
 - A successful call that yields nothing usable (every field null) is **not** an error: the form is left untouched and the banner reports that nothing could be read.
 
 ## Testing
