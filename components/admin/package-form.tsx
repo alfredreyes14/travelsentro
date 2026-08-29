@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import {
   type PackageFormValues,
 } from "./package-form-schema";
 import { PhotoManager, type PhotoManagerPhoto } from "./photo-manager";
+import { usePosterImport } from "./poster-import-context";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -146,6 +147,40 @@ export function PackageForm({
     label: string;
     onConfirm: () => void;
   } | null>(null);
+
+  const { extraction, importSeq } = usePosterImport();
+  const [pendingImport, setPendingImport] = useState<PackageFormValues | null>(
+    null
+  );
+
+  /**
+   * A poster import replaces the whole form. On a fresh draft there is
+   * nothing to lose, so apply it straight away; if the admin has already
+   * typed something (e.g. importing a second poster), confirm first.
+   * Keyed on importSeq, not on `extraction`, so re-importing a poster that
+   * yields identical values still re-fills the form.
+   */
+  useEffect(() => {
+    if (importSeq === 0 || extraction === null) return;
+
+    const next: PackageFormValues = { ...EMPTY_DEFAULTS, ...extraction.values };
+
+    if (form.formState.isDirty) {
+      // Gates a confirmation dialog on importSeq, an external event from
+      // context rather than derived render state -- the same documented
+      // exception carousel.tsx takes to this rule; there's no DOM/library
+      // event to subscribe to instead.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPendingImport(next);
+      return;
+    }
+
+    form.reset(next);
+    setActiveTab("details");
+    // form and extraction are stable for a given importSeq; re-running on
+    // their identity would re-apply the import on unrelated re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importSeq]);
 
   function requestRemove(
     hasContent: boolean,
@@ -705,6 +740,35 @@ export function PackageForm({
                 }}
               >
                 Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={pendingImport !== null}
+          onOpenChange={(open) => !open && setPendingImport(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Replace what you&apos;ve entered?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Importing this poster will overwrite everything currently in
+                this form, including any changes you&apos;ve typed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (pendingImport) {
+                    form.reset(pendingImport);
+                    setActiveTab("details");
+                  }
+                  setPendingImport(null);
+                }}
+              >
+                Replace
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

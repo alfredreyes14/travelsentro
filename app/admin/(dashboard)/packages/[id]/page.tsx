@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
 import { PosterImportProvider } from "@/components/admin/poster-import-context";
 import { PosterImportButton } from "@/components/admin/poster-import-button";
+import { PosterImportBanner } from "@/components/admin/poster-import-banner";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -155,6 +156,8 @@ export default async function EditPackagePage({
             </Button>
           </div>
         </PageHeader>
+
+        <PosterImportBanner />
 
         <PackageForm
           packageId={pkg.id}
