@@ -107,7 +107,11 @@ export function PackageCard({
 
           <div className="pointer-events-auto flex shrink-0 items-center gap-2">
             <WhatsAppCta packageName={pkg.name} variant="icon-only" />
-            <FacebookCta packageName={pkg.name} variant="icon-only" />
+            <FacebookCta
+              packageName={pkg.name}
+              packageSlug={pkg.slug}
+              variant="icon-only"
+            />
           </div>
         </div>
       </div>

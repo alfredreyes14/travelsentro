@@ -6,8 +6,15 @@ export const SITE_URL = "https://travelsentro.com";
 
 // D-04: TravelSentro's Facebook page — centralized here so every CTA and
 // future call site shares one constant instead of inlining the URL.
-export const FACEBOOK_URL =
-  "https://web.facebook.com/profile.php?id=61567102791951";
+//
+// Uses the Page's vanity username rather than a numeric ID. The previous
+// value here (web.facebook.com/profile.php?id=61567102791951) reaches the
+// same Page, but Facebook 301s it to this canonical /travelsentroph URL,
+// so pointing at the destination directly avoids the redirect hop. It also
+// matters for SEO: this constant is the JSON-LD `sameAs` value in
+// app/layout.tsx, which should name the canonical profile URL. Host is
+// www, not web — web.facebook.com is a legacy desktop-forcing alias.
+export const FACEBOOK_URL = "https://www.facebook.com/travelsentroph";
 
 // D-04 follow-up: the Page's Messenger vanity username, used to build
 // m.me deep links (numeric page IDs aren't a documented m.me format).
@@ -15,13 +22,20 @@ export const FACEBOOK_PAGE_USERNAME = "travelsentroph";
 
 // Numeric Page ID, needed by the Graph API (which addresses the page by ID,
 // not username) for both sending messages and the one-time webhook
-// subscription call. NOTE: confirmed via the Meta App Dashboard's "Generate
-// access tokens" panel to be the Page actually connected to the Messenger
-// app -- this differs from the ID embedded in FACEBOOK_URL above
-// (61567102791951), which predates this bot and was never itself verified
-// against the Graph API. That discrepancy is unresolved -- see conversation
-// notes; worth checking separately whether FACEBOOK_URL points at the
-// right Page.
+// subscription call.
+//
+// The two IDs floating around this project are NOT two different Pages --
+// that earlier concern is resolved. TravelSentro has one Page with two
+// identifiers, which is normal under Meta's New Pages Experience:
+//   61567102791951  profile ID, what profile.php URLs use
+//   446521218543410 Page ID, what the Graph API and Messenger use
+// Verified by resolving all three entry points -- m.me/travelsentroph,
+// m.me/61567102791951 and m.me/446521218543410 all land on the same
+// thread (messenger.com/t/446521218543410), and profile.php?id=6156...
+// redirects to facebook.com/travelsentroph. Confirmed independently by
+// debug_token, which reports profile_id 446521218543410 for the Page
+// token. Use this ID for anything Graph API; use FACEBOOK_URL for links
+// shown to customers.
 export const FACEBOOK_PAGE_ID = "446521218543410";
 
 // Package PDF export — business contact info for the printable itinerary's

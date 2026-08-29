@@ -1,5 +1,6 @@
 import { after } from "next/server";
 
+import { GENERAL_MESSENGER_REF } from "@/lib/messenger/link";
 import { buildGreeting, sendMessengerText, verifySignature } from "@/lib/messenger/webhook";
 import { createClient } from "@/lib/supabase/server";
 
@@ -83,21 +84,21 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   }
 
-  // TEMPORARY DIAGNOSTIC (remove once live delivery shape is confirmed):
-  // logs the raw event shape so we can see exactly what Meta sends for a
-  // real click/message, since dashboard "Test" tools have proven unreliable
-  // as a stand-in for real delivery.
-  console.log("Messenger webhook raw payload:", rawBody);
-
   for (const entry of payload.entry ?? []) {
     for (const event of entry.messaging ?? []) {
       const senderId = event.sender?.id;
       const referral =
         event.referral ?? event.postback?.referral ?? event.message?.referral;
 
-      // TEMPORARY DIAGNOSTIC (remove once live delivery shape is confirmed):
+      // Delivery-shape diagnostic. Deliberately PII-free: no sender PSID,
+      // no message text, no raw payload -- an earlier version logged the
+      // whole body and put real customers' PSIDs and message contents in
+      // Vercel logs. `ref` is safe to keep: it's an internal package slug,
+      // never customer data, and hasReferral is the single field that
+      // explains the common "clicked the button, got no greeting" report
+      // (a link built without a packageSlug carries no ref, so Meta sends
+      // no referral and the event is skipped just below).
       console.log("Messenger webhook event:", {
-        senderId,
         hasReferral: Boolean(referral),
         ref: referral?.ref,
         hasMessage: Boolean(event.message),
@@ -112,7 +113,10 @@ export async function POST(request: Request) {
 
       after(async () => {
         try {
-          const packageName = ref ? await lookupPackageName(ref) : null;
+          const packageName =
+            ref && ref !== GENERAL_MESSENGER_REF
+              ? await lookupPackageName(ref)
+              : null;
           await sendMessengerText(senderId, buildGreeting(packageName));
         } catch (err) {
           console.error("Messenger auto-greeting failed", err);

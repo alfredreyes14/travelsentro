@@ -5,19 +5,40 @@
  *
  * Run via `npm run verify:messenger-link`.
  */
-import { buildMessengerLink } from "../lib/messenger/link";
+import { buildMessengerLink, GENERAL_MESSENGER_REF } from "../lib/messenger/link";
 import { FACEBOOK_PAGE_USERNAME } from "../lib/constants";
 
 type CheckResult = { name: string; pass: boolean; detail: string };
 
+// Regression guard: a ref-less link is what silently broke the auto-greeting
+// -- Meta only fires the referral webhook when `ref` is present, so a bare
+// m.me link opened Messenger and the customer got no reply. Every link must
+// carry a ref, package or not.
 function checkNoSlug(): CheckResult {
   const url = buildMessengerLink();
-  const expected = `https://m.me/${FACEBOOK_PAGE_USERNAME}`;
+  const expected = `https://m.me/${FACEBOOK_PAGE_USERNAME}?ref=${GENERAL_MESSENGER_REF}`;
   const pass = url === expected;
   return {
-    name: "No slug -> plain page link",
+    name: "No slug -> general ref (never a bare link)",
     pass,
     detail: pass ? `got "${url}"` : `expected "${expected}", got "${url}"`,
+  };
+}
+
+function checkEveryLinkHasRef(): CheckResult {
+  const urls = [
+    buildMessengerLink(),
+    buildMessengerLink(""),
+    buildMessengerLink("bali-getaway"),
+  ];
+  const missing = urls.filter((u) => !u.includes("?ref="));
+  const pass = missing.length === 0;
+  return {
+    name: "Every link carries a ref (empty slug included)",
+    pass,
+    detail: pass
+      ? `all ${urls.length} links have a ref`
+      : `ref-less link(s): ${missing.join(", ")}`,
   };
 }
 
@@ -43,7 +64,12 @@ function checkSlugIsEncoded(): CheckResult {
 }
 
 function main() {
-  const results = [checkNoSlug(), checkWithSlug(), checkSlugIsEncoded()];
+  const results = [
+    checkNoSlug(),
+    checkEveryLinkHasRef(),
+    checkWithSlug(),
+    checkSlugIsEncoded(),
+  ];
 
   console.log(`\nverify-messenger-link\n`);
   let allPass = true;
