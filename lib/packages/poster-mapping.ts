@@ -192,10 +192,14 @@ export function mapPosterToFormValues(
   if (remarks !== null) values.remarks = remarks;
 
   const travelDates: PackageFormValues["travelDates"] = [];
+  let droppedDateRows = 0;
   for (const row of raw.travelDates) {
     const from = row.dateFrom;
     const to = row.dateTo;
-    if (!isValidIsoDate(from) || !isValidIsoDate(to) || to < from) continue;
+    if (!isValidIsoDate(from) || !isValidIsoDate(to) || to < from) {
+      droppedDateRows += 1;
+      continue;
+    }
     const fee = row.additionalFee !== null ? Math.round(row.additionalFee) : null;
     travelDates.push({
       dateFrom: from,
@@ -205,6 +209,17 @@ export function mapPosterToFormValues(
   }
   if (travelDates.length > 0) {
     values.travelDates = travelDates;
+    // A partial drop is the case the banner exists for: some dates imported,
+    // others vanished. Staying silent here loses a departure the poster
+    // actually printed.
+    if (droppedDateRows > 0) {
+      flag(
+        "travelDates",
+        "Travel dates",
+        "travel-dates",
+        `${droppedDateRows} of ${raw.travelDates.length} date ranges on the poster couldn't be used (most often a missing year) and ${droppedDateRows === 1 ? "was" : "were"} dropped. Check the Travel Dates tab.`
+      );
+    }
   } else {
     flag(
       "travelDates",
@@ -224,6 +239,18 @@ export function mapPosterToFormValues(
     .filter((day) => day.title.length > 0 && day.description.length > 0);
   if (itinerary.length > 0) {
     values.itinerary = itinerary;
+    const droppedDays = raw.itinerary.length - itinerary.length;
+    // Same partial-drop reasoning as travel dates: an itinerary day missing
+    // its title or description silently vanishing is worse than a visible
+    // flag the admin can act on.
+    if (droppedDays > 0) {
+      flag(
+        "itinerary",
+        "Itinerary",
+        "itinerary",
+        `${droppedDays} day${droppedDays === 1 ? "" : "s"} on the poster ${droppedDays === 1 ? "was" : "were"} missing a title or description and ${droppedDays === 1 ? "was" : "were"} dropped. Check the Itinerary tab.`
+      );
+    }
   } else {
     flag(
       "itinerary",

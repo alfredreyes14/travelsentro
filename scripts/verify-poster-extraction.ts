@@ -277,6 +277,49 @@ function checkLists(): void {
   );
 }
 
+// --- 7b. Partial drops still raise a flag ----------------------------------
+function checkPartialDrops(): void {
+  const dates = mapPosterToFormValues(
+    poster({
+      travelDates: [
+        { dateFrom: "2026-03-14", dateTo: "2026-03-16", additionalFee: null },
+        { dateFrom: null, dateTo: null, additionalFee: null },
+      ],
+    }),
+    DESTINATIONS
+  );
+  const datesPass =
+    dates.values.travelDates?.length === 1 &&
+    flaggedFields(dates.unmapped).includes("travelDates");
+  record(
+    "A partially-invalid travel dates list keeps the valid row and still flags travelDates",
+    datesPass,
+    datesPass
+      ? "1 kept, flagged"
+      : `travelDates: ${JSON.stringify(dates.values.travelDates)}, flags: ${flaggedFields(dates.unmapped).join(",")}`
+  );
+
+  const days = mapPosterToFormValues(
+    poster({
+      itinerary: [
+        { title: "Arrival", description: "Check in" },
+        { title: "Departure", description: "" },
+      ],
+    }),
+    DESTINATIONS
+  );
+  const daysPass =
+    days.values.itinerary?.length === 1 &&
+    flaggedFields(days.unmapped).includes("itinerary");
+  record(
+    "A partially-invalid itinerary keeps the complete day and still flags itinerary",
+    daysPass,
+    daysPass
+      ? "1 kept, flagged"
+      : `itinerary: ${JSON.stringify(days.values.itinerary)}, flags: ${flaggedFields(days.unmapped).join(",")}`
+  );
+}
+
 // --- 8. Remarks is optional and never flagged -----------------------------
 function checkRemarksNeverFlagged(): void {
   const { unmapped } = mapPosterToFormValues(emptyPoster(), DESTINATIONS);
@@ -356,6 +399,7 @@ function main(): void {
   checkDestinationMatching();
   checkTravelDates();
   checkLists();
+  checkPartialDrops();
   checkRemarksNeverFlagged();
   checkSchemaInvariant();
 
