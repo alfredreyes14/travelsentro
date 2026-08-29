@@ -152,6 +152,12 @@ export function PackageForm({
   const [pendingImport, setPendingImport] = useState<PackageFormValues | null>(
     null
   );
+  // Tracks which importSeq has already been handled -- dialog opened, or
+  // immediate-apply tab switch performed -- so the derived render logic
+  // below doesn't refire (and reopen a just-cancelled dialog, or re-force
+  // the Details tab) on unrelated re-renders once importSeq itself stops
+  // changing.
+  const [handledImportSeq, setHandledImportSeq] = useState(0);
 
   /**
    * A poster import replaces the whole form. On a fresh draft there is
@@ -159,24 +165,30 @@ export function PackageForm({
    * typed something (e.g. importing a second poster), confirm first.
    * Keyed on importSeq, not on `extraction`, so re-importing a poster that
    * yields identical values still re-fills the form.
+   *
+   * Both branches below are decided directly in the render body -- React's
+   * documented "adjusting state when a value changes" alternative to an
+   * Effect (https://react.dev/learn/you-might-not-need-an-effect). Neither
+   * "should the confirmation dialog be open" nor "which tab is active" is
+   * an imperative call to an external system; both are pure UI state
+   * derivable from importSeq and the form's own isDirty flag. form.reset()
+   * is different -- it mutates react-hook-form's internal store and
+   * notifies subscribers -- so it alone stays in the effect below.
    */
+  if (importSeq !== 0 && importSeq !== handledImportSeq && extraction !== null) {
+    setHandledImportSeq(importSeq);
+    if (form.formState.isDirty) {
+      setPendingImport({ ...EMPTY_DEFAULTS, ...extraction.values });
+    } else {
+      setActiveTab("details");
+    }
+  }
+
   useEffect(() => {
     if (importSeq === 0 || extraction === null) return;
+    if (form.formState.isDirty) return; // handled above, during render
 
-    const next: PackageFormValues = { ...EMPTY_DEFAULTS, ...extraction.values };
-
-    if (form.formState.isDirty) {
-      // Gates a confirmation dialog on importSeq, an external event from
-      // context rather than derived render state -- the same documented
-      // exception carousel.tsx takes to this rule; there's no DOM/library
-      // event to subscribe to instead.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPendingImport(next);
-      return;
-    }
-
-    form.reset(next);
-    setActiveTab("details");
+    form.reset({ ...EMPTY_DEFAULTS, ...extraction.values });
     // form and extraction are stable for a given importSeq; re-running on
     // their identity would re-apply the import on unrelated re-renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
