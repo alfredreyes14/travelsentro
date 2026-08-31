@@ -46,6 +46,14 @@ function isValidIsoDate(value: string | null): value is string {
   );
 }
 
+/**
+ * Formats a whole-peso amount for banner copy ("6999" -> "PHP 6,999"). Only
+ * ever used in reason strings the admin reads, never in form values.
+ */
+function formatPeso(amount: number): string {
+  return `PHP ${amount.toLocaleString("en-PH")}`;
+}
+
 function toLabelRows(entries: string[]): { label: string }[] {
   return entries
     .map((entry) => entry.trim())
@@ -135,8 +143,17 @@ export function mapPosterToFormValues(
 
   // Pricing. pricePerPax on the form is the PRE-discount price: the public
   // site renders `price_per_pax - discount_amount` with price_per_pax struck
-  // through. So a poster showing "was 6999, now 5999" becomes
-  // pricePerPax 6999 + discountAmount 1000, NOT pricePerPax 5999.
+  // through. So a poster showing "was 6999, now 5999" puts 6999 here, NOT
+  // 5999 -- the 1000 difference belongs in discountAmount.
+  //
+  // discountAmount itself is NEVER auto-filled: discounts are entered by hand
+  // (user decision, 2026-08-31). Auto-filling it and putting the marked-down
+  // price in pricePerPax would be the one combination that silently
+  // undercharges, since an admin who then typed the discount in would be
+  // discounting an already-discounted price. Instead we seed the pre-discount
+  // price and flag the discount with the exact figure to type, so a manual
+  // entry lands correctly and an ignored one is at least visible in the
+  // banner.
   const current =
     raw.pricePerPax !== null ? Math.round(raw.pricePerPax) : null;
   const original =
@@ -156,15 +173,22 @@ export function mapPosterToFormValues(
   } else {
     const discount = original - current;
     if (discount > 0 && discount < original) {
+      // Seed the struck-through price so a hand-entered discount subtracts
+      // from the right number.
       values.pricePerPax = original;
-      values.discountAmount = discount;
+      flag(
+        "discountAmount",
+        "Discount",
+        "details",
+        `The poster marks ${formatPeso(original)} down to ${formatPeso(current)}. Price per pax is set to ${original} — enter ${discount} as the Discount on the Details tab to show that markdown on the site.`
+      );
     } else {
       values.pricePerPax = current;
       flag(
         "discountAmount",
         "Discount",
         "details",
-        `The poster's "was" price (${original}) isn't higher than its current price (${current}), so no discount was applied. Check the Details tab.`
+        `The poster's "was" price (${original}) isn't higher than its current price (${current}), so no discount could be worked out. Check the Details tab.`
       );
     }
   }

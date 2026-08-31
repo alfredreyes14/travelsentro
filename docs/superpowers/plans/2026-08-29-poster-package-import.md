@@ -14,7 +14,7 @@
 
 - **Never invent data.** The model returns `null` for anything not printed on the poster. Every mapping rule prefers a flagged gap over a plausible guess.
 - **Nothing is dropped silently.** When a list row is discarded (a travel date with no year, an itinerary day missing its description), that field is flagged even if other rows survived. A partial import that looks complete is the feature's worst failure mode.
-- **Pricing direction is load-bearing.** The public site renders `price_per_pax - discount_amount` with `price_per_pax` struck through. A poster showing ~~₱6,999~~ ₱5,999 maps to `pricePerPax: 6999, discountAmount: 1000`. Inverting this misprices a live package.
+- **Pricing direction is load-bearing.** The public site renders `price_per_pax - discount_amount` with `price_per_pax` struck through. A poster showing ~~₱6,999~~ ₱5,999 puts **6999** in `pricePerPax`. `discountAmount` is **never auto-filled** — discounts are entered by hand (user decision, 2026-08-31); the banner names the exact figure to type. Inverting this misprices a live package.
 - **Nothing is written to the database by the import.** It fills the in-memory form only; `updatePackage` remains the sole write path.
 - **Add-only gate:** the button renders only when `pkg.destination_id === null` (never successfully saved). No migration, no new column, no URL param.
 - **Model is env-switchable:** `POSTER_EXTRACTION_MODEL`, defaulting to `claude-opus-5`. Do **not** pass `thinking` or `output_config.effort` — both are unsupported on `claude-haiku-4-5`, which must remain a drop-in switch.
@@ -656,8 +656,17 @@ export function mapPosterToFormValues(
 
   // Pricing. pricePerPax on the form is the PRE-discount price: the public
   // site renders `price_per_pax - discount_amount` with price_per_pax struck
-  // through. So a poster showing "was 6999, now 5999" becomes
-  // pricePerPax 6999 + discountAmount 1000, NOT pricePerPax 5999.
+  // through. So a poster showing "was 6999, now 5999" puts 6999 here, NOT
+  // 5999 -- the 1000 difference belongs in discountAmount.
+  //
+  // discountAmount itself is NEVER auto-filled: discounts are entered by hand
+  // (user decision, 2026-08-31). Auto-filling it and putting the marked-down
+  // price in pricePerPax would be the one combination that silently
+  // undercharges, since an admin who then typed the discount in would be
+  // discounting an already-discounted price. Instead we seed the pre-discount
+  // price and flag the discount with the exact figure to type, so a manual
+  // entry lands correctly and an ignored one is at least visible in the
+  // banner.
   const current =
     raw.pricePerPax !== null ? Math.round(raw.pricePerPax) : null;
   const original =
@@ -677,19 +686,25 @@ export function mapPosterToFormValues(
   } else {
     const discount = original - current;
     if (discount > 0 && discount < original) {
+      // Seed the struck-through price so a hand-entered discount subtracts
+      // from the right number.
       values.pricePerPax = original;
-      values.discountAmount = discount;
+      flag(
+        "discountAmount",
+        "Discount",
+        "details",
+        `The poster marks ${formatPeso(original)} down to ${formatPeso(current)}. Price per pax is set to ${original} — enter ${discount} as the Discount on the Details tab to show that markdown on the site.`
+      );
     } else {
       values.pricePerPax = current;
       flag(
         "discountAmount",
         "Discount",
         "details",
-        `The poster's "was" price (${original}) isn't higher than its current price (${current}), so no discount was applied. Check the Details tab.`
+        `The poster's "was" price (${original}) isn't higher than its current price (${current}), so no discount could be worked out. Check the Details tab.`
       );
     }
   }
-
   const durationLabel = cleanText(raw.durationLabel);
   if (durationLabel !== null) {
     values.durationLabel = durationLabel;

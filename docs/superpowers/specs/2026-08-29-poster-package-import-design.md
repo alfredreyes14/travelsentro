@@ -81,8 +81,10 @@ The model therefore reports two plain observations rather than the form's derive
 
 | Poster shows | pricePerPax | discountAmount |
 |---|---|---|
-| `₱5,999` | 5999 | undefined |
-| ~~`₱6,999`~~ `₱5,999` | 6999 | 1000 |
+| `₱5,999` | 5999 | never auto-filled |
+| ~~`₱6,999`~~ `₱5,999` | 6999 | never auto-filled — flagged with "enter 1000" |
+
+**Discounts are always entered by hand** (user decision, 2026-08-31). The extraction still reads the markdown, but only to seed `pricePerPax` with the pre-discount figure and to tell the admin, in the banner, exactly what to type. The alternative — auto-filling the discount and seeding the marked-down price — is the one combination that silently undercharges, because an admin who then typed the discount would be discounting an already-discounted price.
 
 Getting this backwards would misprice a package on the live public site, so it is stated explicitly in the prompt, encoded in the mapper, and covered by the verification script.
 
@@ -110,7 +112,7 @@ Each rule below encodes a constraint `packageFormSchema` already enforces, so th
 
 - **Destination** — normalize (lowercase, trim, collapse whitespace) both sides, then: exact match → substring match (poster "Coron, Palawan" contains the row "Coron"). No match, or 2+ ambiguous matches, leaves `destinationId` unset and flags the field, carrying the raw poster text in `reason` (e.g. *poster says "Coron, Palawan" — no matching destination; pick one or add it under Packages → Destinations*). An earlier draft added a third "first comma-segment" tier; it was removed as unreachable — a first segment is always a substring of the whole string, so the substring tier already matches anything it could.
 - **Price per pax** — `Math.round()`, must be `> 0` (schema requires `.int().positive()`). Absent, zero, or negative → flagged.
-- **Discount** — derived as `originalPricePerPax - pricePerPax`, kept only when the result is `> 0` **and** `< pricePerPax` (the schema requires `.positive()` and refines `discountAmount < pricePerPax`). A non-positive result — which is what an inverted or equal pair of prices produces — is dropped and flagged.
+- **Discount** — never written to the form. When the poster shows a valid markdown (`originalPricePerPax - pricePerPax > 0`), `pricePerPax` takes the pre-discount figure and the banner names the exact amount to enter. An inverted or equal pair of prices leaves `pricePerPax` at the printed price and flags that no discount could be worked out.
 - **Travel dates** — a row survives only with both `dateFrom` and `dateTo` as valid `YYYY-MM-DD` and `dateTo >= dateFrom` (the schema's `.refine()`). Flagged whenever **any** row is dropped, not only when all of them are: a poster listing three departures that quietly imports two is exactly the loss the banner exists to prevent.
 - **Name / Duration** — trimmed; empty or null → flagged.
 - **Remarks** — trimmed; optional in the schema and **never flagged**, since most posters have no remarks-equivalent and flagging it would be noise in every single import.
@@ -157,9 +159,9 @@ No test framework exists in this repo; the convention is standalone `scripts/ver
 
 `scripts/verify-poster-extraction.ts` (npm script `verify:poster-extraction`) asserts, against hand-written `PosterExtraction` fixtures:
 
-1. Struck-through pricing → `pricePerPax: 6999, discountAmount: 1000` (the inversion guard).
-2. Single price → `discountAmount: undefined`.
-3. Discount `>= pricePerPax` → dropped and flagged.
+1. Struck-through pricing → `pricePerPax: 6999`, discount unset and flagged with the exact figure to type (the inversion guard).
+2. Single price → `pricePerPax` as printed, discount unset.
+3. `discountAmount` is never auto-filled, across every pricing fixture.
 4. Zero/negative/null price → flagged.
 5. Destination exact and substring matches resolve to the right id; no-match and ambiguous-match flag with the raw text preserved.
 6. A travel-date row with no year → dropped, Travel Dates flagged; `dateTo < dateFrom` → dropped.

@@ -55,17 +55,33 @@ function record(name: string, pass: boolean, detail: string): void {
 
 // --- 1. Struck-through pricing (the inversion guard) ---------------------
 function checkStruckThroughPricing(): void {
-  const { values } = mapPosterToFormValues(
+  const { values, unmapped } = mapPosterToFormValues(
     poster({ pricePerPax: 5999, originalPricePerPax: 6999 }),
     DESTINATIONS
   );
-  const pass = values.pricePerPax === 6999 && values.discountAmount === 1000;
+  // pricePerPax takes the PRE-discount price so a hand-entered discount
+  // subtracts from the right number. discountAmount is never auto-filled.
+  const pass =
+    values.pricePerPax === 6999 &&
+    values.discountAmount === undefined &&
+    flaggedFields(unmapped).includes("discountAmount");
   record(
-    "Struck-through price maps to pre-discount pricePerPax + discountAmount",
+    "Struck-through price seeds pre-discount pricePerPax and flags the discount",
     pass,
     pass
-      ? "6999 / 1000 (renders as struck 6999, pay 5999)"
-      : `expected 6999/1000, got ${values.pricePerPax}/${values.discountAmount}`
+      ? "6999 / undefined + flagged (type 1000 by hand -> struck 6999, pay 5999)"
+      : `expected 6999/undefined+flagged, got ${values.pricePerPax}/${values.discountAmount}, flags: ${flaggedFields(unmapped).join(",")}`
+  );
+
+  // The banner has to carry the exact figure to type, or the manual step is
+  // guesswork.
+  const reason =
+    unmapped.find((entry) => entry.field === "discountAmount")?.reason ?? "";
+  const reasonPass = reason.includes("1000") && reason.includes("6,999");
+  record(
+    "Discount flag names the amount to enter and the marked-down price",
+    reasonPass,
+    reasonPass ? `reason: "${reason}"` : `reason lacked the figures: "${reason}"`
   );
 }
 
@@ -407,6 +423,27 @@ function checkSchemaInvariant(): void {
   }
 }
 
+// --- 10. discountAmount is never auto-filled (user decision, 2026-08-31) --
+function checkDiscountNeverAutoFilled(): void {
+  const fixtures: { label: string; value: PosterExtraction }[] = [
+    { label: "struck-through price", value: poster({ pricePerPax: 5999, originalPricePerPax: 6999 }) },
+    { label: "single price", value: poster({ pricePerPax: 5999 }) },
+    { label: "inverted was/now", value: poster({ pricePerPax: 6999, originalPricePerPax: 5999 }) },
+    { label: "equal was/now", value: poster({ pricePerPax: 5999, originalPricePerPax: 5999 }) },
+    { label: "no price at all", value: emptyPoster() },
+  ];
+
+  for (const fixture of fixtures) {
+    const { values } = mapPosterToFormValues(fixture.value, DESTINATIONS);
+    const pass = values.discountAmount === undefined;
+    record(
+      `Discount is never auto-filled (${fixture.label})`,
+      pass,
+      pass ? "undefined" : `auto-filled ${values.discountAmount}`
+    );
+  }
+}
+
 function main(): void {
   checkStruckThroughPricing();
   checkSinglePrice();
@@ -419,6 +456,7 @@ function main(): void {
   checkItineraryPresentButUnusable();
   checkRemarksNeverFlagged();
   checkSchemaInvariant();
+  checkDiscountNeverAutoFilled();
 
   console.log("\nPoster extraction mapping checks\n");
   for (const result of results) {
