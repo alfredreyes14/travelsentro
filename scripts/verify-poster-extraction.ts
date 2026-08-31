@@ -13,6 +13,8 @@ import {
 } from "../components/admin/package-form-schema";
 import type { PosterExtraction } from "../lib/packages/poster-prompt";
 import { mapPosterToFormValues } from "../lib/packages/poster-mapping";
+import AnthropicSDK from "@anthropic-ai/sdk";
+import { describePosterExtractionError } from "../lib/packages/poster-error";
 
 type CheckResult = { name: string; pass: boolean; detail: string };
 
@@ -444,6 +446,107 @@ function checkDiscountNeverAutoFilled(): void {
   }
 }
 
+// --- 11. API failure messages tell the admin the truth -------------------
+/**
+ * Builds the error the SDK would construct from a real API response body, so
+ * these assert against genuine SDK classes rather than hand-rolled fakes.
+ * No key and no network needed -- APIError.generate is pure.
+ */
+function apiError(status: number, type: string, message: string): unknown {
+  return AnthropicSDK.APIError.generate(
+    status,
+    { type: "error", error: { type, message } },
+    undefined,
+    new Headers()
+  );
+}
+
+function checkErrorMessages(): void {
+  // Exhausted credits: "try again" is the one instruction that cannot work,
+  // so it must never be the advice here.
+  const credits = describePosterExtractionError(
+    apiError(400, "billing_error", "Your credit balance is too low to access the Claude API.")
+  );
+  const creditsPass =
+    credits.message.includes("credits") &&
+    credits.message.includes("console.anthropic.com");
+  record(
+    "Exhausted credits name the cause and where to top up",
+    creditsPass,
+    creditsPass ? `"${credits.message}"` : `got: "${credits.message}"`
+  );
+
+  const creditsLogPass = credits.log.includes("billing");
+  record(
+    "Exhausted credits are logged as a billing error",
+    creditsLogPass,
+    creditsLogPass ? `"${credits.log}"` : `got: "${credits.log}"`
+  );
+
+  // The same condition as an untyped 400 (the documented backstop).
+  const untyped = describePosterExtractionError(
+    apiError(400, "invalid_request_error", "Your credit balance is too low to access the Claude API.")
+  );
+  const untypedPass = untyped.message === credits.message;
+  record(
+    "Credit exhaustion reported as an untyped 400 gets the same message",
+    untypedPass,
+    untypedPass ? "matched" : `got: "${untyped.message}"`
+  );
+
+  // A 400 that is NOT about credits must not be mistaken for one.
+  const otherBadRequest = describePosterExtractionError(
+    apiError(400, "invalid_request_error", "messages.0.content.0.image.source.base64: invalid image")
+  );
+  const otherPass = !otherBadRequest.message.includes("credits");
+  record(
+    "An unrelated 400 is not misreported as a credit problem",
+    otherPass,
+    otherPass ? `"${otherBadRequest.message}"` : `misclassified: "${otherBadRequest.message}"`
+  );
+
+  const auth = describePosterExtractionError(
+    apiError(401, "authentication_error", "invalid x-api-key")
+  );
+  const authPass = auth.message.includes("isn't configured");
+  record(
+    "A rejected API key reports a configuration problem",
+    authPass,
+    authPass ? `"${auth.message}"` : `got: "${auth.message}"`
+  );
+
+  const rateLimit = describePosterExtractionError(
+    apiError(429, "rate_limit_error", "rate limit exceeded")
+  );
+  const ratePass = rateLimit.message.includes("busy");
+  record(
+    "A rate limit reports a transient problem",
+    ratePass,
+    ratePass ? `"${rateLimit.message}"` : `got: "${rateLimit.message}"`
+  );
+
+  const serverError = describePosterExtractionError(
+    apiError(500, "api_error", "internal server error")
+  );
+  const serverPass =
+    !serverError.message.includes("credits") &&
+    serverError.log.includes("api_error");
+  record(
+    "An unclassified API error stays generic but logs its type",
+    serverPass,
+    serverPass ? `log: "${serverError.log}"` : `got log: "${serverError.log}"`
+  );
+
+  const plain = describePosterExtractionError(new Error("socket hang up"));
+  const plainPass =
+    !plain.message.includes("credits") && plain.log.includes("socket hang up");
+  record(
+    "A non-SDK error stays generic and logs its detail",
+    plainPass,
+    plainPass ? `log: "${plain.log}"` : `got log: "${plain.log}"`
+  );
+}
+
 function main(): void {
   checkStruckThroughPricing();
   checkSinglePrice();
@@ -457,6 +560,7 @@ function main(): void {
   checkRemarksNeverFlagged();
   checkSchemaInvariant();
   checkDiscountNeverAutoFilled();
+  checkErrorMessages();
 
   console.log("\nPoster extraction mapping checks\n");
   for (const result of results) {

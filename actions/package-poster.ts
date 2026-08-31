@@ -15,6 +15,7 @@ import {
   mapPosterToFormValues,
   type UnmappedField,
 } from "@/lib/packages/poster-mapping";
+import { describePosterExtractionError } from "@/lib/packages/poster-error";
 import {
   MAX_POSTER_BYTES,
   isAcceptedMimeType,
@@ -162,26 +163,10 @@ export async function extractPackageFromPoster(input: {
 
     return { ok: true, values, unmapped };
   } catch (error) {
-    // Most specific first — never string-match SDK error messages.
-    if (error instanceof Anthropic.AuthenticationError) {
-      console.error("Anthropic auth failed for poster extraction");
-      return {
-        ok: false,
-        error:
-          "Poster import isn't configured yet. Please contact your administrator.",
-      };
-    }
-    if (error instanceof Anthropic.RateLimitError) {
-      return {
-        ok: false,
-        error: "The extraction service is busy. Please try again in a moment.",
-      };
-    }
-    if (error instanceof Anthropic.APIError) {
-      console.error(`Anthropic API error ${error.status}:`, error.message);
-      return { ok: false, error: GENERIC_ERROR_MESSAGE };
-    }
-    console.error("Poster extraction failed:", error);
-    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+    // Branch selection and copy live in describePosterExtractionError so
+    // every case is verifiable offline (scripts/verify-poster-extraction.ts).
+    const { message, log } = describePosterExtractionError(error);
+    console.error(log);
+    return { ok: false, error: message };
   }
 }

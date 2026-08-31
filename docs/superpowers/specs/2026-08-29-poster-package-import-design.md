@@ -148,7 +148,13 @@ This is a deliberate choice of a visible gap over a silent wrong answer: a guess
 
 Every failure returns a `{ ok: false, error }` the button surfaces via `toast.error` — no partial form fills, no thrown errors reaching the user.
 
-- Typed SDK catch chain, most specific first: `AuthenticationError` → "AI extraction isn't configured. Contact your administrator."; `RateLimitError` → "The extraction service is busy. Try again in a moment."; `APIError` → generic. Never string-match error messages.
+- Branch selection and copy live in `lib/packages/poster-error.ts` as a pure `describePosterExtractionError(error)`, so every case is verifiable offline against real SDK error instances. The action just calls it. Typed SDK checks, most specific first:
+  - **Out of credits** → *"Poster import has run out of Anthropic API credits. Top up the account at console.anthropic.com, then try again."* Detected via `APIError.type === "billing_error"` (a first-class member of the SDK's `ErrorType` union — not a message match), with a narrow documented backstop for the same condition arriving as an untyped 400. This must precede the generic branch: "try again" is the one instruction that cannot work until someone tops the account up.
+  - `AuthenticationError` → "Poster import isn't configured yet. Please contact your administrator."
+  - `RateLimitError` → "The extraction service is busy. Please try again in a moment."
+  - `APIConnectionTimeoutError` → "Reading that poster took too long. Try again, or use a smaller image."
+  - `APIError` → generic, but logs `status` **and** `type`, so any condition deserving its own message is identifiable from the logs rather than invisible.
+  - Anything else → generic, logging the underlying message.
 - `response.parsed_output === null` (schema parse failed) → "Couldn't read this poster. Try a clearer image, or fill the form in manually."
 - Rejected MIME type or an oversized file → rejected client-side before the upload, and again server-side. The cap is **3.5 MB on the raw file**, not 5 MB: base64 inflates payloads by ~33%, and the API's limit is 5 MB on the *encoded* image, so a 5 MB file would arrive as ~6.7 MB and be rejected by the API. The error names the limit and suggests resizing.
 - A successful call that yields nothing usable (every field null) is **not** an error: the form is left untouched and the banner reports that nothing could be read.
