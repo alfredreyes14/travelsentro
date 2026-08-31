@@ -16,6 +16,8 @@
     "verify:semaphore-error-handling": "tsx scripts/verify-semaphore-error-handling.ts",
     "verify:unsubscribe-token-secret": "tsx scripts/verify-unsubscribe-token-secret.ts",
     "verify:bulk-email-status": "tsx scripts/verify-bulk-email-status-accuracy.ts",
+    "verify:poster-extraction": "tsx scripts/verify-poster-extraction.ts",
+    "verify:poster-extraction:live": "tsx --env-file=.env.local scripts/verify-poster-extraction.ts --live",
     "verify:package-pdf": "tsx --env-file=.env.local scripts/verify-package-pdf.ts",
     "verify:public-package-pdf": "tsx --env-file=.env.local scripts/verify-public-package-pdf.ts",
     "verify:admin-package-pdf": "tsx --env-file=.env.local scripts/verify-admin-package-pdf.ts",
@@ -24,6 +26,7 @@
     "verify:messenger-webhook": "tsx scripts/verify-messenger-webhook.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.122.0",
     "@aws-sdk/client-s3": "^3.1105.0",
     "@base-ui/react": "^1.6.0",
     "@dnd-kit/core": "^6.3.1",

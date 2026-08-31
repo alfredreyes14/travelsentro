@@ -7,11 +7,20 @@ import { PackageForm } from "@/components/admin/package-form";
 import type { PackageFormValues } from "@/components/admin/package-form-schema";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/admin/page-header";
+import { PosterImportProvider } from "@/components/admin/poster-import-context";
+import { PosterImportButton } from "@/components/admin/poster-import-button";
+import { PosterImportBanner } from "@/components/admin/poster-import-banner";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
   title: "Edit Package | TravelSentro Admin",
 };
+
+// A Server Action inherits the route segment config of the page it's
+// invoked from. extractPackageFromPoster (actions/package-poster.ts) calls
+// the Anthropic API with a 60s client timeout and up to 1 retry, so this
+// caps the whole request at 2 minutes instead of the platform default.
+export const maxDuration = 120;
 
 type PackageDetail = Database["public"]["Tables"]["packages"]["Row"] & {
   package_photos: Database["public"]["Tables"]["package_photos"]["Row"][];
@@ -131,24 +140,38 @@ export default async function EditPackagePage({
     bringItems,
   };
 
-  return (
-    <div className="flex flex-col gap-6">
-      <PageHeader title="Edit Package" description={`${pkg.name} · ${pkg.slug}`}>
-        <Button
-          variant="outline"
-          size="lg"
-          render={<a href={`/admin/packages/${pkg.id}/pdf`} download />}
-        >
-          Download Full Itinerary
-        </Button>
-      </PageHeader>
+  // createDraftPackage inserts with destination_id unset, and updatePackage
+  // can't succeed without one (packageFormSchema requires destinationId).
+  // So a null destination means this package has never been saved -- i.e.
+  // the admin is still adding it, which is the only time poster import is
+  // offered.
+  const isUnsavedDraft = pkg.destination_id === null;
 
-      <PackageForm
-        packageId={pkg.id}
-        defaultValues={defaultValues}
-        initialPhotos={photos}
-        destinations={destinationOptions}
-      />
-    </div>
+  return (
+    <PosterImportProvider>
+      <div className="flex flex-col gap-6">
+        <PageHeader title="Edit Package" description={`${pkg.name} · ${pkg.slug}`}>
+          <div className="flex flex-wrap items-center gap-3">
+            {isUnsavedDraft ? <PosterImportButton /> : null}
+            <Button
+              variant="outline"
+              size="lg"
+              render={<a href={`/admin/packages/${pkg.id}/pdf`} download />}
+            >
+              Download Full Itinerary
+            </Button>
+          </div>
+        </PageHeader>
+
+        <PosterImportBanner />
+
+        <PackageForm
+          packageId={pkg.id}
+          defaultValues={defaultValues}
+          initialPhotos={photos}
+          destinations={destinationOptions}
+        />
+      </div>
+    </PosterImportProvider>
   );
 }

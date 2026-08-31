@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -8,9 +8,11 @@ import { toast } from "sonner";
 import { updatePackage } from "@/actions/packages";
 import {
   packageFormSchema,
+  EMPTY_DEFAULTS,
   type PackageFormValues,
 } from "./package-form-schema";
 import { PhotoManager, type PhotoManagerPhoto } from "./photo-manager";
+import { usePosterImport } from "./poster-import-context";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -53,20 +55,6 @@ const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
 export type PackageDestinationOption = { id: string; name: string };
-
-const EMPTY_DEFAULTS: PackageFormValues = {
-  name: "",
-  pricePerPax: 0,
-  discountAmount: undefined,
-  durationLabel: "",
-  destinationId: "",
-  remarks: "",
-  travelDates: [],
-  itinerary: [],
-  inclusions: [],
-  exclusions: [],
-  bringItems: [],
-};
 
 /**
  * Maps each tab's string value to the PackageFormValues field names rendered
@@ -146,6 +134,60 @@ export function PackageForm({
     label: string;
     onConfirm: () => void;
   } | null>(null);
+
+  const { extraction, importSeq } = usePosterImport();
+  const [pendingImport, setPendingImport] = useState<PackageFormValues | null>(
+    null
+  );
+  // Tracks which importSeq has already been handled -- dialog opened, or
+  // immediate-apply tab switch performed -- so the derived render logic
+  // below doesn't refire (and reopen a just-cancelled dialog, or re-force
+  // the Details tab) on unrelated re-renders once importSeq itself stops
+  // changing.
+  const [handledImportSeq, setHandledImportSeq] = useState(0);
+
+  /**
+   * A poster import replaces the whole form. On a fresh draft there is
+   * nothing to lose, so apply it straight away; if the admin has already
+   * typed something (e.g. importing a second poster), confirm first.
+   * Keyed on importSeq, not on `extraction`, so re-importing a poster that
+   * yields identical values still re-fills the form.
+   *
+   * Both branches below are decided directly in the render body -- React's
+   * documented "adjusting state when a value changes" alternative to an
+   * Effect (https://react.dev/learn/you-might-not-need-an-effect). Neither
+   * "should the confirmation dialog be open" nor "which tab is active" is
+   * an imperative call to an external system; both are pure UI state
+   * derivable from importSeq and the form's own isDirty flag. form.reset()
+   * is different -- it mutates react-hook-form's internal store and
+   * notifies subscribers -- so it alone stays in the effect below.
+   */
+  // Read unconditionally (not just inside the branch below) so react-hook-form
+  // subscribes to isDirty at mount. RHF only computes isDirty once something
+  // has read it through the formState proxy -- if the first read happened
+  // inside the `importSeq !== 0` branch, the very first import would run
+  // before the subscription existed and form.formState.isDirty would still
+  // read stale/false, silently skipping the confirmation dialog.
+  const isFormDirty = form.formState.isDirty;
+
+  if (importSeq !== 0 && importSeq !== handledImportSeq && extraction !== null) {
+    setHandledImportSeq(importSeq);
+    if (isFormDirty) {
+      setPendingImport({ ...EMPTY_DEFAULTS, ...extraction.values });
+    } else {
+      setActiveTab("details");
+    }
+  }
+
+  useEffect(() => {
+    if (importSeq === 0 || extraction === null) return;
+    if (isFormDirty) return; // handled above, during render
+
+    form.reset({ ...EMPTY_DEFAULTS, ...extraction.values });
+    // form and extraction are stable for a given importSeq; re-running on
+    // their identity would re-apply the import on unrelated re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importSeq]);
 
   function requestRemove(
     hasContent: boolean,
@@ -705,6 +747,35 @@ export function PackageForm({
                 }}
               >
                 Remove
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={pendingImport !== null}
+          onOpenChange={(open) => !open && setPendingImport(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Replace what you&apos;ve entered?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Importing this poster will overwrite everything currently in
+                this form, including any changes you&apos;ve typed.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (pendingImport) {
+                    form.reset(pendingImport);
+                    setActiveTab("details");
+                  }
+                  setPendingImport(null);
+                }}
+              >
+                Replace
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

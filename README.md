@@ -20,6 +20,29 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+### Poster import (Claude vision)
+
+The admin package screen can pre-fill a new package from a marketing poster
+image. Requires:
+
+| Variable | Required | Default | Notes |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | yes | — | Without it the button returns "Poster import isn't configured yet." |
+| `POSTER_EXTRACTION_MODEL` | no | `claude-opus-5` | Set to `claude-haiku-4-5` for ~5x lower cost per poster, at some accuracy cost on cluttered posters. |
+
+Roughly $0.08 (~₱4.50) per poster on the default model. The button appears
+only on a package that has never been saved. Nothing is written to the
+database by the import — it fills the form, and the admin saves as usual.
+
+Verify the mapping rules offline (no API calls, no key needed):
+
+    npm run verify:poster-extraction
+
+Check a real poster end to end (one billed API call, needs `ANTHROPIC_API_KEY`
+in `.env.local`):
+
+    npm run verify:poster-extraction:live -- ./poster.jpg
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
