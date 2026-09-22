@@ -3,9 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { GripVerticalIcon, MoreHorizontalIcon } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { MoreHorizontalIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -33,11 +32,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
 import { TableCell, TableRow } from "@/components/ui/table";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -51,25 +45,10 @@ export function PackageListRow({
   onMutated: () => void;
   onDeleted: (id: string) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id });
-
   const [isPublished, setIsPublished] = useState(item.isPublished);
   const [isFeatured, setIsFeatured] = useState(item.isFeatured);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.6 : 1,
-  };
 
   function handlePublishChange(checked: boolean) {
     setIsPublished(checked);
@@ -126,25 +105,7 @@ export function PackageListRow({
 
   return (
     <>
-      <TableRow ref={setNodeRef} style={style}>
-        <TableCell>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <button
-                  type="button"
-                  className="flex size-11 items-center justify-center text-muted-foreground"
-                  {...attributes}
-                  {...listeners}
-                />
-              }
-            >
-              <GripVerticalIcon />
-              <span className="sr-only">Drag to reorder</span>
-            </TooltipTrigger>
-            <TooltipContent>Drag to reorder</TooltipContent>
-          </Tooltip>
-        </TableCell>
+      <TableRow>
         <TableCell>
           <div className="relative size-12 overflow-hidden rounded-md bg-secondary/10">
             {item.photoUrl ? (
@@ -159,6 +120,12 @@ export function PackageListRow({
           </div>
         </TableCell>
         <TableCell className="font-medium">{item.name}</TableCell>
+        <TableCell className="text-muted-foreground">
+          {item.destinationName ?? "—"}
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          {item.travelWindowLabel}
+        </TableCell>
         <TableCell>
           <div className="flex items-center gap-2">
             <Switch
@@ -178,6 +145,11 @@ export function PackageListRow({
             />
             <span className="text-sm text-muted-foreground">Featured</span>
           </div>
+        </TableCell>
+        <TableCell className="text-muted-foreground">
+          <span title={new Date(item.createdAt).toLocaleString()}>
+            {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+          </span>
         </TableCell>
         <TableCell>
           <DropdownMenu>

@@ -21,23 +21,47 @@ export function ItineraryAccordion({ days }: { days: ItineraryDay[] }) {
 
   return (
     <Accordion>
-      {sortedDays.map((day) => (
-        <AccordionItem key={day.id} value={day.id}>
-          <AccordionTrigger>
-            <span className="flex items-center gap-3">
-              <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[12px] font-semibold text-secondary-foreground">
-                {day.day_number}
+      {sortedDays.map((day) => {
+        // Descriptions are stored as newline-separated activity lines -- the
+        // poster importer and the manual form both follow that convention,
+        // and the PDF renders them the same way. Show one bullet per line,
+        // falling back to a plain paragraph for a single-line description.
+        const lines = day.description
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean);
+
+        return (
+          <AccordionItem key={day.id} value={day.id}>
+            <AccordionTrigger>
+              <span className="flex items-center gap-3">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-[12px] font-semibold text-secondary-foreground">
+                  {day.day_number}
+                </span>
+                <span>{day.title}</span>
               </span>
-              <span>{day.title}</span>
-            </span>
-          </AccordionTrigger>
-          <AccordionContent className="pl-10">
-            <p className="text-base leading-[1.5] text-muted-foreground">
-              {day.description}
-            </p>
-          </AccordionContent>
-        </AccordionItem>
-      ))}
+            </AccordionTrigger>
+            <AccordionContent className="pl-10">
+              {lines.length > 1 ? (
+                <ul className="flex flex-col gap-1.5 text-base leading-[1.5] text-muted-foreground">
+                  {lines.map((line, index) => (
+                    <li key={index} className="flex gap-2">
+                      <span aria-hidden="true" className="text-secondary">
+                        &bull;
+                      </span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-base leading-[1.5] text-muted-foreground">
+                  {lines[0] ?? ""}
+                </p>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        );
+      })}
     </Accordion>
   );
 }

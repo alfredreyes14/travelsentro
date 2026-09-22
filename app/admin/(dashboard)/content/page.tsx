@@ -13,8 +13,6 @@ import type {
 } from "@/components/admin/content/hero-slide-form";
 import { TestimonialsList } from "@/components/admin/content/testimonials-list";
 import type { TestimonialRecord } from "@/components/admin/content/testimonial-form";
-import { PartnersList } from "@/components/admin/content/partners-list";
-import type { PartnerRecord } from "@/components/admin/content/partner-form";
 import { PageHeader } from "@/components/admin/page-header";
 import {
   Tabs,
@@ -41,8 +39,6 @@ type HeroSlideRow = Database["public"]["Tables"]["hero_slides"]["Row"] & {
     | null;
 };
 
-type PartnerRow = Database["public"]["Tables"]["partners"]["Row"];
-
 export default async function AdminContentPage() {
   // AUTH-05 (T-06-21) -- gate independent of Task 2's nav hiding; RLS is the
   // second, independent enforcement layer.
@@ -54,8 +50,6 @@ export default async function AdminContentPage() {
     { data: heroSlideRows, error: heroSlidesError },
     { data: packageOptionRows, error: packagesError },
     { data: testimonialRows, error: testimonialsError },
-    { data: brandPartnerRows, error: brandPartnersError },
-    { data: corporateClientRows, error: corporateClientsError },
   ] = await Promise.all([
     supabase
       .from("hero_slides")
@@ -66,16 +60,6 @@ export default async function AdminContentPage() {
     // slide candidates (T-06-22).
     supabase.from("packages").select("id, name").eq("is_featured", true).eq("is_published", true).is("deleted_at", null).order("name"),
     supabase.from("testimonials").select("*").order("sort_order", { ascending: true }),
-    supabase
-      .from("partners")
-      .select("*")
-      .eq("partner_type", "brand_partner")
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("partners")
-      .select("*")
-      .eq("partner_type", "corporate_client")
-      .order("sort_order", { ascending: true }),
   ]);
 
   if (heroSlidesError) {
@@ -89,15 +73,6 @@ export default async function AdminContentPage() {
   }
   if (testimonialsError) {
     console.error("Failed to load testimonials:", testimonialsError.message);
-  }
-  if (brandPartnersError) {
-    console.error("Failed to load brand partners:", brandPartnersError.message);
-  }
-  if (corporateClientsError) {
-    console.error(
-      "Failed to load corporate clients:",
-      corporateClientsError.message
-    );
   }
 
   const packages: HeroSlidePackageOption[] = (packageOptionRows ?? []).map(
@@ -149,22 +124,6 @@ export default async function AdminContentPage() {
     })
   );
 
-  // Rule 1 fix: partners-list.tsx renders <img src={item.logoUrl}> (not the
-  // raw logoStoragePath, which partner-form.tsx's edit-mode default value
-  // needs to stay a bare Storage path so re-saving without replacing the
-  // logo doesn't overwrite logo_storage_path with a resolved public URL).
-  function mapPartnerRow(row: PartnerRow): PartnerRecord & { logoUrl: string } {
-    return {
-      id: row.id,
-      logoStoragePath: row.logo_storage_path,
-      linkUrl: row.link_url,
-      logoUrl: getPublicImageUrl(row.logo_storage_path),
-    };
-  }
-
-  const brandPartners = (brandPartnerRows ?? []).map(mapPartnerRow);
-  const corporateClients = (corporateClientRows ?? []).map(mapPartnerRow);
-
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -176,7 +135,6 @@ export default async function AdminContentPage() {
         <TabsList>
           <TabsTrigger value="hero-slides">{"Hero Slides"}</TabsTrigger>
           <TabsTrigger value="testimonials">{"Testimonials"}</TabsTrigger>
-          <TabsTrigger value="partners">{"Partners & Clients"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="hero-slides" keepMounted className="pt-4">
@@ -185,13 +143,6 @@ export default async function AdminContentPage() {
 
         <TabsContent value="testimonials" keepMounted className="pt-4">
           <TestimonialsList initialItems={testimonials} />
-        </TabsContent>
-
-        <TabsContent value="partners" keepMounted className="pt-4">
-          <PartnersList
-            initialBrandPartners={brandPartners}
-            initialCorporateClients={corporateClients}
-          />
         </TabsContent>
       </Tabs>
     </div>

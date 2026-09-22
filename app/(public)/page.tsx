@@ -9,12 +9,13 @@ import { WhyChooseUs } from "@/components/homepage/why-choose-us";
 import { FeaturedPackagesGrid } from "@/components/homepage/featured-packages-grid";
 import { DestinationsSection } from "@/components/homepage/destinations-section";
 import { TestimonialsSection } from "@/components/homepage/testimonials-section";
-import { BrandPartners } from "@/components/homepage/brand-partners";
+import { PartnerAffiliations } from "@/components/homepage/partner-affiliations";
 import { CorporateClients } from "@/components/homepage/corporate-clients";
 import { Reveal } from "@/components/motion/reveal";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
+import { readLogoFolder } from "@/lib/logos/read-logo-folder";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -65,15 +66,15 @@ function firstPhotoUrl(photos: PackagePhotoRef[]): string | null {
 export default async function HomePage() {
   const supabase = createPublicClient();
 
-  // All six sections are independent reads (no query depends on another's
-  // result), so they run concurrently instead of as a 6-request waterfall.
+  // All four sections are independent reads (no query depends on another's
+  // result), so they run concurrently instead of as a 4-request waterfall.
+  // Partner/client logos are no longer part of this -- they're read
+  // synchronously from public/logos/** below, not queried from Supabase.
   const [
     { data: rawSlides, error: slidesError },
     { data: featuredData, error: featuredError },
     { data: testimonialsData, error: testimonialsError },
     { data: destinationsData, error: destinationsError },
-    { data: brandPartnersData, error: brandPartnersError },
-    { data: corporateClientsData, error: corporateClientsError },
   ] = await Promise.all([
     // (1) Hero slides -- package-linked or promo. hero_slides has
     // unconditional public-read RLS but packages does not, so a
@@ -87,15 +88,16 @@ export default async function HomePage() {
         "*, packages(id, slug, name, is_published, deleted_at, package_photos(storage_path, display_order))"
       )
       .order("sort_order", { ascending: true }),
-    // (3) Featured packages -- byte-identical query shape to
+    // (3) Featured packages -- same query shape as
     // app/(public)/packages/page.tsx, reusing the existing is_featured
     // flag (D-04) as the only addition. Zero new curation mechanism.
+    // Newest first, since `sort_order` is no longer authored in the admin.
     supabase
       .from("packages")
       .select("*, package_photos(storage_path, display_order)")
       .eq("is_published", true)
       .eq("is_featured", true)
-      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(6),
     // (4) Testimonials
     supabase.from("testimonials").select("*").order("sort_order", { ascending: true }),
@@ -108,19 +110,6 @@ export default async function HomePage() {
       .from("destinations")
       .select("*")
       .eq("is_active", true)
-      .order("sort_order", { ascending: true }),
-    // (5) Brand partners and (6) corporate clients -- two fully
-    // independent queries/counts, one per partner_type, never a combined
-    // "any partner exists" check (RESEARCH.md Pitfall 3 / D-07).
-    supabase
-      .from("partners")
-      .select("*")
-      .eq("partner_type", "brand_partner")
-      .order("sort_order", { ascending: true }),
-    supabase
-      .from("partners")
-      .select("*")
-      .eq("partner_type", "corporate_client")
       .order("sort_order", { ascending: true }),
   ]);
 
@@ -207,32 +196,13 @@ export default async function HomePage() {
     (d) => d.region === "international"
   );
 
-  if (brandPartnersError) {
-    console.error("Failed to load brand partners:", brandPartnersError.message);
-  }
-
-  const brandPartners = (brandPartnersData ?? []).map(
-    (partner: Database["public"]["Tables"]["partners"]["Row"]) => ({
-      id: partner.id,
-      logoUrl: getPublicImageUrl(partner.logo_storage_path),
-      linkUrl: partner.link_url,
-    })
-  );
-
-  if (corporateClientsError) {
-    console.error(
-      "Failed to load corporate clients:",
-      corporateClientsError.message
-    );
-  }
-
-  const corporateClients = (corporateClientsData ?? []).map(
-    (client: Database["public"]["Tables"]["partners"]["Row"]) => ({
-      id: client.id,
-      logoUrl: getPublicImageUrl(client.logo_storage_path),
-      linkUrl: client.link_url,
-    })
-  );
+  // Partner/client logos come straight from public/logos/** -- dropping a
+  // new file into one of these folders is enough to make it appear, no DB
+  // row or admin upload step involved.
+  const airlineLogos = readLogoFolder("airlines");
+  const operatorLogos = readLogoFolder("operators");
+  const brandPartnerLogos = readLogoFolder("brand-partners");
+  const corporateClientLogos = readLogoFolder("corporate partners");
 
   return (
     <ViewTransition enter="slide-up" default="none">
@@ -269,6 +239,17 @@ export default async function HomePage() {
           <TestimonialsSection testimonials={testimonials} />
         </Reveal>
 
+        <Reveal>
+          <PartnerAffiliations
+            airlines={airlineLogos}
+            operators={operatorLogos}
+            brandPartners={brandPartnerLogos}
+          />
+        </Reveal>
+        <Reveal>
+          <CorporateClients logos={corporateClientLogos} />
+        </Reveal>
+
         <section className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-16 sm:px-8">
           <div className="flex flex-col gap-2">
             <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
@@ -296,13 +277,6 @@ export default async function HomePage() {
 
           <InquiryForm />
         </section>
-
-        <Reveal>
-          <BrandPartners partners={brandPartners} />
-        </Reveal>
-        <Reveal>
-          <CorporateClients clients={corporateClients} />
-        </Reveal>
       </div>
     </ViewTransition>
   );

@@ -17,9 +17,9 @@ import {
 } from "@/lib/packages/poster-mapping";
 import { describePosterExtractionError } from "@/lib/packages/poster-error";
 import {
-  MAX_POSTER_BYTES,
+  MAX_API_IMAGE_BYTES,
   isAcceptedMimeType,
-  OVERSIZED_POSTER_MESSAGE,
+  POSTER_PREP_FAILED_MESSAGE,
   UNSUPPORTED_POSTER_MESSAGE,
 } from "@/lib/packages/poster-upload-limits";
 
@@ -67,8 +67,12 @@ export async function extractPackageFromPoster(input: {
     return { ok: false, error: "That file looks empty. Please pick another." };
   }
 
-  if (decodedBytes > MAX_POSTER_BYTES) {
-    return { ok: false, error: OVERSIZED_POSTER_MESSAGE };
+  // The browser compresses large posters under this ceiling before sending
+  // (compress-poster-image.ts). Re-checked here as defense in depth: the
+  // Messages API rejects an inline image whose base64 payload tops 5 MB, and
+  // that 400 would otherwise surface as a misleading "try again".
+  if (decodedBytes > MAX_API_IMAGE_BYTES) {
+    return { ok: false, error: POSTER_PREP_FAILED_MESSAGE };
   }
 
   const supabase = await createClient();

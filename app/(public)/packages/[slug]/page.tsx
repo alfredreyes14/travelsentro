@@ -270,12 +270,14 @@ export default async function PackageDetailPage({
           </section>
         </Reveal>
 
-        <Reveal>
-          <section className={SECTION_CARD}>
-            <SectionHeading icon={Backpack}>What to Bring</SectionHeading>
-            <Checklist items={bringItems} kind="bring" />
-          </section>
-        </Reveal>
+        {bringItems.length > 0 ? (
+          <Reveal>
+            <section className={SECTION_CARD}>
+              <SectionHeading icon={Backpack}>What to Bring</SectionHeading>
+              <Checklist items={bringItems} kind="bring" />
+            </section>
+          </Reveal>
+        ) : null}
 
       {travelDates.length > 0 ? (
         <Reveal>
@@ -301,7 +303,7 @@ export default async function PackageDetailPage({
                   >
                     <span>{label}</span>
                     {date.additional_fee ? (
-                      <Badge variant="outline">
+                      <Badge variant="outline" className="text-destructive">
                         +&#8369;{date.additional_fee.toLocaleString("en-PH")}
                       </Badge>
                     ) : null}

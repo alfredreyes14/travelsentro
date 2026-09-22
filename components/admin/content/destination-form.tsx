@@ -33,6 +33,11 @@ import {
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
+const REGION_ITEMS = [
+  { value: "local", label: "Local" },
+  { value: "international", label: "International" },
+] as const;
+
 export type DestinationRecord = {
   id: string;
   name: string;
@@ -246,15 +251,22 @@ function DestinationFormBody({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Region</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                items={REGION_ITEMS}
+                value={field.value}
+                onValueChange={field.onChange}
+              >
                 <FormControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a region" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="local">Local</SelectItem>
-                  <SelectItem value="international">International</SelectItem>
+                  {REGION_ITEMS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />

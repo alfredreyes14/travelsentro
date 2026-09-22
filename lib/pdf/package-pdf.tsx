@@ -117,6 +117,7 @@ function formatTravelDateRange(from: string, to: string): string {
 
 const NAVY = "#021f4a";
 const ORANGE = "#f49314";
+const RED = "#d12026";
 
 const styles = StyleSheet.create({
   page: {
@@ -185,12 +186,18 @@ const styles = StyleSheet.create({
   },
   dateRow: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "baseline",
+    gap: 32,
     marginBottom: 2,
   },
   paragraph: {
     fontSize: 10,
     lineHeight: 1.4,
+  },
+  dateFee: {
+    fontSize: 10,
+    lineHeight: 1.4,
+    color: RED,
   },
   footer: {
     position: "absolute",
@@ -327,7 +334,7 @@ export function PackagePdfDocument({
                   {formatTravelDateRange(date.travel_date_from, date.travel_date_to)}
                 </Text>
                 {date.additional_fee ? (
-                  <Text style={styles.paragraph}>
+                  <Text style={styles.dateFee}>
                     +{formatPhp(date.additional_fee)}
                   </Text>
                 ) : null}

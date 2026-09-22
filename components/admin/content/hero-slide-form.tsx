@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useMemo, useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -33,6 +33,11 @@ import {
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
+
+const SLIDE_TYPE_ITEMS = [
+  { value: "package", label: "Package" },
+  { value: "promo", label: "Promo" },
+] as const;
 
 export type HeroSlidePackageOption = {
   id: string;
@@ -192,6 +197,13 @@ function HeroSlideFormBody({
 
   const slideType = form.watch("slideType");
 
+  // Base UI's <SelectValue> renders the raw value unless the root is given an
+  // items map, which would show the package's UUID in the trigger.
+  const packageItems = useMemo(
+    () => packages.map(({ id, name }) => ({ value: id, label: name })),
+    [packages]
+  );
+
   async function handleImageChange(
     event: ChangeEvent<HTMLInputElement>,
     onUploaded: (storagePath: string) => void
@@ -248,15 +260,22 @@ function HeroSlideFormBody({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Slide Type</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                items={SLIDE_TYPE_ITEMS}
+                value={field.value}
+                onValueChange={field.onChange}
+              >
                 <FormControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a slide type" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="package">Package</SelectItem>
-                  <SelectItem value="promo">Promo</SelectItem>
+                  {SLIDE_TYPE_ITEMS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -271,7 +290,11 @@ function HeroSlideFormBody({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Package</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
+                <Select
+                  items={packageItems}
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
                   <FormControl>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select a package" />

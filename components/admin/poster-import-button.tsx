@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type ChangeEvent } from "react";
-import { SparklesIcon } from "lucide-react";
+import { Loader2Icon, SparklesIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { extractPackageFromPoster } from "@/actions/package-poster";
@@ -10,10 +10,12 @@ import {
   MAX_POSTER_BYTES,
   isAcceptedMimeType,
   OVERSIZED_POSTER_MESSAGE,
+  POSTER_PREP_FAILED_MESSAGE,
   UNSUPPORTED_POSTER_MESSAGE,
 } from "@/lib/packages/poster-upload-limits";
-import { readFileAsBase64 } from "@/lib/read-file-as-base64";
+import { preparePosterForUpload } from "@/lib/packages/compress-poster-image";
 import { Button } from "@/components/ui/button";
+import { useNavigationBlocker } from "./navigation-guard";
 import { usePosterImport } from "./poster-import-context";
 
 const GENERIC_ERROR_MESSAGE =
@@ -29,6 +31,16 @@ export function PosterImportButton() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isExtracting, setIsExtracting] = useState(false);
   const { applyExtraction } = usePosterImport();
+
+  // The extraction lives entirely in this component's state -- leaving the
+  // page (or the tab) throws away the poster's details, so confirm first.
+  useNavigationBlocker({
+    when: isExtracting,
+    title: "Still reading the poster",
+    description:
+      "This poster hasn't finished processing. If you leave now the import is cancelled, and none of its details will be filled into the form.",
+    confirmLabel: "Leave anyway",
+  });
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -48,10 +60,20 @@ export function PosterImportButton() {
 
     setIsExtracting(true);
     try {
-      const base64 = await readFileAsBase64(file);
+      // A large poster is downscaled/re-encoded in the browser first so the
+      // request stays under the extraction API's inline-image limit -- the
+      // admin can pick a full-resolution export and it just works.
+      let prepared: Awaited<ReturnType<typeof preparePosterForUpload>>;
+      try {
+        prepared = await preparePosterForUpload(file);
+      } catch {
+        toast.error(POSTER_PREP_FAILED_MESSAGE);
+        return;
+      }
+
       const result = await extractPackageFromPoster({
-        base64,
-        mimeType: file.type,
+        base64: prepared.base64,
+        mimeType: prepared.mimeType,
       });
 
       if (!result.ok) {
@@ -109,12 +131,16 @@ export function PosterImportButton() {
         onChange={handleFileChange}
       />
       <Button
-        variant="outline"
         size="lg"
         disabled={isExtracting}
+        aria-busy={isExtracting}
         onClick={() => inputRef.current?.click()}
       >
-        <SparklesIcon />
+        {isExtracting ? (
+          <Loader2Icon className="animate-spin" aria-hidden="true" />
+        ) : (
+          <SparklesIcon aria-hidden="true" />
+        )}
         {isExtracting ? "Reading poster..." : "Import from Poster"}
       </Button>
     </>

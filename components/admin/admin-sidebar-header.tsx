@@ -2,10 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { PanelLeftIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
+import { useNavigationGuard } from "./navigation-guard";
+
+const HOME_HREF = "/admin/crm";
 
 /**
  * Sidebar's own header: brand mark + the sidebar's collapse/expand toggle
@@ -18,12 +22,23 @@ import { useSidebar } from "@/components/ui/sidebar";
  */
 export function AdminSidebarHeader() {
   const { toggleSidebar } = useSidebar();
+  const router = useRouter();
+  const { isBlocked, runGuarded } = useNavigationGuard();
+
+  // Shared by both brand lockups below (only one is visible at a time,
+  // depending on whether the sidebar is collapsed).
+  function handleBrandNavigate(event: { preventDefault: () => void }) {
+    if (!isBlocked) return;
+    event.preventDefault();
+    runGuarded(() => router.push(HOME_HREF));
+  }
 
   return (
     <div className="flex items-center justify-between gap-2 group-data-[collapsible=icon]:flex-col-reverse group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-2">
       <Link
-        href="/admin/crm"
+        href={HOME_HREF}
         aria-label="TravelSentro admin home"
+        onNavigate={handleBrandNavigate}
         className="flex min-w-0 items-center opacity-100 transition-opacity hover:opacity-80 group-data-[collapsible=icon]:hidden"
       >
         <Image
@@ -36,8 +51,9 @@ export function AdminSidebarHeader() {
         />
       </Link>
       <Link
-        href="/admin/crm"
+        href={HOME_HREF}
         aria-label="TravelSentro admin home"
+        onNavigate={handleBrandNavigate}
         className="hidden items-center opacity-100 transition-opacity hover:opacity-80 group-data-[collapsible=icon]:flex"
       >
         <Image

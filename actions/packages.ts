@@ -250,35 +250,3 @@ export async function featurePackage(
   revalidatePath("/admin/packages");
   return { ok: true };
 }
-
-/**
- * Persists a client-computed drag order (Pattern 6). The order array is
- * untrusted input from the browser (T-02-17) — the only real boundary here
- * is the can_manage_packages permission check itself, since this operates
- * on global catalog state with no per-user ownership concept.
- */
-export async function reorderPackages(
-  order: { id: string; sortOrder: number }[]
-): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
-
-  const supabase = await createClient();
-  const results = await Promise.all(
-    order.map((item) =>
-      supabase
-        .from("packages")
-        .update({ sort_order: item.sortOrder })
-        .eq("id", item.id)
-    )
-  );
-
-  if (results.some((result) => result.error)) {
-    return { ok: false, error: GENERIC_ERROR_MESSAGE };
-  }
-
-  // Ordering doesn't change any single package's detail content, so only
-  // the list pages need revalidation.
-  revalidatePath("/packages");
-  revalidatePath("/admin/packages");
-  return { ok: true };
-}

@@ -158,6 +158,7 @@ export function CrmDetail({
           </h1>
           {canEdit ? (
             <Select
+              items={STATUS_LABELS}
               value={status}
               onValueChange={(value) =>
                 handleStatusChange(value as ContactStatus)

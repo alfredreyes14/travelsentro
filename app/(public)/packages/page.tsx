@@ -122,9 +122,11 @@ export default async function PackagesPage({
       .lte("package_travel_dates.travel_date_from", to);
   }
 
-  const { data: packages, error } = await query.order("sort_order", {
-    ascending: true,
-  });
+  // Featured packages lead, then newest first. (The admin panel no longer
+  // exposes manual drag-ordering, so `sort_order` is no longer authored.)
+  const { data: packages, error } = await query
+    .order("is_featured", { ascending: false })
+    .order("created_at", { ascending: false });
 
   if (error) {
     // Surfaced server-side only — the page still renders the empty state

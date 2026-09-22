@@ -3,9 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { GripVerticalIcon, MoreHorizontalIcon } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { MoreHorizontalIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -33,11 +32,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -51,25 +45,10 @@ export function PackageListCard({
   onMutated: () => void;
   onDeleted: (id: string) => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.id });
-
   const [isPublished, setIsPublished] = useState(item.isPublished);
   const [isFeatured, setIsFeatured] = useState(item.isFeatured);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.6 : 1,
-  };
 
   function handlePublishChange(checked: boolean) {
     setIsPublished(checked);
@@ -126,25 +105,8 @@ export function PackageListCard({
 
   return (
     <>
-      <Card ref={setNodeRef} style={style} className="p-4">
+      <Card className="p-4">
         <div className="flex items-center gap-3">
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <button
-                  type="button"
-                  className="flex size-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 active:bg-muted"
-                  {...attributes}
-                  {...listeners}
-                />
-              }
-            >
-              <GripVerticalIcon />
-              <span className="sr-only">Drag to reorder</span>
-            </TooltipTrigger>
-            <TooltipContent>Drag to reorder</TooltipContent>
-          </Tooltip>
-
           <div className="relative size-12 shrink-0 overflow-hidden rounded-md bg-secondary/10">
             {item.photoUrl ? (
               <Image
@@ -159,6 +121,15 @@ export function PackageListCard({
 
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium">{item.name}</p>
+            <p className="truncate text-sm text-muted-foreground">
+              {(item.destinationName ?? "—") + " · " + item.travelWindowLabel}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Added{" "}
+              {formatDistanceToNow(new Date(item.createdAt), {
+                addSuffix: true,
+              })}
+            </p>
             <div className="mt-2 flex flex-col gap-2">
               <div className="flex items-center gap-2">
                 <Switch

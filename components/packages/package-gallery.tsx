@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { XIcon, ZoomIn, ZoomOut } from "lucide-react";
 
 import {
   Carousel,
@@ -8,12 +9,26 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { FadeImage } from "@/components/motion/fade-image";
 import { cn } from "@/lib/utils";
 
 type GalleryPhoto = { url: string; alt: string | null };
+
+// Lightbox zoom: 100% is fit-to-width (already readable for a tall
+// itinerary poster), stepping up to 300% for fine print. Zoom resets to
+// 100% whenever the visible photo changes.
+const MIN_ZOOM = 1;
+const MAX_ZOOM = 3;
+const ZOOM_STEP = 0.5;
 
 // Caps the grid to one hero tile + 4 more, exactly filling the 2x4 hero
 // layout's cell count — packages can have many more photos than fit
@@ -31,6 +46,25 @@ const MAX_VISIBLE_PHOTOS = 5;
 export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [zoom, setZoom] = useState(MIN_ZOOM);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
+
+  // Reset zoom when the reader pages to a different photo inside the
+  // lightbox (arrow buttons, swipe, or arrow keys) -- a zoom level chosen
+  // for one poster rarely makes sense for the next.
+  useEffect(() => {
+    if (!carouselApi) return;
+    const reset = () => setZoom(MIN_ZOOM);
+    carouselApi.on("select", reset);
+    return () => {
+      carouselApi.off("select", reset);
+    };
+  }, [carouselApi]);
+
+  const zoomIn = () =>
+    setZoom((z) => Math.min(MAX_ZOOM, Math.round((z + ZOOM_STEP) * 100) / 100));
+  const zoomOut = () =>
+    setZoom((z) => Math.max(MIN_ZOOM, Math.round((z - ZOOM_STEP) * 100) / 100));
 
   if (photos.length === 0) return null;
 
@@ -68,6 +102,7 @@ export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
               type="button"
               onClick={() => {
                 setSelectedIndex(index);
+                setZoom(MIN_ZOOM);
                 setOpen(true);
               }}
               aria-label={
@@ -98,7 +133,14 @@ export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
                     : hasHeroTile
                       ? "(min-width: 768px) 25vw, 50vw"
                       : isSinglePhoto
-                        ? "100vw"
+                        ? // The gallery is capped by the page's max-w-4xl
+                          // (896px) wrapper minus its sm:px-8 padding, so a
+                          // full-bleed single photo never actually renders
+                          // wider than ~832px -- a bare "100vw" here both
+                          // over-requests on large screens and trips
+                          // next/image's dev-only "not rendered at full
+                          // viewport width" warning.
+                          "(min-width: 896px) 832px, 100vw"
                         : "50vw"
                 }
                 preload={index === 0}
@@ -114,23 +156,97 @@ export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
         })}
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-2xl">
+      <Dialog
+        open={open}
+        onOpenChange={(next) => {
+          setOpen(next);
+          if (!next) setZoom(MIN_ZOOM);
+        }}
+      >
+        {/*
+         * showCloseButton={false}: the shared DialogContent's default close
+         * is a bare ghost icon that all but disappears against a photo. This
+         * lightbox swaps in a frosted chip -- same treatment as the zoom
+         * cluster on the opposite corner -- so it stays legible over any
+         * poster.
+         */}
+        <DialogContent
+          showCloseButton={false}
+          className="sm:max-w-2xl lg:max-w-3xl"
+        >
           <DialogTitle className="sr-only">Photo gallery</DialogTitle>
+
+          <div className="absolute top-2 left-2 z-10 flex items-center gap-0.5 rounded-lg bg-popover/90 p-0.5 ring-1 ring-foreground/10 backdrop-blur-sm">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={zoomOut}
+              disabled={zoom <= MIN_ZOOM}
+              aria-label="Zoom out"
+            >
+              <ZoomOut />
+            </Button>
+            <span className="w-9 text-center text-[11px] font-medium tabular-nums text-muted-foreground">
+              {Math.round(zoom * 100)}%
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              onClick={zoomIn}
+              disabled={zoom >= MAX_ZOOM}
+              aria-label="Zoom in"
+            >
+              <ZoomIn />
+            </Button>
+          </div>
+
+          <DialogClose
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-lg"
+                className="absolute top-2 right-2 z-10 rounded-lg bg-popover/90 shadow-sm ring-1 ring-foreground/10 backdrop-blur-sm hover:bg-popover"
+              />
+            }
+          >
+            <XIcon className="size-5" />
+            <span className="sr-only">Close</span>
+          </DialogClose>
+
           <Carousel
             key={selectedIndex}
+            setApi={setCarouselApi}
             opts={{ startIndex: selectedIndex, loop: true }}
           >
             <CarouselContent>
               {photos.map((photo, index) => (
                 <CarouselItem key={photo.url}>
-                  <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg">
+                  {/*
+                   * These "photos" are usually full-height itinerary
+                   * posters, not landscape snapshots -- a fixed aspect-ratio
+                   * box + object-cover would crop away most of the poster.
+                   * width/height={0} + sizes lets next/image stay responsive
+                   * without known intrinsic dimensions; at 100% zoom it fits
+                   * the dialog width, and each zoom step widens it further
+                   * inside this scroll viewport so the reader can pan around
+                   * the fine print.
+                   */}
+                  <div className="max-h-[80dvh] w-full overflow-auto overscroll-contain rounded-lg bg-secondary/10">
                     <FadeImage
                       src={photo.url}
                       alt={photo.alt ?? `Photo ${index + 1}`}
-                      fill
-                      sizes="(min-width: 768px) 640px, 100vw"
-                      className="object-cover"
+                      width={0}
+                      height={0}
+                      sizes="(min-width: 1024px) 740px, (min-width: 640px) 640px, 100vw"
+                      style={{ width: `${zoom * 100}%` }}
+                      // No width transition here: FadeImage folds caller
+                      // classes through cn()/tailwind-merge, and any
+                      // transition-* utility would evict its own
+                      // opacity/transform fade. Zoom just snaps between steps.
+                      className="mx-auto block h-auto max-w-none"
                     />
                   </div>
                 </CarouselItem>

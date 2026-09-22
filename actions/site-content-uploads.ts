@@ -16,7 +16,6 @@ const GENERIC_ERROR_MESSAGE =
 const ALLOWED_FOLDERS = [
   "hero-slides",
   "testimonials",
-  "partners",
   "destinations",
 ] as const;
 
@@ -34,15 +33,15 @@ function extensionFromMimeType(type: string): string {
 /**
  * Uploads a single image to R2 and returns its object key. Unlike
  * package-photos.ts's uploadPhotos (multi-photo gallery, per-file
- * display_order computed from a running max), each hero slide/testimonial/
- * partner has at most one image, so there is no "current max" to race on --
- * the random suffix (not an index) is sufficient. Does NOT call
+ * display_order computed from a running max), each hero slide/testimonial
+ * has at most one image, so there is no "current max" to race on -- the
+ * random suffix (not an index) is sufficient. Does NOT call
  * revalidatePath -- the uploaded image isn't attached to any visible entity
- * until the owning createSlide/createTestimonial/createPartner/updateSlide/
- * etc. call runs afterward and revalidates.
+ * until the owning createSlide/createTestimonial/updateSlide/etc. call runs
+ * afterward and revalidates.
  */
 export async function uploadSiteContentImage(
-  folder: "hero-slides" | "testimonials" | "partners" | "destinations",
+  folder: "hero-slides" | "testimonials" | "destinations",
   file: UploadImageInput
 ): Promise<ActionResult & { storagePath?: string }> {
   await requirePermission("can_manage_packages");
@@ -68,9 +67,9 @@ export async function uploadSiteContentImage(
  * Standalone Storage-only utility for the admin form's "replace/remove
  * image before saving" UX -- does NOT also delete a database row (unlike
  * package-photos.ts's deletePhoto, which deletes both together) and is NOT
- * chained from deleteSlide/deleteTestimonial/deletePartner in this phase,
- * so a deleted entity's Storage object can become orphaned. This is an
- * accepted, documented scope limit, not a silent gap.
+ * chained from deleteSlide/deleteTestimonial in this phase, so a deleted
+ * entity's Storage object can become orphaned. This is an accepted,
+ * documented scope limit, not a silent gap.
  */
 export async function deleteSiteContentImage(
   storagePath: string

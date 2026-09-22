@@ -65,6 +65,11 @@ export type AdminContactListItem = {
 
 const STATUS_FILTER_ALL = "all";
 
+const STATUS_FILTER_ITEMS = {
+  [STATUS_FILTER_ALL]: "All statuses",
+  ...STATUS_LABELS,
+};
+
 function SortableHeader({
   label,
   column,
@@ -244,6 +249,7 @@ export function CrmTable({ contacts }: { contacts: AdminContactListItem[] }) {
           />
         </div>
         <Select
+          items={STATUS_FILTER_ITEMS}
           value={statusFilterValue}
           onValueChange={(value) =>
             table

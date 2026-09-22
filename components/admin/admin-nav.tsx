@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   PackageIcon,
   ContactIcon,
@@ -10,6 +10,7 @@ import {
   MapPinIcon,
 } from "lucide-react";
 
+import { useNavigationGuard } from "./navigation-guard";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -33,6 +34,8 @@ export function AdminNav({
   canManageUsers: boolean;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { isBlocked, runGuarded } = useNavigationGuard();
 
   const items: NavItem[] = [
     // D-13: hidden entirely (not disabled) when the permission is absent.
@@ -95,7 +98,18 @@ export function AdminNav({
                   size="lg"
                   isActive={item.href === activeHref}
                   tooltip={item.label}
-                  render={<Link href={item.href} />}
+                  render={
+                    <Link
+                      href={item.href}
+                      // Client-side navigation never reaches beforeunload,
+                      // so unfinished work is confirmed here instead.
+                      onNavigate={(event) => {
+                        if (!isBlocked) return;
+                        event.preventDefault();
+                        runGuarded(() => router.push(item.href));
+                      }}
+                    />
+                  }
                 >
                   <item.icon className="size-5" />
                   <span className="group-data-[collapsible=icon]:hidden">

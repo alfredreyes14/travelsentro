@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useFieldArray, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -103,6 +103,13 @@ export function PackageForm({
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
+
+  // Base UI's <SelectValue> renders the raw value unless the root is given an
+  // items map, which would show the destination's UUID in the trigger.
+  const destinationItems = useMemo(
+    () => destinations.map(({ id, name }) => ({ value: id, label: name })),
+    [destinations]
+  );
 
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
@@ -276,7 +283,11 @@ export function PackageForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Destination</FormLabel>
-                  <Select value={field.value || ""} onValueChange={field.onChange}>
+                  <Select
+                    items={destinationItems}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
                     <FormControl>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select a destination" />

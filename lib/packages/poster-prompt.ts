@@ -57,7 +57,7 @@ Fields:
 - durationLabel: as printed, e.g. "3 days, 2 nights" or "4D3N".
 - remarks: fine print, disclaimers, or booking conditions. Otherwise null.
 - travelDates: one entry per departure date range printed. dateFrom and dateTo must be full ISO "YYYY-MM-DD" dates. IF THE POSTER DOES NOT PRINT A YEAR FOR A DATE, RETURN NULL FOR THAT DATE -- do not assume the current year, the next year, or anything else. additionalFee is a surcharge printed for that specific range (e.g. a peak-season upcharge), otherwise null.
-- itinerary: one entry per day. For "Day 1 - Arrival & City Tour", title is "Arrival & City Tour" and description is the activities listed under it. Empty array if the poster has no day-by-day breakdown.
+- itinerary: one entry per day. For "Day 1 - Arrival & City Tour", title is "Arrival & City Tour". description is the activities listed under that day, with EACH activity on its own line separated by a newline (one activity per line) and bullet characters or leading dashes removed. Do not run the activities together into one sentence or join them with commas. Empty array if the poster has no day-by-day breakdown.
 - inclusions: what the price covers ("Inclusions", "Package includes").
 - exclusions: what it does not cover ("Exclusions", "Not included").
 - bringItems: what the traveler should bring ("What to bring", "Reminders").

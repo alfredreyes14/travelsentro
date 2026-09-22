@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useSidebar } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { useNavigationGuard } from "./navigation-guard";
 
 const SECTION_LABELS: { prefix: string; label: string }[] = [
   // Most specific prefix first so nested routes (e.g. the Destinations
@@ -61,6 +62,7 @@ export function AdminTopbar({
 }) {
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
+  const { runGuarded } = useNavigationGuard();
   const sectionLabel = getSectionLabel(pathname);
   const initials = getInitials(name, email);
 
@@ -112,7 +114,10 @@ export function AdminTopbar({
             </DropdownMenuLabel>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive" onClick={() => logout()}>
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => runGuarded(() => logout())}
+          >
             <LogOutIcon />
             Log Out
           </DropdownMenuItem>

@@ -37,6 +37,11 @@ import type { Profile } from "@/lib/auth/dal";
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
+const ROLE_ITEMS = [
+  { value: "admin", label: "Admin" },
+  { value: "staff", label: "Staff" },
+] as const;
+
 type AccountFormProps =
   | { mode: "create"; onSuccess: () => void }
   | { mode: "edit"; account: Profile; onSuccess: () => void };
@@ -161,15 +166,22 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Role</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                items={ROLE_ITEMS}
+                value={field.value}
+                onValueChange={field.onChange}
+              >
                 <FormControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
+                  {ROLE_ITEMS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -330,15 +342,22 @@ function EditAccountForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Role</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                items={ROLE_ITEMS}
+                value={field.value}
+                onValueChange={field.onChange}
+              >
                 <FormControl>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select a role" />
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  <SelectItem value="staff">Staff</SelectItem>
+                  {ROLE_ITEMS.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />

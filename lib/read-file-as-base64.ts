@@ -1,12 +1,13 @@
 /**
- * Shared client-side helper: reads a File as a base64 string (stripping the
- * "data:<mime>;base64," prefix) for handoff to a Server Action that decodes
- * it server-side. Extracted from components/admin/photo-manager.tsx's
+ * Shared client-side helper: reads a File (or any Blob, e.g. a canvas
+ * `toBlob` result from the poster compressor) as a base64 string (stripping
+ * the "data:<mime>;base64," prefix) for handoff to a Server Action that
+ * decodes it server-side. Extracted from components/admin/photo-manager.tsx's
  * inline readFileAsBase64 (byte-for-byte identical logic) so 06-05/06-06's
  * upload-capable forms import one shared helper instead of each duplicating
  * it.
  */
-export function readFileAsBase64(file: File): Promise<string> {
+export function readFileAsBase64(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {

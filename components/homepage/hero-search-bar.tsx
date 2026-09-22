@@ -133,6 +133,7 @@ export function HeroSearchBar({
       <div className="flex flex-1 flex-col gap-1 px-2">
         <span className={FIELD_LABEL_CLASSES}>Month</span>
         <Select
+          items={MONTH_OPTIONS}
           value={month ?? ""}
           onValueChange={(value) => setMonth(value || null)}
         >
