@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
+import { formatPackagePrice } from "@/lib/packages/format-price";
 import {
   HeroSlidesList,
   type HeroSlideListItem,
@@ -13,6 +14,11 @@ import type {
 } from "@/components/admin/content/hero-slide-form";
 import { TestimonialsList } from "@/components/admin/content/testimonials-list";
 import type { TestimonialRecord } from "@/components/admin/content/testimonial-form";
+import {
+  UpsellItemsList,
+  type UpsellItemListItem,
+  type UpsellPackageOption,
+} from "@/components/admin/content/upsell-items-list";
 import { PageHeader } from "@/components/admin/page-header";
 import {
   Tabs,
@@ -39,6 +45,15 @@ type HeroSlideRow = Database["public"]["Tables"]["hero_slides"]["Row"] & {
     | null;
 };
 
+type UpsellItemRow = Database["public"]["Tables"]["upsell_items"]["Row"] & {
+  packages:
+    | (Pick<
+        Database["public"]["Tables"]["packages"]["Row"],
+        "id" | "name" | "price_per_pax" | "discount_amount"
+      > & { package_photos: PackagePhotoRow[] })
+    | null;
+};
+
 export default async function AdminContentPage() {
   // AUTH-05 (T-06-21) -- gate independent of Task 2's nav hiding; RLS is the
   // second, independent enforcement layer.
@@ -50,6 +65,8 @@ export default async function AdminContentPage() {
     { data: heroSlideRows, error: heroSlidesError },
     { data: packageOptionRows, error: packagesError },
     { data: testimonialRows, error: testimonialsError },
+    { data: upsellItemRows, error: upsellItemsError },
+    { data: publishedPackageRows, error: publishedPackagesError },
   ] = await Promise.all([
     supabase
       .from("hero_slides")
@@ -60,6 +77,20 @@ export default async function AdminContentPage() {
     // slide candidates (T-06-22).
     supabase.from("packages").select("id, name").eq("is_featured", true).eq("is_published", true).is("deleted_at", null).order("name"),
     supabase.from("testimonials").select("*").order("sort_order", { ascending: true }),
+    supabase
+      .from("upsell_items")
+      .select(
+        "*, packages(id, name, price_per_pax, discount_amount, package_photos(storage_path, display_order))"
+      )
+      .order("created_at", { ascending: true }),
+    // Upsell items aren't restricted to featured packages (unlike hero
+    // slides above) -- any published, non-deleted package is eligible.
+    supabase
+      .from("packages")
+      .select("id, name")
+      .eq("is_published", true)
+      .is("deleted_at", null)
+      .order("name"),
   ]);
 
   if (heroSlidesError) {
@@ -73,6 +104,15 @@ export default async function AdminContentPage() {
   }
   if (testimonialsError) {
     console.error("Failed to load testimonials:", testimonialsError.message);
+  }
+  if (upsellItemsError) {
+    console.error("Failed to load upsell items:", upsellItemsError.message);
+  }
+  if (publishedPackagesError) {
+    console.error(
+      "Failed to load published packages:",
+      publishedPackagesError.message
+    );
   }
 
   const packages: HeroSlidePackageOption[] = (packageOptionRows ?? []).map(
@@ -124,6 +164,36 @@ export default async function AdminContentPage() {
     })
   );
 
+  // Same RLS-null-filter as the public homepage's hero-slide query: an
+  // upsell item whose linked package has since been unpublished or
+  // soft-deleted comes back with `packages: null`, and is dropped here
+  // rather than rendered broken.
+  const upsellItems: UpsellItemListItem[] = ((upsellItemRows ?? []) as UpsellItemRow[])
+    .map((row) => {
+      const pkg = row.packages;
+      if (!pkg) return null;
+
+      const [firstPhoto] = [...pkg.package_photos].sort(
+        (a, b) => a.display_order - b.display_order
+      );
+      const price = formatPackagePrice(pkg.price_per_pax, pkg.discount_amount);
+
+      const item: UpsellItemListItem = {
+        id: row.id,
+        packageId: pkg.id,
+        packageName: pkg.name,
+        imageUrl: firstPhoto ? getPublicImageUrl(firstPhoto.storage_path) : null,
+        priceLabel: price.final,
+      };
+      return item;
+    })
+    .filter((item): item is UpsellItemListItem => item !== null);
+
+  const upsellPackageIds = new Set(upsellItems.map((item) => item.packageId));
+  const upsellPackageOptions: UpsellPackageOption[] = (publishedPackageRows ?? [])
+    .filter((pkg) => !upsellPackageIds.has(pkg.id))
+    .map((pkg) => ({ id: pkg.id, name: pkg.name }));
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -135,6 +205,7 @@ export default async function AdminContentPage() {
         <TabsList>
           <TabsTrigger value="hero-slides">{"Hero Slides"}</TabsTrigger>
           <TabsTrigger value="testimonials">{"Testimonials"}</TabsTrigger>
+          <TabsTrigger value="upsell-popup">{"Upsell Popup"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="hero-slides" keepMounted className="pt-4">
@@ -143,6 +214,13 @@ export default async function AdminContentPage() {
 
         <TabsContent value="testimonials" keepMounted className="pt-4">
           <TestimonialsList initialItems={testimonials} />
+        </TabsContent>
+
+        <TabsContent value="upsell-popup" keepMounted className="pt-4">
+          <UpsellItemsList
+            initialItems={upsellItems}
+            packageOptions={upsellPackageOptions}
+          />
         </TabsContent>
       </Tabs>
     </div>
