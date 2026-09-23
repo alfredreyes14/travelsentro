@@ -1,26 +1,39 @@
 import { FadeImage } from "@/components/motion/fade-image";
+import { LogoMarquee } from "@/components/homepage/logo-marquee";
 import type { LogoFile } from "@/lib/logos/read-logo-folder";
 
-function LogoGroup({ heading, logos }: { heading: string; logos: LogoFile[] }) {
+function LogoGroup({
+  heading,
+  logos,
+  marquee,
+}: {
+  heading: string;
+  logos: LogoFile[];
+  marquee?: boolean;
+}) {
   if (logos.length === 0) return null;
 
   return (
-    <div className="flex flex-col items-center gap-8">
+    <div className="flex w-full flex-col items-center gap-8">
       <p className="font-heading text-xl leading-[1.2] font-semibold text-foreground">
         {heading}
       </p>
-      <div className="flex flex-wrap items-center justify-center gap-12">
-        {logos.map((logo) => (
-          <FadeImage
-            key={logo.id}
-            src={logo.src}
-            alt={logo.alt}
-            width={280}
-            height={140}
-            className="h-auto max-h-28 w-auto max-w-64 object-contain"
-          />
-        ))}
-      </div>
+      {marquee ? (
+        <LogoMarquee logos={logos} />
+      ) : (
+        <div className="flex flex-wrap items-center justify-center gap-12">
+          {logos.map((logo) => (
+            <FadeImage
+              key={logo.id}
+              src={logo.src}
+              alt={logo.alt}
+              width={280}
+              height={140}
+              className="h-auto max-h-28 w-auto max-w-64 object-contain"
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -73,8 +86,8 @@ export function PartnerAffiliations({
             Partner Affiliations
           </h2>
         </div>
-        <LogoGroup heading="Airlines" logos={airlines} />
-        <LogoGroup heading="Operators" logos={operators} />
+        <LogoGroup heading="Airlines" logos={airlines} marquee />
+        <LogoGroup heading="Operators" logos={operators} marquee />
         <LogoGroup heading="Brand Partners" logos={brandPartners} />
       </div>
     </section>

@@ -20,6 +20,10 @@ export const FACEBOOK_URL = "https://www.facebook.com/travelsentroph";
 // m.me deep links (numeric page IDs aren't a documented m.me format).
 export const FACEBOOK_PAGE_USERNAME = "travelsentroph";
 
+// TravelSentro's Instagram profile — footer social link only, no inquiry
+// flow tied to it (inquiries still route through WhatsApp/Facebook).
+export const INSTAGRAM_URL = "https://www.instagram.com/travelsentro";
+
 // Numeric Page ID, needed by the Graph API (which addresses the page by ID,
 // not username) for both sending messages and the one-time webhook
 // subscription call.

@@ -202,3 +202,44 @@
     transition: none !important;
   }
 }
+
+/* LogoMarquee (components/homepage/logo-marquee.tsx) -- continuous
+   horizontal scroll built from two duplicated copies of a logo list,
+   translated by exactly -50% so the loop point is seamless. Speed is set
+   per-instance via the --marquee-duration custom property (inline style),
+   scaled by logo count so a short list doesn't fly by. Paused on hover so
+   a visitor can stop and read a specific logo. */
+.marquee-track {
+  width: max-content;
+  animation: marquee var(--marquee-duration, 30s) linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Reduced motion: drop the animation and the duplicated copy (marked
+   data-marquee-duplicate, aria-hidden in the component), and wrap the
+   single remaining copy into a centered static row instead -- same
+   fallback shape as the non-marquee LogoGroup. */
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+    flex-wrap: wrap;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .marquee-track [data-marquee-duplicate] {
+    display: none;
+  }
+}
