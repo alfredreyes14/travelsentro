@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { FadeImage } from "@/components/motion/fade-image";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
+import { formatPackagePrice } from "@/lib/packages/format-price";
 import type { Database } from "@/types/database";
 
 type PackageRow = Database["public"]["Tables"]["packages"]["Row"];
@@ -47,6 +48,8 @@ export function PackageCard({
   pkg: PackageRow;
   photoUrl: string | null;
 }) {
+  const price = formatPackagePrice(pkg.price_per_pax, pkg.discount_amount);
+
   return (
     <Card className="group/card relative grid aspect-[4/5] overflow-hidden p-0 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-lg has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50">
       {photoUrl ? (
@@ -94,20 +97,16 @@ export function PackageCard({
 
         <div className="flex items-center justify-between gap-2 pt-1">
           <div className="flex items-center gap-1.5">
-            {pkg.discount_amount ? (
+            {price.original ? (
               <span className="text-xs text-white/70 text-shadow-sm line-through">
-                ₱{pkg.price_per_pax.toLocaleString("en-PH")}
+                {price.original}
               </span>
             ) : null}
             <Badge
               variant="secondary"
               className="h-auto px-3 py-1 text-sm font-semibold shadow-md"
             >
-              ₱
-              {(
-                pkg.price_per_pax - (pkg.discount_amount ?? 0)
-              ).toLocaleString("en-PH")}{" "}
-              / pax
+              {price.final}
             </Badge>
           </div>
 

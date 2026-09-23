@@ -24,7 +24,8 @@
     "setup:messenger-profile": "tsx --env-file=.env.local scripts/setup-messenger-profile.ts",
     "verify:messenger-link": "tsx scripts/verify-messenger-link.ts",
     "verify:messenger-webhook": "tsx scripts/verify-messenger-webhook.ts",
-    "verify:upsell-rls": "tsx --env-file=.env.local scripts/verify-upsell-rls.ts"
+    "verify:upsell-rls": "tsx --env-file=.env.local scripts/verify-upsell-rls.ts",
+    "verify:format-price": "tsx scripts/verify-format-price.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
