@@ -1,12 +1,20 @@
 import Link from "next/link";
 import { SiteHeader } from "@/components/layout/site-header";
 import {
+  UpsellPopup,
+  type UpsellItemDisplay,
+} from "@/components/upsell/upsell-popup";
+import { createPublicClient } from "@/lib/supabase/public";
+import { getPublicImageUrl } from "@/lib/storage/image-url";
+import { formatPackagePrice } from "@/lib/packages/format-price";
+import {
   buildWhatsAppLink,
   formatWhatsAppNumberForDisplay,
   WHATSAPP_NUMBER,
 } from "@/lib/whatsapp";
 import { buildMessengerLink } from "@/lib/messenger/link";
 import { CONTACT_EMAIL, CONTACT_ADDRESS, INSTAGRAM_URL } from "@/lib/constants";
+import type { Database } from "@/types/database";
 
 const FOOTER_LINKS = [
   { href: "/", label: "Home" },
@@ -15,11 +23,73 @@ const FOOTER_LINKS = [
   { href: "/privacy-policy", label: "Privacy Policy" },
 ];
 
-export default function PublicLayout({
+// Popup content (upsell_items) is admin-managed and identical for every
+// visitor, same as the homepage's hero slides/testimonials -- ISR lets
+// this shared layout serve from cache instead of re-querying Supabase on
+// every single public-route request. Paired with createPublicClient() (no
+// cookies() call) so the route group stays eligible for static rendering.
+export const revalidate = 60;
+
+type PackagePhotoRow = Pick<
+  Database["public"]["Tables"]["package_photos"]["Row"],
+  "storage_path" | "display_order"
+>;
+
+type UpsellItemRow = Database["public"]["Tables"]["upsell_items"]["Row"] & {
+  packages:
+    | (Pick<
+        Database["public"]["Tables"]["packages"]["Row"],
+        "id" | "slug" | "name" | "duration_label" | "price_per_pax" | "discount_amount"
+      > & { package_photos: PackagePhotoRow[] })
+    | null;
+};
+
+export default async function PublicLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabase = createPublicClient();
+
+  // upsell_items has unconditional public-read RLS but packages does not,
+  // so an item whose linked package has since been unpublished or
+  // soft-deleted comes back with `packages: null` under RLS -- filtered
+  // out below before render, never rendered broken (same pattern the
+  // homepage already uses for package-linked hero slides).
+  const { data: rawUpsellItems, error: upsellItemsError } = await supabase
+    .from("upsell_items")
+    .select(
+      "*, packages(id, slug, name, duration_label, price_per_pax, discount_amount, package_photos(storage_path, display_order))"
+    )
+    .order("created_at", { ascending: true });
+
+  if (upsellItemsError) {
+    console.error("Failed to load upsell items:", upsellItemsError.message);
+  }
+
+  const upsellItems: UpsellItemDisplay[] = ((rawUpsellItems ?? []) as UpsellItemRow[])
+    .map((row) => {
+      const pkg = row.packages;
+      if (!pkg) return null;
+
+      const [firstPhoto] = [...pkg.package_photos].sort(
+        (a, b) => a.display_order - b.display_order
+      );
+      const price = formatPackagePrice(pkg.price_per_pax, pkg.discount_amount);
+
+      const item: UpsellItemDisplay = {
+        id: row.id,
+        slug: pkg.slug,
+        name: pkg.name,
+        imageUrl: firstPhoto ? getPublicImageUrl(firstPhoto.storage_path) : null,
+        durationLabel: pkg.duration_label,
+        priceOriginal: price.original,
+        priceFinal: price.final,
+      };
+      return item;
+    })
+    .filter((item): item is UpsellItemDisplay => item !== null);
+
   return (
     <>
       {/* Reveal (components/motion/reveal.tsx) and FadeImage/FadeImg
@@ -164,6 +234,8 @@ export default function PublicLayout({
           </div>
         </div>
       </footer>
+
+      <UpsellPopup items={upsellItems} />
     </>
   );
 }
