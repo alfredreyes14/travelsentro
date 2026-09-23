@@ -62,10 +62,19 @@ export function TestimonialsSection({
 }) {
   if (testimonials.length === 0) {
     return (
-      <section className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 sm:px-8">
-        <h2 className="font-heading text-[28px] leading-[1.2] font-semibold">
-          What Our Customers Say
-        </h2>
+      <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8">
+        <div className="flex flex-col gap-2 sm:max-w-2xl">
+          <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
+            Traveler Stories
+          </span>
+          <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-secondary">
+            What Our Customers Say
+          </h2>
+          <p className="text-base leading-[1.5] text-muted-foreground">
+            Real experiences from travelers who&apos;ve explored the
+            Philippines with us.
+          </p>
+        </div>
         <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {Array.from({ length: 3 }, (_, i) => (
             <Card key={i} className="flex flex-col items-start gap-3 p-4">
@@ -84,10 +93,19 @@ export function TestimonialsSection({
   }
 
   return (
-    <section className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 sm:px-8">
-      <h2 className="font-heading text-[28px] leading-[1.2] font-semibold">
-        What Our Customers Say
-      </h2>
+    <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8">
+      <div className="flex flex-col gap-2 sm:max-w-2xl">
+        <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
+          Traveler Stories
+        </span>
+        <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-secondary">
+          What Our Customers Say
+        </h2>
+        <p className="text-base leading-[1.5] text-muted-foreground">
+          Real experiences from travelers who&apos;ve explored the
+          Philippines with us.
+        </p>
+      </div>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {testimonials.map((testimonial) => (
           <Card

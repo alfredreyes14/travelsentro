@@ -3,7 +3,7 @@ import { MapPin } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FadeImg } from "@/components/motion/fade-image";
+import { FadeImage } from "@/components/motion/fade-image";
 
 export type DestinationTile = {
   id: string;
@@ -16,20 +16,24 @@ function DestinationCard({ destination }: { destination: DestinationTile }) {
   return (
     <Link
       href={`/packages?destination=${encodeURIComponent(destination.slug)}`}
-      className="group flex flex-col gap-2"
+      className="group flex flex-col gap-2 rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:ring-offset-2"
     >
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-primary/10">
+      <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-border/60 bg-primary/10 shadow-sm">
         {destination.photoUrl ? (
-          // Plain <img>, not next/image -- R2's hostname is allow-listed in
-          // next.config.ts's remotePatterns now, but this thumbnail doesn't
-          // need next/image's optimization/lazy-loading; kept as a plain
-          // <img> intentionally, not a leftover constraint. FadeImg
-          // (components/motion/fade-image.tsx) mirrors that same
-          // plain-<img> choice while adding a load-fade-in.
-          <FadeImg
+          // next/image, not a plain <img> -- these grids render a dozen+
+          // tiles at once from full-resolution originals (multi-MB camera
+          // photos); without resizing to the actual ~150px tile size,
+          // mobile Safari's per-page image-decode memory budget gets
+          // exceeded and some tiles silently fail to paint (fetch succeeds,
+          // decode doesn't -- no broken-image icon, just nothing rendered).
+          // next/image's sizes prop lets the optimizer serve a thumbnail
+          // instead of the original.
+          <FadeImage
             src={destination.photoUrl}
             alt={destination.name}
-            className="size-full object-cover group-hover:scale-105"
+            fill
+            sizes="(min-width: 640px) 25vw, 50vw"
+            className="transform-gpu object-cover duration-700 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:scale-105"
           />
         ) : (
           <div className="flex size-full items-center justify-center">
@@ -40,6 +44,10 @@ function DestinationCard({ destination }: { destination: DestinationTile }) {
             />
           </div>
         )}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-black/0 opacity-0 transition-opacity duration-700 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:opacity-100"
+        />
       </div>
       <p className="font-heading text-base font-semibold text-secondary">
         {destination.name}
@@ -100,9 +108,17 @@ export function DestinationsSection({
 }) {
   return (
     <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8">
-      <h2 className="font-heading text-[28px] leading-[1.2] font-semibold">
-        Explore Destinations
-      </h2>
+      <div className="flex flex-col gap-2 sm:max-w-2xl">
+        <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
+          Where To Next
+        </span>
+        <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-secondary">
+          Explore Destinations
+        </h2>
+        <p className="text-base leading-[1.5] text-muted-foreground">
+          Browse local and international spots to find your next trip.
+        </p>
+      </div>
       <DestinationGroup
         title="Local Spots"
         destinations={local}

@@ -326,7 +326,7 @@ export default async function PackageDetailPage({
         </Reveal>
       ) : null}
 
-      <div className="flex flex-col gap-4">
+      <div id="inquire" className="flex flex-col gap-4">
         <SectionHeading icon={Mail}>Inquire About {pkg.name}</SectionHeading>
         <InquiryForm packageName={pkg.name} packageId={pkg.id} />
       </div>

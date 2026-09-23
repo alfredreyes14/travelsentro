@@ -47,8 +47,11 @@ export function PartnerAffiliations({
   if (!hasAny) {
     return (
       <section className="py-16">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 sm:px-8">
-          <h2 className="font-heading text-[32px] leading-[1.2] font-semibold">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 text-center sm:px-8">
+          <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
+            Who We Work With
+          </span>
+          <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-secondary">
             Partner Affiliations
           </h2>
           <p className="text-base text-muted-foreground">
@@ -62,9 +65,14 @@ export function PartnerAffiliations({
   return (
     <section className="py-16">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-12 px-6 sm:px-8">
-        <h2 className="font-heading text-[32px] leading-[1.2] font-semibold">
-          Partner Affiliations
-        </h2>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
+            Who We Work With
+          </span>
+          <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-secondary">
+            Partner Affiliations
+          </h2>
+        </div>
         <LogoGroup heading="Airlines" logos={airlines} />
         <LogoGroup heading="Operators" logos={operators} />
         <LogoGroup heading="Brand Partners" logos={brandPartners} />

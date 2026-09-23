@@ -6,10 +6,13 @@ import { ViewTransition } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { PackageCard } from "@/components/packages/package-card";
+import { PackagesPagination } from "@/components/packages/pagination";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { MONTH_OPTIONS } from "@/lib/months";
 import type { Database } from "@/types/database";
+
+const PAGE_SIZE = 6;
 
 /** First/last day of the given month as "YYYY-MM-DD" strings (UTC-based, no
  * timezone drift), used to match package_travel_dates.travel_date_from
@@ -39,14 +42,28 @@ type PackageWithPhotos = Database["public"]["Tables"]["packages"]["Row"] & {
 export default async function PackagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ destination?: string; month?: string; year?: string }>;
+  searchParams: Promise<{
+    destination?: string;
+    month?: string;
+    year?: string;
+    page?: string;
+  }>;
 }) {
   const {
     destination: destinationSlug,
     month: monthParam,
     year: yearParam,
+    page: pageParam,
   } = await searchParams;
   const supabase = await createClient();
+
+  // An invalid/missing page (non-integer, < 1) silently falls back to page 1
+  // rather than erroring — same "ignore, don't break" treatment as the
+  // month/year filter below.
+  const pageNum = (() => {
+    const n = Number(pageParam);
+    return Number.isInteger(n) && n >= 1 ? n : 1;
+  })();
 
   // Both Month and Year must be present and individually valid for the date
   // filter to apply -- an invalid or half-set combination is silently
@@ -106,7 +123,7 @@ export default async function PackagesPage({
 
   let query = supabase
     .from("packages")
-    .select(selectParts.join(", "))
+    .select(selectParts.join(", "), { count: "exact" })
     .eq("is_published", true);
 
   if (destinationSlug) {
@@ -124,9 +141,10 @@ export default async function PackagesPage({
 
   // Featured packages lead, then newest first. (The admin panel no longer
   // exposes manual drag-ordering, so `sort_order` is no longer authored.)
-  const { data: packages, error } = await query
+  const { data: packages, error, count } = await query
     .order("is_featured", { ascending: false })
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .range((pageNum - 1) * PAGE_SIZE, pageNum * PAGE_SIZE - 1);
 
   if (error) {
     // Surfaced server-side only — the page still renders the empty state
@@ -154,6 +172,20 @@ export default async function PackagesPage({
           ? `a trip in ${monthYearLabel}`
           : null;
   const hasAnyFilter = Boolean(destinationSlug) || hasDateFilter;
+  const totalPages = Math.max(Math.ceil((count ?? 0) / PAGE_SIZE), 1);
+
+  // Preserves the active destination/month/year filters across page links —
+  // `page` is only included once it's not the default, so page-1 URLs stay
+  // clean (matches how `/packages` with no filters has no query string).
+  function buildPageHref(page: number): string {
+    const params = new URLSearchParams();
+    if (destinationSlug) params.set("destination", destinationSlug);
+    if (monthParam) params.set("month", monthParam);
+    if (yearParam) params.set("year", yearParam);
+    if (page > 1) params.set("page", String(page));
+    const qs = params.toString();
+    return qs ? `/packages?${qs}` : "/packages";
+  }
 
   return (
     <ViewTransition enter="slide-up" default="none">
@@ -226,6 +258,14 @@ export default async function PackagesPage({
             })}
           </div>
         )}
+
+        {rows.length > 0 ? (
+          <PackagesPagination
+            currentPage={pageNum}
+            totalPages={totalPages}
+            buildHref={buildPageHref}
+          />
+        ) : null}
       </div>
     </ViewTransition>
   );

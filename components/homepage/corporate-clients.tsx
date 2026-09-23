@@ -12,8 +12,11 @@ export function CorporateClients({ logos }: { logos: LogoFile[] }) {
   if (logos.length === 0) {
     return (
       <section className="py-16">
-        <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 sm:px-8">
-          <h2 className="font-heading text-[32px] leading-[1.2] font-semibold">
+        <div className="mx-auto flex max-w-6xl flex-col items-center gap-3 px-6 text-center sm:px-8">
+          <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
+            Trusted By
+          </span>
+          <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-secondary">
             Corporate Clients
           </h2>
           <p className="text-base text-muted-foreground">
@@ -27,9 +30,14 @@ export function CorporateClients({ logos }: { logos: LogoFile[] }) {
   return (
     <section className="py-16">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-10 px-6 sm:px-8">
-        <h2 className="font-heading text-[32px] leading-[1.2] font-semibold">
-          Corporate Clients
-        </h2>
+        <div className="flex flex-col items-center gap-3 text-center">
+          <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
+            Trusted By
+          </span>
+          <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-secondary">
+            Corporate Clients
+          </h2>
+        </div>
         <div className="flex flex-wrap items-center justify-center gap-12">
           {logos.map((logo) => (
             <FadeImage

@@ -22,10 +22,18 @@ export function FeaturedPackagesGrid({
 }) {
   if (items.length === 0) {
     return (
-      <section className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 sm:px-8">
-        <h2 className="font-heading text-[28px] leading-[1.2] font-semibold">
-          Featured Packages
-        </h2>
+      <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8">
+        <div className="flex flex-col gap-2 sm:max-w-2xl">
+          <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
+            Handpicked For You
+          </span>
+          <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-secondary">
+            Featured Packages
+          </h2>
+          <p className="text-base leading-[1.5] text-muted-foreground">
+            A curated selection of packages our travelers love most.
+          </p>
+        </div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }, (_, i) => (
             <Card key={i} className="gap-0 overflow-hidden p-0">
@@ -45,10 +53,18 @@ export function FeaturedPackagesGrid({
   }
 
   return (
-    <section className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-12 sm:px-8">
-      <h2 className="font-heading text-[28px] leading-[1.2] font-semibold">
-        Featured Packages
-      </h2>
+    <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8">
+      <div className="flex flex-col gap-2 sm:max-w-2xl">
+        <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
+          Handpicked For You
+        </span>
+        <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-secondary">
+          Featured Packages
+        </h2>
+        <p className="text-base leading-[1.5] text-muted-foreground">
+          A curated selection of packages our travelers love most.
+        </p>
+      </div>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {items.map((item) => (
           <PackageCard key={item.pkg.id} pkg={item.pkg} photoUrl={item.photoUrl} />

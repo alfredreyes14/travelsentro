@@ -39,9 +39,6 @@ export function WhyChooseUs() {
         <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-secondary">
           Why TravelSentro
         </h2>
-        <p className="text-base leading-[1.5] text-muted-foreground">
-          What travelers get every time they inquire with us.
-        </p>
       </div>
 
       <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-2 sm:gap-x-8 sm:gap-y-10 sm:divide-y-0 lg:grid-cols-4">
