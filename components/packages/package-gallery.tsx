@@ -144,7 +144,7 @@ export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
                         : "50vw"
                 }
                 preload={index === 0}
-                className="object-cover group-hover:scale-105"
+                className="transform-gpu object-cover duration-700 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover:scale-105"
               />
               {showMoreOverlay && (
                 <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-[15px] font-semibold text-white">

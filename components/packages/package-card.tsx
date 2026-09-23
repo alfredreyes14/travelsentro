@@ -11,8 +11,11 @@ type PackageRow = Database["public"]["Tables"]["packages"]["Row"];
 
 /**
  * Immersive overlay card: full-bleed photo with name, duration, "₱X / pax"
- * badge, and icon-only WhatsApp/Facebook CTAs sitting on a bottom gradient
- * scrim instead of a separate white panel.
+ * badge, and icon-only WhatsApp/Facebook CTAs sitting over the photo instead
+ * of a separate white panel. The bottom gradient scrim only fades in on
+ * hover (matching the destinations tiles' hover treatment) — at rest the
+ * photo is undarkened, and the text stays legible via `text-shadow-sm`
+ * rather than the scrim, since there's no hover on mobile.
  *
  * The photo, scrim, badge, and text layers are stacked via the CSS "grid
  * stack" technique (every layer shares `col-start-1 row-start-1` inside a
@@ -45,14 +48,14 @@ export function PackageCard({
   photoUrl: string | null;
 }) {
   return (
-    <Card className="relative grid aspect-[4/5] overflow-hidden p-0 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-lg has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50">
+    <Card className="group/card relative grid aspect-[4/5] overflow-hidden p-0 transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-lg has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50">
       {photoUrl ? (
         <FadeImage
           src={photoUrl}
           alt={pkg.name}
           fill
           sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-          className="col-start-1 row-start-1 object-cover ease-out motion-reduce:transition-none group-hover/card:scale-105"
+          className="col-start-1 row-start-1 transform-gpu object-cover duration-700 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover/card:scale-105"
         />
       ) : (
         <div className="col-start-1 row-start-1 flex items-center justify-center bg-secondary/10 text-sm text-muted-foreground">
@@ -62,7 +65,7 @@ export function PackageCard({
 
       <div
         aria-hidden="true"
-        className="pointer-events-none relative col-start-1 row-start-1 bg-gradient-to-t from-black/90 via-black/10 to-transparent"
+        className="pointer-events-none relative col-start-1 row-start-1 bg-gradient-to-t from-black/90 via-black/10 to-transparent opacity-0 transition-opacity duration-700 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover/card:opacity-100"
       />
 
       <Link

@@ -17,7 +17,7 @@ function LogoGroup({ heading, logos }: { heading: string; logos: LogoFile[] }) {
             alt={logo.alt}
             width={280}
             height={140}
-            className="h-auto max-h-32 w-auto max-w-80 object-contain"
+            className="h-auto max-h-28 w-auto max-w-64 object-contain"
           />
         ))}
       </div>
