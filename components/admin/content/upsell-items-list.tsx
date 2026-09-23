@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { addUpsellItem, removeUpsellItem } from "@/actions/upsell-items";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -50,6 +51,14 @@ export type UpsellItemListItem = {
   packageName: string;
   imageUrl: string | null;
   priceLabel: string;
+  /**
+   * True when the linked package is unpublished or soft-deleted. The
+   * authenticated admin session can still see (and remove) this row --
+   * unlike the public popup, which silently excludes it via RLS -- so
+   * this flag renders as a badge rather than hiding the row outright,
+   * keeping the admin's view manageable instead of just inaccurate.
+   */
+  isHidden: boolean;
 };
 
 export type UpsellPackageOption = {
@@ -157,7 +166,12 @@ export function UpsellItemsList({
                 {items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">
-                      {item.packageName}
+                      <div className="flex items-center gap-2">
+                        {item.packageName}
+                        {item.isHidden ? (
+                          <Badge variant="secondary">Hidden</Badge>
+                        ) : null}
+                      </div>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {item.priceLabel}
@@ -183,7 +197,12 @@ export function UpsellItemsList({
             {items.map((item) => (
               <Card key={item.id} className="p-4">
                 <div className="flex flex-col gap-1">
-                  <p className="font-medium">{item.packageName}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{item.packageName}</p>
+                    {item.isHidden ? (
+                      <Badge variant="secondary">Hidden</Badge>
+                    ) : null}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {item.priceLabel}
                   </p>

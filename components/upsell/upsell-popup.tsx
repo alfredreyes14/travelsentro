@@ -6,9 +6,10 @@ import Link from "next/link";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 
 import { shuffle } from "@/lib/upsell/shuffle";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -125,12 +126,19 @@ export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
             </div>
           </div>
 
-          <Button
-            render={<Link href={`/packages/${current.slug}`} />}
+          {/* DialogClose itself renders as the Link (mirrors
+              site-header.tsx's SheetClose+Link pattern) rather than
+              nesting a separate Button-as-Link inside it, so clicking
+              "View Package" both navigates and closes the dialog --
+              otherwise the modal would stay open, focus-trapped, over
+              the package page the visitor just navigated to. */}
+          <DialogClose
             nativeButton={false}
+            render={<Link href={`/packages/${current.slug}`} />}
+            className={buttonVariants()}
           >
             View Package
-          </Button>
+          </DialogClose>
 
           {shuffled.length > 1 ? (
             <div className="flex items-center justify-center gap-3 pt-1">

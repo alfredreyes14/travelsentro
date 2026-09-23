@@ -49,7 +49,12 @@ type UpsellItemRow = Database["public"]["Tables"]["upsell_items"]["Row"] & {
   packages:
     | (Pick<
         Database["public"]["Tables"]["packages"]["Row"],
-        "id" | "name" | "price_per_pax" | "discount_amount"
+        | "id"
+        | "name"
+        | "price_per_pax"
+        | "discount_amount"
+        | "is_published"
+        | "deleted_at"
       > & { package_photos: PackagePhotoRow[] })
     | null;
 };
@@ -80,7 +85,7 @@ export default async function AdminContentPage() {
     supabase
       .from("upsell_items")
       .select(
-        "*, packages(id, name, price_per_pax, discount_amount, package_photos(storage_path, display_order))"
+        "*, packages(id, name, price_per_pax, discount_amount, is_published, deleted_at, package_photos(storage_path, display_order))"
       )
       .order("created_at", { ascending: true }),
     // Upsell items aren't restricted to featured packages (unlike hero
@@ -164,10 +169,16 @@ export default async function AdminContentPage() {
     })
   );
 
-  // Same RLS-null-filter as the public homepage's hero-slide query: an
-  // upsell item whose linked package has since been unpublished or
-  // soft-deleted comes back with `packages: null`, and is dropped here
-  // rather than rendered broken.
+  // Unlike the public anon client, an authenticated can_manage_packages
+  // session's `packages` RLS policy ("manage_packages can read all
+  // packages") has no is_published/deleted_at condition, so `row.packages`
+  // is never null here just because a package was unpublished or
+  // soft-deleted -- it's still returned in full. `isHidden` surfaces that
+  // state explicitly (rendered as a badge in UpsellItemsList) so an admin
+  // can see -- and still remove -- an item the public popup has already
+  // silently dropped, rather than this list looking identical to a fully
+  // live one and contradicting the page's own "changes go live on the
+  // public site immediately" description.
   const upsellItems: UpsellItemListItem[] = ((upsellItemRows ?? []) as UpsellItemRow[])
     .map((row) => {
       const pkg = row.packages;
@@ -184,6 +195,7 @@ export default async function AdminContentPage() {
         packageName: pkg.name,
         imageUrl: firstPhoto ? getPublicImageUrl(firstPhoto.storage_path) : null,
         priceLabel: price.final,
+        isHidden: !pkg.is_published || pkg.deleted_at !== null,
       };
       return item;
     })
