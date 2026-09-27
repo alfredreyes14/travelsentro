@@ -93,11 +93,6 @@ export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
         showCloseButton={false}
         className="gap-0 overflow-hidden p-0 sm:max-w-sm"
       >
-        {/* Visually hidden -- the visible package name in the panel below
-            is the real heading, but Base UI's Dialog still needs an
-            accessible title for aria-labelledby. */}
-        <DialogTitle className="sr-only">You Might Also Like</DialogTitle>
-
         <div className="relative aspect-video w-full bg-secondary/10">
           {current.imageUrl ? (
             <Image
@@ -129,6 +124,12 @@ export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
 
         <div className="flex flex-col gap-3 bg-primary p-5 text-primary-foreground">
           <div className="flex flex-col gap-0.5">
+            {/* Catchy, visible sales headline -- also the Dialog's real
+                accessible title (aria-labelledby), so there's no separate
+                sr-only duplicate. */}
+            <DialogTitle className="font-heading text-xs font-bold tracking-wide text-secondary uppercase">
+              Exclusive Deal Just For You
+            </DialogTitle>
             <h3 className="font-heading text-lg font-semibold">
               {current.name}
             </h3>
