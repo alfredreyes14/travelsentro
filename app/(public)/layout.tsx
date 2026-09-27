@@ -85,7 +85,6 @@ export default async function PublicLayout({
         durationLabel: pkg.duration_label,
         priceOriginal: price.original,
         priceFinal: price.final,
-        savingsLabel: price.savings,
       };
       return item;
     })

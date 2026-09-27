@@ -39,33 +39,11 @@ function checkZeroDiscountTreatedAsNoDiscount(): CheckResult {
   };
 }
 
-function checkSavingsWithDiscount(): CheckResult {
-  const result = formatPackagePrice(12000, 2000);
-  const pass = result.savings === "₱2,000";
-  return {
-    name: "With discount: savings is the formatted discount amount",
-    pass,
-    detail: `savings=${JSON.stringify(result.savings)}`,
-  };
-}
-
-function checkSavingsWithNoDiscount(): CheckResult {
-  const result = formatPackagePrice(12000, null);
-  const pass = result.savings === null;
-  return {
-    name: "No discount: savings is null",
-    pass,
-    detail: `savings=${JSON.stringify(result.savings)}`,
-  };
-}
-
 function main() {
   const results = [
     checkNoDiscount(),
     checkWithDiscount(),
     checkZeroDiscountTreatedAsNoDiscount(),
-    checkSavingsWithDiscount(),
-    checkSavingsWithNoDiscount(),
   ];
 
   console.log(`\nverify-format-price\n`);

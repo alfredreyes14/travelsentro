@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react";
 
 import { shuffle } from "@/lib/upsell/shuffle";
-import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
@@ -21,8 +20,6 @@ export type UpsellItemDisplay = {
   durationLabel: string | null;
   priceOriginal: string | null;
   priceFinal: string;
-  /** Formatted discount amount (e.g. "₱2,000"), null when there's no discount. */
-  savingsLabel: string | null;
 };
 
 /**
@@ -35,10 +32,11 @@ export type UpsellItemDisplay = {
  * is ISR-cached and a server-side shuffle would bake one fixed order into
  * the cached HTML for every visitor within the revalidation window.
  *
- * Styling follows the "bold/sales-forward" direction chosen during design:
- * full-bleed photo with a savings badge, a dark navy info panel (matching
- * the site's --primary brand color) holding the price callout and CTA, so
- * the popup reads as a deal rather than a generic dialog.
+ * Styling follows the "bold/sales-forward" direction chosen during design,
+ * pared back toward minimalism on request: full-bleed photo, then a plain
+ * (not solid-color) panel with a single strong accent color reserved for
+ * the price and the CTA, rather than repeating it across a badge, a
+ * headline, and a filled background all at once.
  */
 export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
   const [open, setOpen] = useState(false);
@@ -104,15 +102,6 @@ export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
             />
           ) : null}
 
-          {current.savingsLabel ? (
-            <Badge
-              variant="secondary"
-              className="absolute top-3 left-3 h-auto px-3 py-1 text-sm font-semibold shadow-md"
-            >
-              Save {current.savingsLabel}
-            </Badge>
-          ) : null}
-
           <DialogClose
             nativeButton={false}
             aria-label="Close"
@@ -122,27 +111,32 @@ export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
           </DialogClose>
         </div>
 
-        <div className="flex flex-col gap-3 bg-primary p-5 text-primary-foreground">
+        <div className="flex flex-col gap-3 p-5">
           <div className="flex flex-col gap-0.5">
-            {/* Catchy, visible sales headline -- also the Dialog's real
-                accessible title (aria-labelledby), so there's no separate
-                sr-only duplicate. */}
-            <DialogTitle className="font-heading text-xs font-bold tracking-wide text-secondary uppercase">
+            {/* Catchy sales headline -- also the Dialog's real accessible
+                title (aria-labelledby), so there's no separate sr-only
+                duplicate. Text-only, no fill, so it reads as a label, not
+                another loud block of color. */}
+            <DialogTitle className="font-heading text-xs font-semibold tracking-wide text-secondary uppercase">
               Exclusive Deal Just For You
             </DialogTitle>
-            <h3 className="font-heading text-lg font-semibold">
+            <h3 className="font-heading text-lg font-semibold text-foreground">
               {current.name}
             </h3>
             {current.durationLabel ? (
-              <p className="text-xs text-primary-foreground/70">
+              <p className="text-xs text-muted-foreground">
                 {current.durationLabel}
               </p>
             ) : null}
           </div>
 
+          {/* Original + final price alone communicate the discount --
+              the struck-through number is the "was", the bold orange
+              number is the "now". No separate savings badge repeating
+              the same information a third time. */}
           <div className="flex items-baseline gap-2">
             {current.priceOriginal ? (
-              <span className="text-sm text-primary-foreground/60 line-through">
+              <span className="text-sm text-muted-foreground line-through">
                 {current.priceOriginal}
               </span>
             ) : null}
@@ -169,21 +163,19 @@ export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
             <div className="flex items-center justify-center gap-3 pt-1">
               <Button
                 variant="ghost"
-                size="icon"
-                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                size="icon-sm"
                 disabled={!canGoPrev}
                 onClick={() => setIndex((i) => i - 1)}
                 aria-label="Previous item"
               >
                 <ChevronLeftIcon />
               </Button>
-              <span className="text-xs text-primary-foreground/60">
+              <span className="text-xs text-muted-foreground">
                 {index + 1} / {shuffled.length}
               </span>
               <Button
                 variant="ghost"
-                size="icon"
-                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
+                size="icon-sm"
                 disabled={!canGoNext}
                 onClick={() => setIndex((i) => i + 1)}
                 aria-label="Next item"
