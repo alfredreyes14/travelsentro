@@ -12,6 +12,7 @@ const baseAccountFields = {
   canManagePackages: z.boolean(),
   canMessageCustomers: z.boolean(),
   canEditCrm: z.boolean(),
+  canManageVouchers: z.boolean(),
 };
 
 export const createAccountSchema = z.object({

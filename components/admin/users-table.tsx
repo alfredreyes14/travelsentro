@@ -191,6 +191,9 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
                             {profile.can_edit_crm && (
                               <Badge variant="outline">CRM</Badge>
                             )}
+                            {profile.can_manage_vouchers && (
+                              <Badge variant="outline">Vouchers</Badge>
+                            )}
                           </>
                         )}
                       </div>
@@ -287,6 +290,9 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
                       )}
                       {profile.can_edit_crm && (
                         <Badge variant="outline">CRM</Badge>
+                      )}
+                      {profile.can_manage_vouchers && (
+                        <Badge variant="outline">Vouchers</Badge>
                       )}
                     </>
                   )}

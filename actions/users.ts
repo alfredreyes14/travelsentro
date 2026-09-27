@@ -32,6 +32,7 @@ type AccountInput = {
   canManagePackages: boolean;
   canMessageCustomers: boolean;
   canEditCrm: boolean;
+  canManageVouchers: boolean;
 };
 
 export async function createAccount(
@@ -84,6 +85,7 @@ export async function createAccount(
       can_manage_packages: values.canManagePackages,
       can_message_customers: values.canMessageCustomers,
       can_edit_crm: values.canEditCrm,
+      can_manage_vouchers: values.canManageVouchers,
     })
     .eq("id", created.user.id);
 
@@ -142,6 +144,7 @@ export async function updateAccount(
       can_manage_packages: values.canManagePackages,
       can_message_customers: values.canMessageCustomers,
       can_edit_crm: values.canEditCrm,
+      can_manage_vouchers: values.canManageVouchers,
     })
     .eq("id", id);
 

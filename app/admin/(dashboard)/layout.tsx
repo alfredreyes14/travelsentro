@@ -25,6 +25,7 @@ export default async function AdminDashboardLayout({
 
   const canManagePackages = profile.role === "admin" || profile.can_manage_packages;
   const canManageUsers = profile.role === "admin";
+  const canManageVouchers = profile.role === "admin" || profile.can_manage_vouchers;
 
   return (
     <NavigationGuardProvider>
@@ -37,6 +38,7 @@ export default async function AdminDashboardLayout({
             <AdminNav
               canManagePackages={canManagePackages}
               canManageUsers={canManageUsers}
+              canManageVouchers={canManageVouchers}
             />
           </SidebarContent>
           <SidebarFooter>

@@ -76,6 +76,7 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
       canManagePackages: false,
       canMessageCustomers: false,
       canEditCrm: false,
+      canManageVouchers: false,
     },
   });
 
@@ -241,6 +242,24 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="canManageVouchers"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
+                <FormLabel className="cursor-pointer">
+                  Manage Vouchers
+                </FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
         </FormSection>
 
         <Button
@@ -273,6 +292,7 @@ function EditAccountForm({
       canManagePackages: account.can_manage_packages,
       canMessageCustomers: account.can_message_customers,
       canEditCrm: account.can_edit_crm,
+      canManageVouchers: account.can_manage_vouchers,
     },
   });
 
@@ -408,6 +428,24 @@ function EditAccountForm({
             render={({ field }) => (
               <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
                 <FormLabel className="cursor-pointer">Edit CRM Data</FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="canManageVouchers"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
+                <FormLabel className="cursor-pointer">
+                  Manage Vouchers
+                </FormLabel>
                 <FormControl>
                   <Switch
                     checked={field.value}

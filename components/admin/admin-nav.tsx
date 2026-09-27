@@ -8,6 +8,7 @@ import {
   UsersIcon,
   LayoutTemplateIcon,
   MapPinIcon,
+  TicketIcon,
 } from "lucide-react";
 
 import { useNavigationGuard } from "./navigation-guard";
@@ -29,9 +30,11 @@ type NavItem = {
 export function AdminNav({
   canManagePackages,
   canManageUsers,
+  canManageVouchers,
 }: {
   canManagePackages: boolean;
   canManageUsers: boolean;
+  canManageVouchers: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -70,6 +73,12 @@ export function AdminNav({
       label: "Contacts",
       icon: ContactIcon,
       show: true,
+    },
+    {
+      href: "/admin/vouchers",
+      label: "Vouchers",
+      icon: TicketIcon,
+      show: canManageVouchers,
     },
     {
       href: "/admin/users",

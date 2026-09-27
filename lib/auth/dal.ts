@@ -11,7 +11,8 @@ export type Profile = Tables<"profiles">;
 export type Permission =
   | "can_manage_packages"
   | "can_message_customers"
-  | "can_edit_crm";
+  | "can_edit_crm"
+  | "can_manage_vouchers";
 
 /**
  * Server-only Data Access Layer (DAL) — re-validates the session (getUser(),
