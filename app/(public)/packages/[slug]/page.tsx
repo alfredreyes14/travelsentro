@@ -73,7 +73,7 @@ export async function generateMetadata({
   const pkg = await getPackageBySlug(slug);
   if (!pkg) return {};
 
-  const price = pkg.price_per_pax - (pkg.discount_amount ?? 0);
+  const price = pkg.price_per_pax;
   const description = [
     pkg.duration_label,
     `from ₱${price.toLocaleString("en-PH")} per pax`,
@@ -167,7 +167,7 @@ export default async function PackageDetailPage({
     },
     offers: {
       "@type": "Offer",
-      price: pkg.price_per_pax - (pkg.discount_amount ?? 0),
+      price: pkg.price_per_pax,
       priceCurrency: "PHP",
       availability: "https://schema.org/InStock",
       url: `${SITE_URL}/packages/${pkg.slug}`,
@@ -203,15 +203,15 @@ export default async function PackageDetailPage({
           <div className="flex items-center gap-2">
             {pkg.discount_amount ? (
               <span className="text-sm text-muted-foreground line-through">
-                &#8369;{pkg.price_per_pax.toLocaleString("en-PH")}
+                &#8369;
+                {(
+                  pkg.price_per_pax + pkg.discount_amount
+                ).toLocaleString("en-PH")}
               </span>
             ) : null}
             <Badge className="h-9 rounded-full px-4 text-[15px] font-bold tabular-nums shadow-sm">
               &#8369;
-              {(
-                pkg.price_per_pax - (pkg.discount_amount ?? 0)
-              ).toLocaleString("en-PH")}{" "}
-              / pax
+              {pkg.price_per_pax.toLocaleString("en-PH")} / pax
             </Badge>
           </div>
         </div>

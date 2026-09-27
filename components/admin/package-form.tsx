@@ -351,7 +351,9 @@ export function PackageForm({
                     />
                   </FormControl>
                   <FormDescription>
-                    A fixed amount off the price per pax.
+                    Added on top of the price per pax to show a struck-through
+                    &quot;was&quot; price (e.g. ₱100 price + ₱50 discount
+                    shows as ₱150 crossed out, ₱100 charged).
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

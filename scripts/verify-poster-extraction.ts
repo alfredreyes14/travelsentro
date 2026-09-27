@@ -61,18 +61,19 @@ function checkStruckThroughPricing(): void {
     poster({ pricePerPax: 5999, originalPricePerPax: 6999 }),
     DESTINATIONS
   );
-  // pricePerPax takes the PRE-discount price so a hand-entered discount
-  // subtracts from the right number. discountAmount is never auto-filled.
+  // pricePerPax takes the REAL/charged price so a hand-entered discount
+  // inflates the struck-through price by the right amount. discountAmount is
+  // never auto-filled.
   const pass =
-    values.pricePerPax === 6999 &&
+    values.pricePerPax === 5999 &&
     values.discountAmount === undefined &&
     flaggedFields(unmapped).includes("discountAmount");
   record(
-    "Struck-through price seeds pre-discount pricePerPax and flags the discount",
+    "Struck-through price seeds the real pricePerPax and flags the discount",
     pass,
     pass
-      ? "6999 / undefined + flagged (type 1000 by hand -> struck 6999, pay 5999)"
-      : `expected 6999/undefined+flagged, got ${values.pricePerPax}/${values.discountAmount}, flags: ${flaggedFields(unmapped).join(",")}`
+      ? "5999 / undefined + flagged (type 1000 by hand -> struck 6999, pay 5999)"
+      : `expected 5999/undefined+flagged, got ${values.pricePerPax}/${values.discountAmount}, flags: ${flaggedFields(unmapped).join(",")}`
   );
 
   // The banner has to carry the exact figure to type, or the manual step is

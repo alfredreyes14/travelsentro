@@ -233,9 +233,10 @@ export async function publishPackage(
  * PackageFormValues object (name, duration, destination, travel dates,
  * itinerary...) and would be far too heavy for "just change the discount"
  * call sites like the upsell popup's Add/Edit Item form. Mirrors
- * package-form-schema.ts's discountAmount rules (positive, strictly less
- * than the price) server-side, since this bypasses that Zod schema
- * entirely.
+ * package-form-schema.ts's discountAmount rule (positive) server-side,
+ * since this bypasses that Zod schema entirely. discountAmount is added ON
+ * TOP of price_per_pax to inflate the displayed struck-through price, so
+ * there's no upper bound tying it to price_per_pax.
  */
 export async function updatePackageDiscount(
   id: string,
@@ -248,23 +249,6 @@ export async function updatePackageDiscount(
   }
 
   const supabase = await createClient();
-
-  const { data: pkg, error: fetchError } = await supabase
-    .from("packages")
-    .select("price_per_pax")
-    .eq("id", id)
-    .single();
-
-  if (fetchError || !pkg) {
-    return { ok: false, error: GENERIC_ERROR_MESSAGE };
-  }
-
-  if (discountAmount !== null && discountAmount >= pkg.price_per_pax) {
-    return {
-      ok: false,
-      error: "Discount must be less than the price per pax.",
-    };
-  }
 
   const { data, error } = await supabase
     .from("packages")

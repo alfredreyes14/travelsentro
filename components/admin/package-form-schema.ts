@@ -39,37 +39,31 @@ const travelDateSchema = z
     path: ["dateTo"],
   });
 
-export const packageFormSchema = z
-  .object({
-    name: z.string().min(1, "Please enter a package name"),
-    pricePerPax: z
-      .number({ error: "Price must be a positive number" })
-      .int("Price must be a positive number")
-      .positive("Price must be a positive number"),
-    discountAmount: z
-      .number({ error: "Discount must be a positive number" })
-      .positive("Discount must be a positive number")
-      .optional(),
-    durationLabel: z.string().min(1, "Please enter the duration"),
-    destinationId: z.string().min(1, "Please select a destination"),
-    remarks: z.string().optional(),
-    travelDates: z
-      .array(travelDateSchema)
-      .min(1, "Add at least one travel date"),
-    itinerary: z.array(itineraryDaySchema),
-    inclusions: z.array(inclusionItemSchema),
-    exclusions: z.array(inclusionItemSchema),
-    bringItems: z.array(inclusionItemSchema),
-  })
-  .refine(
-    (values) =>
-      values.discountAmount === undefined ||
-      values.discountAmount < values.pricePerPax,
-    {
-      message: "Discount must be less than the price per pax",
-      path: ["discountAmount"],
-    }
-  );
+export const packageFormSchema = z.object({
+  name: z.string().min(1, "Please enter a package name"),
+  pricePerPax: z
+    .number({ error: "Price must be a positive number" })
+    .int("Price must be a positive number")
+    .positive("Price must be a positive number"),
+  // Added ON TOP of pricePerPax to display an inflated, struck-through
+  // "original" price (price 100 + discount 50 shows as ~~150~~ 100) --
+  // pricePerPax itself is always the real price the customer pays, so there's
+  // no upper bound tying discountAmount to it.
+  discountAmount: z
+    .number({ error: "Discount must be a positive number" })
+    .positive("Discount must be a positive number")
+    .optional(),
+  durationLabel: z.string().min(1, "Please enter the duration"),
+  destinationId: z.string().min(1, "Please select a destination"),
+  remarks: z.string().optional(),
+  travelDates: z
+    .array(travelDateSchema)
+    .min(1, "Add at least one travel date"),
+  itinerary: z.array(itineraryDaySchema),
+  inclusions: z.array(inclusionItemSchema),
+  exclusions: z.array(inclusionItemSchema),
+  bringItems: z.array(inclusionItemSchema),
+});
 
 export type PackageFormValues = z.infer<typeof packageFormSchema>;
 

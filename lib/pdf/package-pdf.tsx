@@ -227,8 +227,9 @@ export function PackagePdfDocument({
   pkg: PackagePdfData;
   logoSrc: string;
 }) {
-  const finalPrice = pkg.price_per_pax - (pkg.discount_amount ?? 0);
+  const finalPrice = pkg.price_per_pax;
   const hasDiscount = (pkg.discount_amount ?? 0) > 0;
+  const strikePrice = pkg.price_per_pax + (pkg.discount_amount ?? 0);
 
   const sortedDays = [...pkg.itinerary_days].sort(
     (a, b) => a.day_number - b.day_number
@@ -263,7 +264,7 @@ export function PackagePdfDocument({
           <View style={styles.priceRow}>
             {hasDiscount ? (
               <Text style={styles.priceStrike}>
-                {formatPhp(pkg.price_per_pax)}
+                {formatPhp(strikePrice)}
               </Text>
             ) : null}
             <Text style={styles.price}>{formatPhp(finalPrice)} / pax</Text>

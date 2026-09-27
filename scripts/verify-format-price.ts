@@ -21,9 +21,9 @@ function checkNoDiscount(): CheckResult {
 
 function checkWithDiscount(): CheckResult {
   const result = formatPackagePrice(12000, 2000);
-  const pass = result.original === "₱12,000" && result.final === "₱10,000 / pax";
+  const pass = result.original === "₱14,000" && result.final === "₱12,000 / pax";
   return {
-    name: "With discount: original is the pre-discount price, final is discounted",
+    name: "With discount: original is inflated (price + discount), final is the real price",
     pass,
     detail: `original=${JSON.stringify(result.original)} final=${JSON.stringify(result.final)}`,
   };

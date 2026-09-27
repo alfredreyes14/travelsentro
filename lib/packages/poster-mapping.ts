@@ -141,19 +141,18 @@ export function mapPosterToFormValues(
     flag("destinationId", "Destination", "details", destination.reason);
   }
 
-  // Pricing. pricePerPax on the form is the PRE-discount price: the public
-  // site renders `price_per_pax - discount_amount` with price_per_pax struck
-  // through. So a poster showing "was 6999, now 5999" puts 6999 here, NOT
-  // 5999 -- the 1000 difference belongs in discountAmount.
+  // Pricing. pricePerPax on the form is the REAL price the customer pays --
+  // the public site renders `price_per_pax + discount_amount` struck through
+  // next to the plain price_per_pax. So a poster showing "was 6999, now 5999"
+  // puts 5999 here (the actual charge), NOT 6999 -- the 1000 difference
+  // belongs in discountAmount, which inflates the struck-through price back
+  // up to 6999.
   //
   // discountAmount itself is NEVER auto-filled: discounts are entered by hand
-  // (user decision, 2026-08-31). Auto-filling it and putting the marked-down
-  // price in pricePerPax would be the one combination that silently
-  // undercharges, since an admin who then typed the discount in would be
-  // discounting an already-discounted price. Instead we seed the pre-discount
-  // price and flag the discount with the exact figure to type, so a manual
-  // entry lands correctly and an ignored one is at least visible in the
-  // banner.
+  // (user decision, 2026-08-31). Seeding it automatically would let an admin
+  // publish a "was/now" markdown without ever reviewing the figure the poster
+  // printed, so we seed the real charged price and flag the discount with the
+  // exact figure to type, making an ignored one visible in the banner.
   const current =
     raw.pricePerPax !== null ? Math.round(raw.pricePerPax) : null;
   const original =
@@ -173,14 +172,14 @@ export function mapPosterToFormValues(
   } else {
     const discount = original - current;
     if (discount > 0 && discount < original) {
-      // Seed the struck-through price so a hand-entered discount subtracts
-      // from the right number.
-      values.pricePerPax = original;
+      // Seed the real/charged price; a hand-entered discount inflates the
+      // struck-through "original" shown next to it (price + discount).
+      values.pricePerPax = current;
       flag(
         "discountAmount",
         "Discount",
         "details",
-        `The poster marks ${formatPeso(original)} down to ${formatPeso(current)}. Price per pax is set to ${original} — enter ${discount} as the Discount on the Details tab to show that markdown on the site.`
+        `The poster marks ${formatPeso(original)} down to ${formatPeso(current)}. Price per pax is set to ${current} — enter ${discount} as the Discount on the Details tab to show ${formatPeso(original)} struck through on the site.`
       );
     } else {
       values.pricePerPax = current;

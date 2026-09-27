@@ -414,7 +414,7 @@ function AddUpsellItemForm({
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">Original Price</label>
+        <label className="text-sm font-medium">Price per pax</label>
         <Input
           disabled
           readOnly
@@ -498,7 +498,7 @@ function EditUpsellItemForm({
       </div>
 
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">Original Price</label>
+        <label className="text-sm font-medium">Price per pax</label>
         <Input
           disabled
           readOnly
