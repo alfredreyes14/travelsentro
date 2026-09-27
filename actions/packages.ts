@@ -227,6 +227,66 @@ export async function publishPackage(
   return { ok: true };
 }
 
+/**
+ * Narrow discount-only update -- mirrors publishPackage/featurePackage's
+ * shape rather than reusing updatePackage(), which requires the entire
+ * PackageFormValues object (name, duration, destination, travel dates,
+ * itinerary...) and would be far too heavy for "just change the discount"
+ * call sites like the upsell popup's Add/Edit Item form. Mirrors
+ * package-form-schema.ts's discountAmount rules (positive, strictly less
+ * than the price) server-side, since this bypasses that Zod schema
+ * entirely.
+ */
+export async function updatePackageDiscount(
+  id: string,
+  discountAmount: number | null
+): Promise<ActionResult> {
+  await requirePermission("can_manage_packages");
+
+  if (discountAmount !== null && discountAmount <= 0) {
+    return { ok: false, error: "Discount must be a positive number." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: pkg, error: fetchError } = await supabase
+    .from("packages")
+    .select("price_per_pax")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !pkg) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  if (discountAmount !== null && discountAmount >= pkg.price_per_pax) {
+    return {
+      ok: false,
+      error: "Discount must be less than the price per pax.",
+    };
+  }
+
+  const { data, error } = await supabase
+    .from("packages")
+    .update({ discount_amount: discountAmount })
+    .eq("id", id)
+    .select("slug")
+    .single();
+
+  if (error || !data) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  revalidatePath("/packages");
+  revalidatePath(`/packages/${data.slug}`);
+  revalidatePath("/admin/packages");
+  revalidatePath("/admin/content");
+  // "layout", not the default "page" -- the upsell popup renders in the
+  // shared (public)/layout.tsx, which wraps every public route.
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function featurePackage(
   id: string,
   isFeatured: boolean

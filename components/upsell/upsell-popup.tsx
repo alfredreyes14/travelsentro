@@ -3,17 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react";
 
 import { shuffle } from "@/lib/upsell/shuffle";
+import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 const SESSION_STORAGE_KEY = "ts-upsell-seen";
 const OPEN_DELAY_MS = 1500;
@@ -26,6 +21,8 @@ export type UpsellItemDisplay = {
   durationLabel: string | null;
   priceOriginal: string | null;
   priceFinal: string;
+  /** Formatted discount amount (e.g. "₱2,000"), null when there's no discount. */
+  savingsLabel: string | null;
 };
 
 /**
@@ -37,6 +34,11 @@ export type UpsellItemDisplay = {
  * here (client-side), not in the server query, since (public)/layout.tsx
  * is ISR-cached and a server-side shuffle would bake one fixed order into
  * the cached HTML for every visitor within the revalidation window.
+ *
+ * Styling follows the "bold/sales-forward" direction chosen during design:
+ * full-bleed photo with a savings badge, a dark navy info panel (matching
+ * the site's --primary brand color) holding the price callout and CTA, so
+ * the popup reads as a deal rather than a generic dialog.
  */
 export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
   const [open, setOpen] = useState(false);
@@ -73,10 +75,10 @@ export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `items` is
-    // this layout-scoped singleton's server-fetched initial prop; it never
-    // changes after mount, and re-running this on identity isn't how
-    // "once per session" is meant to behave.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // `items` is this layout-scoped singleton's server-fetched initial
+    // prop; it never changes after mount, and re-running this on identity
+    // isn't how "once per session" is meant to behave.
   }, []);
 
   if (shuffled.length === 0) return null;
@@ -87,43 +89,65 @@ export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>You Might Also Like</DialogTitle>
-        </DialogHeader>
+      <DialogContent
+        showCloseButton={false}
+        className="gap-0 overflow-hidden p-0 sm:max-w-sm"
+      >
+        {/* Visually hidden -- the visible package name in the panel below
+            is the real heading, but Base UI's Dialog still needs an
+            accessible title for aria-labelledby. */}
+        <DialogTitle className="sr-only">You Might Also Like</DialogTitle>
 
-        <div className="flex flex-col gap-3">
-          <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-secondary/10">
-            {current.imageUrl ? (
-              <Image
-                src={current.imageUrl}
-                alt={current.name}
-                fill
-                sizes="(min-width: 640px) 24rem, 100vw"
-                className="object-cover"
-              />
-            ) : null}
-          </div>
+        <div className="relative aspect-video w-full bg-secondary/10">
+          {current.imageUrl ? (
+            <Image
+              src={current.imageUrl}
+              alt={current.name}
+              fill
+              sizes="(min-width: 640px) 24rem, 100vw"
+              className="object-cover"
+            />
+          ) : null}
 
-          <div className="flex flex-col gap-1">
+          {current.savingsLabel ? (
+            <Badge
+              variant="secondary"
+              className="absolute top-3 left-3 h-auto px-3 py-1 text-sm font-semibold shadow-md"
+            >
+              Save {current.savingsLabel}
+            </Badge>
+          ) : null}
+
+          <DialogClose
+            nativeButton={false}
+            aria-label="Close"
+            className="absolute top-3 right-3 flex size-8 items-center justify-center rounded-full bg-black/40 text-white transition-colors hover:bg-black/60"
+          >
+            <XIcon className="size-4" />
+          </DialogClose>
+        </div>
+
+        <div className="flex flex-col gap-3 bg-primary p-5 text-primary-foreground">
+          <div className="flex flex-col gap-0.5">
             <h3 className="font-heading text-lg font-semibold">
               {current.name}
             </h3>
             {current.durationLabel ? (
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-primary-foreground/70">
                 {current.durationLabel}
               </p>
             ) : null}
-            <div className="flex items-center gap-1.5 pt-1">
-              {current.priceOriginal ? (
-                <span className="text-xs text-muted-foreground line-through">
-                  {current.priceOriginal}
-                </span>
-              ) : null}
-              <span className="text-sm font-semibold">
-                {current.priceFinal}
+          </div>
+
+          <div className="flex items-baseline gap-2">
+            {current.priceOriginal ? (
+              <span className="text-sm text-primary-foreground/60 line-through">
+                {current.priceOriginal}
               </span>
-            </div>
+            ) : null}
+            <span className="text-2xl font-bold text-secondary">
+              {current.priceFinal}
+            </span>
           </div>
 
           {/* DialogClose itself renders as the Link (mirrors
@@ -135,7 +159,7 @@ export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
           <DialogClose
             nativeButton={false}
             render={<Link href={`/packages/${current.slug}`} />}
-            className={buttonVariants()}
+            className={buttonVariants({ variant: "secondary", size: "lg" })}
           >
             View Package
           </DialogClose>
@@ -145,18 +169,20 @@ export function UpsellPopup({ items }: { items: UpsellItemDisplay[] }) {
               <Button
                 variant="ghost"
                 size="icon"
+                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
                 disabled={!canGoPrev}
                 onClick={() => setIndex((i) => i - 1)}
                 aria-label="Previous item"
               >
                 <ChevronLeftIcon />
               </Button>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs text-primary-foreground/60">
                 {index + 1} / {shuffled.length}
               </span>
               <Button
                 variant="ghost"
                 size="icon"
+                className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground"
                 disabled={!canGoNext}
                 onClick={() => setIndex((i) => i + 1)}
                 aria-label="Next item"

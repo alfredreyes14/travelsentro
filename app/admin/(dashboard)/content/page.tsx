@@ -90,9 +90,12 @@ export default async function AdminContentPage() {
       .order("created_at", { ascending: true }),
     // Upsell items aren't restricted to featured packages (unlike hero
     // slides above) -- any published, non-deleted package is eligible.
+    // price_per_pax/discount_amount ride along so the Add Item form can
+    // show a read-only "Original Price" and pre-fill the Discount field
+    // with whatever discount the package already has.
     supabase
       .from("packages")
-      .select("id, name")
+      .select("id, name, price_per_pax, discount_amount")
       .eq("is_published", true)
       .is("deleted_at", null)
       .order("name"),
@@ -194,7 +197,10 @@ export default async function AdminContentPage() {
         packageId: pkg.id,
         packageName: pkg.name,
         imageUrl: firstPhoto ? getPublicImageUrl(firstPhoto.storage_path) : null,
-        priceLabel: price.final,
+        pricePerPax: pkg.price_per_pax,
+        discountAmount: pkg.discount_amount,
+        priceOriginal: price.original,
+        priceFinal: price.final,
         isHidden: !pkg.is_published || pkg.deleted_at !== null,
       };
       return item;
@@ -204,7 +210,12 @@ export default async function AdminContentPage() {
   const upsellPackageIds = new Set(upsellItems.map((item) => item.packageId));
   const upsellPackageOptions: UpsellPackageOption[] = (publishedPackageRows ?? [])
     .filter((pkg) => !upsellPackageIds.has(pkg.id))
-    .map((pkg) => ({ id: pkg.id, name: pkg.name }));
+    .map((pkg) => ({
+      id: pkg.id,
+      name: pkg.name,
+      pricePerPax: pkg.price_per_pax,
+      discountAmount: pkg.discount_amount,
+    }));
 
   return (
     <div className="flex flex-col gap-6">
