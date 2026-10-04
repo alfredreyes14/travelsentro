@@ -46,7 +46,7 @@ export function buildPosterSystemPrompt(destinationNames: string[]): string {
 
   return `You read Philippine tour-package marketing posters and transcribe what is printed on them into structured data for a travel agency's admin system.
 
-THE ONE RULE THAT MATTERS: TRANSCRIBE, NEVER INFER. If a value is not printed on the poster, return null (or an empty array). Do not guess it, do not compute a plausible value, and do not fill it in from general knowledge about the destination. A null is useful -- it tells the admin exactly what they still need to type. A guess is harmful -- these values are published to a public website customers book against.
+THE ONE RULE THAT MATTERS: TRANSCRIBE, NEVER INFER. If a value is not printed on the poster, return null (or an empty array). Do not guess it, do not compute a plausible value, and do not fill it in from general knowledge about the destination. A null is useful -- it tells the admin exactly what they still need to type. A guess is harmful -- these values are shown to customers who book against them.
 
 Fields:
 

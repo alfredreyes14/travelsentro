@@ -194,6 +194,9 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
                             {profile.can_manage_vouchers && (
                               <Badge variant="outline">Vouchers</Badge>
                             )}
+                            {profile.can_manage_quotes && (
+                              <Badge variant="outline">Quotes</Badge>
+                            )}
                           </>
                         )}
                       </div>
@@ -293,6 +296,9 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
                       )}
                       {profile.can_manage_vouchers && (
                         <Badge variant="outline">Vouchers</Badge>
+                      )}
+                      {profile.can_manage_quotes && (
+                        <Badge variant="outline">Quotes</Badge>
                       )}
                     </>
                   )}

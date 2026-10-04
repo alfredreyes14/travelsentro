@@ -9,6 +9,7 @@ import {
   LayoutTemplateIcon,
   MapPinIcon,
   TicketIcon,
+  FileTextIcon,
 } from "lucide-react";
 
 import { useNavigationGuard } from "./navigation-guard";
@@ -31,10 +32,12 @@ export function AdminNav({
   canManagePackages,
   canManageUsers,
   canManageVouchers,
+  canManageQuotes,
 }: {
   canManagePackages: boolean;
   canManageUsers: boolean;
   canManageVouchers: boolean;
+  canManageQuotes: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -79,6 +82,12 @@ export function AdminNav({
       label: "Vouchers",
       icon: TicketIcon,
       show: canManageVouchers,
+    },
+    {
+      href: "/admin/quotes",
+      label: "Quotes",
+      icon: FileTextIcon,
+      show: canManageQuotes,
     },
     {
       href: "/admin/users",

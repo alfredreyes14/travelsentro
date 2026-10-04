@@ -7,7 +7,7 @@ import type { PosterExtraction } from "./poster-prompt";
  * it is written as a complete sentence addressed to the admin.
  */
 export type UnmappedField = {
-  field: keyof PackageFormValues;
+  field: string;
   label: string;
   tab: string;
   reason: string;

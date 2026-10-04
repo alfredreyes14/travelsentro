@@ -489,6 +489,7 @@ export type Database = {
         Row: {
           can_edit_crm: boolean;
           can_manage_packages: boolean;
+          can_manage_quotes: boolean;
           can_manage_vouchers: boolean;
           can_message_customers: boolean;
           created_at: string;
@@ -501,6 +502,7 @@ export type Database = {
         Insert: {
           can_edit_crm?: boolean;
           can_manage_packages?: boolean;
+          can_manage_quotes?: boolean;
           can_manage_vouchers?: boolean;
           can_message_customers?: boolean;
           created_at?: string;
@@ -513,6 +515,7 @@ export type Database = {
         Update: {
           can_edit_crm?: boolean;
           can_manage_packages?: boolean;
+          can_manage_quotes?: boolean;
           can_manage_vouchers?: boolean;
           can_message_customers?: boolean;
           created_at?: string;
@@ -523,6 +526,94 @@ export type Database = {
           role?: string;
         };
         Relationships: [];
+      };
+      quotes: {
+        Row: {
+          bring_items: NonNullable<Json>;
+          contact_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          customer_name: string | null;
+          discount_amount: number | null;
+          duration_label: string;
+          exclusions: NonNullable<Json>;
+          id: string;
+          inclusions: NonNullable<Json>;
+          itinerary: NonNullable<Json>;
+          price_per_pax: number;
+          quote_no: string;
+          remarks: string | null;
+          source: string;
+          source_package_id: string | null;
+          title: string;
+          travel_dates: NonNullable<Json>;
+          updated_at: string;
+        };
+        Insert: {
+          bring_items?: NonNullable<Json>;
+          contact_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          customer_name?: string | null;
+          discount_amount?: number | null;
+          duration_label: string;
+          exclusions?: NonNullable<Json>;
+          id?: string;
+          inclusions?: NonNullable<Json>;
+          itinerary?: NonNullable<Json>;
+          price_per_pax: number;
+          quote_no?: string;
+          remarks?: string | null;
+          source?: string;
+          source_package_id?: string | null;
+          title: string;
+          travel_dates?: NonNullable<Json>;
+          updated_at?: string;
+        };
+        Update: {
+          bring_items?: NonNullable<Json>;
+          contact_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          customer_name?: string | null;
+          discount_amount?: number | null;
+          duration_label?: string;
+          exclusions?: NonNullable<Json>;
+          id?: string;
+          inclusions?: NonNullable<Json>;
+          itinerary?: NonNullable<Json>;
+          price_per_pax?: number;
+          quote_no?: string;
+          remarks?: string | null;
+          source?: string;
+          source_package_id?: string | null;
+          title?: string;
+          travel_dates?: NonNullable<Json>;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quotes_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quotes_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quotes_source_package_id_fkey";
+            columns: ["source_package_id"];
+            isOneToOne: false;
+            referencedRelation: "packages";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       testimonials: {
         Row: {

@@ -13,6 +13,11 @@ import {
 } from "../components/admin/package-form-schema";
 import type { PosterExtraction } from "../lib/packages/poster-prompt";
 import { mapPosterToFormValues } from "../lib/packages/poster-mapping";
+import {
+  quoteFormSchema,
+  EMPTY_QUOTE_VALUES,
+} from "../components/admin/quote-form-schema";
+import { mapPosterToQuoteValues } from "../lib/quotes/poster-mapping";
 import AnthropicSDK from "@anthropic-ai/sdk";
 import { describePosterExtractionError } from "../lib/packages/poster-error";
 
@@ -548,6 +553,58 @@ function checkErrorMessages(): void {
   );
 }
 
+// --- Quote mapping (flyer -> quote form) ---------------------------------
+function checkQuoteMapping(): void {
+  const full = poster({
+    name: "Coron Island Escape",
+    destinationName: "Coron, Palawan",
+    pricePerPax: 5999,
+    originalPricePerPax: 6999,
+    durationLabel: "3D2N",
+    travelDates: [{ dateFrom: "2026-11-05", dateTo: "2026-11-07", additionalFee: null }],
+    itinerary: [{ title: "Arrival", description: "Pickup" }],
+    inclusions: ["Hotel"],
+    exclusions: ["Airfare"],
+    bringItems: ["Sunscreen"],
+  });
+  const { values, unmapped } = mapPosterToQuoteValues(full);
+
+  record(
+    "quote mapping: poster name becomes the quote title",
+    values.title === "Coron Island Escape" && !("name" in values),
+    JSON.stringify(values)
+  );
+  record(
+    "quote mapping: destination is neither filled nor flagged",
+    !("destinationId" in values) && !flaggedFields(unmapped).includes("destinationId"),
+    JSON.stringify(flaggedFields(unmapped))
+  );
+  const discount = unmapped.find((entry) => entry.field === "discountAmount");
+  record(
+    "quote mapping: discount reason talks about the quote PDF, not the site",
+    discount !== undefined && discount.reason.includes("on the quote PDF") && !discount.reason.includes("on the site"),
+    discount?.reason ?? "no discount entry"
+  );
+  record(
+    "quote mapping: merged onto EMPTY_QUOTE_VALUES, the result passes quoteFormSchema",
+    quoteFormSchema.safeParse({ ...EMPTY_QUOTE_VALUES, ...values }).success,
+    JSON.stringify(values)
+  );
+
+  const empty = mapPosterToQuoteValues(emptyPoster());
+  record(
+    "quote mapping: no undefined-valued keys (they would blank EMPTY_QUOTE_VALUES on spread)",
+    Object.values(empty.values).every((value) => value !== undefined),
+    JSON.stringify(Object.keys(empty.values))
+  );
+  const titleFlag = empty.unmapped.find((entry) => entry.field === "title");
+  record(
+    "quote mapping: a missing title is flagged as the quote title",
+    titleFlag !== undefined && titleFlag.label === "Quote title" && !flaggedFields(empty.unmapped).includes("name"),
+    JSON.stringify(empty.unmapped.map((e) => `${e.field}:${e.label}`))
+  );
+}
+
 function main(): void {
   checkStruckThroughPricing();
   checkSinglePrice();
@@ -562,6 +619,7 @@ function main(): void {
   checkSchemaInvariant();
   checkDiscountNeverAutoFilled();
   checkErrorMessages();
+  checkQuoteMapping();
 
   console.log("\nPoster extraction mapping checks\n");
   for (const result of results) {
