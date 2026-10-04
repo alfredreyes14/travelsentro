@@ -87,7 +87,7 @@ export function PartnerAffiliations({
           </h2>
         </div>
         <LogoGroup heading="Airlines" logos={airlines} marquee />
-        <LogoGroup heading="Operators" logos={operators} marquee />
+        <LogoGroup heading="Travel Partners" logos={operators} marquee />
         <LogoGroup heading="Brand Partners" logos={brandPartners} />
       </div>
     </section>
