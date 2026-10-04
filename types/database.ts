@@ -620,7 +620,7 @@ export type Database = {
           created_at: string;
           customer_name: string;
           id: string;
-          photo_storage_path: string | null;
+          photo_storage_paths: string[];
           quote: string;
           rating: number;
           sort_order: number;
@@ -629,7 +629,7 @@ export type Database = {
           created_at?: string;
           customer_name: string;
           id?: string;
-          photo_storage_path?: string | null;
+          photo_storage_paths?: string[];
           quote: string;
           rating: number;
           sort_order?: number;
@@ -638,7 +638,7 @@ export type Database = {
           created_at?: string;
           customer_name?: string;
           id?: string;
-          photo_storage_path?: string | null;
+          photo_storage_paths?: string[];
           quote?: string;
           rating?: number;
           sort_order?: number;

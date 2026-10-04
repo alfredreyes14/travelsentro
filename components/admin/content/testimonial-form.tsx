@@ -3,12 +3,15 @@
 import { useState, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { XIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { createTestimonial, updateTestimonial } from "@/actions/testimonials";
 import { uploadSiteContentImage } from "@/actions/site-content-uploads";
 import { readFileAsBase64 } from "@/lib/read-file-as-base64";
+import { getPublicImageUrl } from "@/lib/storage/image-url";
 import {
+  MAX_TESTIMONIAL_PHOTOS,
   testimonialFormSchema,
   type TestimonialFormValues,
 } from "./testimonial-form-schema";
@@ -33,7 +36,7 @@ export type TestimonialRecord = {
   customerName: string;
   quote: string;
   rating: number;
-  photoStoragePath: string | null;
+  photoStoragePaths: string[];
 };
 
 type TestimonialFormProps =
@@ -65,7 +68,7 @@ function CreateTestimonialForm({ onSuccess }: { onSuccess: () => void }) {
         customerName: "",
         quote: "",
         rating: 0,
-        photoStoragePath: "",
+        photoStoragePaths: [],
       }}
       submitLabel="Add Testimonial"
       onSubmit={async (values) => {
@@ -94,7 +97,7 @@ function EditTestimonialForm({
         customerName: testimonial.customerName,
         quote: testimonial.quote,
         rating: testimonial.rating,
-        photoStoragePath: testimonial.photoStoragePath ?? "",
+        photoStoragePaths: testimonial.photoStoragePaths,
       }}
       submitLabel="Save Changes"
       onSubmit={async (values) => {
@@ -127,32 +130,61 @@ function TestimonialFormBody({
     defaultValues,
   });
 
-  async function handlePhotoChange(
+  /**
+   * Uploads every selected file, one Server Action call at a time, and
+   * appends each successful upload's key as it lands -- mirroring
+   * photo-manager.tsx, a failure partway through keeps the photos that
+   * already uploaded instead of discarding the whole selection. Files
+   * beyond MAX_TESTIMONIAL_PHOTOS are skipped up front rather than
+   * uploaded and then rejected by the schema on submit.
+   */
+  async function handlePhotosSelected(
     event: ChangeEvent<HTMLInputElement>,
-    onUploaded: (storagePath: string) => void
+    currentPaths: string[],
+    onChange: (paths: string[]) => void
   ) {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const selected = Array.from(event.target.files ?? []);
+    if (selected.length === 0) return;
+
+    const remainingSlots = MAX_TESTIMONIAL_PHOTOS - currentPaths.length;
+    const files = selected.slice(0, Math.max(remainingSlots, 0));
+    if (files.length < selected.length) {
+      toast.error(
+        `Only ${MAX_TESTIMONIAL_PHOTOS} photos are allowed per testimonial -- ${selected.length - files.length} skipped.`
+      );
+    }
 
     setIsUploadingImage(true);
+    let paths = currentPaths;
+    let succeededCount = 0;
     try {
-      const base64 = await readFileAsBase64(file);
-      const result = await uploadSiteContentImage("testimonials", {
-        name: file.name,
-        type: file.type,
-        base64,
-      });
-
-      if (!result.ok) {
-        toast.error(result.error);
-      } else if (result.storagePath) {
-        onUploaded(result.storagePath);
-        toast.success("Photo uploaded.");
-      } else {
-        toast.error(GENERIC_ERROR_MESSAGE);
+      for (const file of files) {
+        try {
+          const base64 = await readFileAsBase64(file);
+          const result = await uploadSiteContentImage("testimonials", {
+            name: file.name,
+            type: file.type,
+            base64,
+          });
+          if (result.ok && result.storagePath) {
+            paths = [...paths, result.storagePath];
+            onChange(paths);
+            succeededCount += 1;
+          } else {
+            toast.error(result.ok ? GENERIC_ERROR_MESSAGE : result.error);
+          }
+        } catch {
+          toast.error(GENERIC_ERROR_MESSAGE);
+        }
       }
-    } catch {
-      toast.error(GENERIC_ERROR_MESSAGE);
+
+      if (succeededCount > 0) {
+        toast.success(
+          succeededCount === 1
+            ? "Photo uploaded."
+            : `${succeededCount} photos uploaded.`
+        );
+      }
     } finally {
       setIsUploadingImage(false);
       event.target.value = "";
@@ -221,31 +253,72 @@ function TestimonialFormBody({
 
         <FormField
           control={form.control}
-          name="photoStoragePath"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Photo (optional)</FormLabel>
-              <FormControl>
-                <input
-                  type="file"
-                  accept="image/*"
-                  disabled={isUploadingImage}
-                  onChange={(event) =>
-                    handlePhotoChange(event, (storagePath) =>
-                      field.onChange(storagePath)
-                    )
-                  }
-                  className="text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-secondary-foreground"
-                />
-              </FormControl>
-              {field.value ? (
+          name="photoStoragePaths"
+          render={({ field }) => {
+            const isFull = field.value.length >= MAX_TESTIMONIAL_PHOTOS;
+
+            return (
+              <FormItem>
+                <FormLabel>
+                  Photos (optional, up to {MAX_TESTIMONIAL_PHOTOS})
+                </FormLabel>
+                {field.value.length > 0 ? (
+                  <ul className="grid grid-cols-4 gap-2">
+                    {field.value.map((storagePath, index) => (
+                      <li
+                        key={storagePath}
+                        className="relative aspect-square overflow-hidden rounded-md bg-secondary/10"
+                      >
+                        {/* Plain <img>, matching hero-slides-list.tsx's
+                            admin thumbnail convention. */}
+                        <img
+                          src={getPublicImageUrl(storagePath)}
+                          alt={`Photo ${index + 1}`}
+                          className="size-full object-cover"
+                        />
+                        {/* Removing only drops the key from the form; the
+                            R2 object is left in place so cancelling an edit
+                            never breaks the saved testimonial (orphaning is
+                            the accepted scope limit noted in
+                            site-content-uploads.ts). */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            field.onChange(
+                              field.value.filter((path) => path !== storagePath)
+                            )
+                          }
+                          disabled={isUploadingImage}
+                          className="absolute top-1 right-1 flex size-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80 disabled:opacity-50"
+                        >
+                          <XIcon className="size-3.5" />
+                          <span className="sr-only">Remove photo {index + 1}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <FormControl>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    disabled={isUploadingImage || isFull}
+                    onChange={(event) =>
+                      handlePhotosSelected(event, field.value, field.onChange)
+                    }
+                    className="text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-secondary-foreground disabled:opacity-50"
+                  />
+                </FormControl>
                 <p className="text-sm text-muted-foreground">
-                  Photo uploaded.
+                  {isUploadingImage
+                    ? "Uploading..."
+                    : `${field.value.length} of ${MAX_TESTIMONIAL_PHOTOS} photos`}
                 </p>
-              ) : null}
-              <FormMessage />
-            </FormItem>
-          )}
+                <FormMessage />
+              </FormItem>
+            );
+          }}
         />
 
         <Button

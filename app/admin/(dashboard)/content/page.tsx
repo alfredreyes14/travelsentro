@@ -165,7 +165,7 @@ export default async function AdminContentPage() {
       customerName: row.customer_name,
       quote: row.quote,
       rating: row.rating,
-      photoStoragePath: row.photo_storage_path,
+      photoStoragePaths: row.photo_storage_paths ?? [],
     })
   );
 

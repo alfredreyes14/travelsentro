@@ -40,6 +40,10 @@ import {
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
+function formatPhotoCount(count: number): string {
+  return count === 1 ? "1 photo" : `${count} photos`;
+}
+
 /**
  * Combines Dialog-wrapped add/edit TestimonialForm with an AlertDialog
  * delete confirmation and a responsive Table/Card-list split, mirroring
@@ -138,6 +142,7 @@ export function TestimonialsList({
                   <TableHead>Customer</TableHead>
                   <TableHead>Quote</TableHead>
                   <TableHead>Rating</TableHead>
+                  <TableHead>Photos</TableHead>
                   <TableHead className="w-24">
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -153,6 +158,9 @@ export function TestimonialsList({
                       {item.quote}
                     </TableCell>
                     <TableCell>{item.rating} / 5</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {item.photoStoragePaths.length}
+                    </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
                         <Button
@@ -186,7 +194,8 @@ export function TestimonialsList({
                     {item.quote}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {item.rating} / 5
+                    {item.rating} / 5 &middot;{" "}
+                    {formatPhotoCount(item.photoStoragePaths.length)}
                   </p>
                 </div>
                 <div className="mt-3 flex gap-2">

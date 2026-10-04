@@ -13,10 +13,12 @@ type PackageRow = Database["public"]["Tables"]["packages"]["Row"];
 /**
  * Immersive overlay card: full-bleed photo with name, duration, "₱X / pax"
  * badge, and icon-only WhatsApp/Facebook CTAs sitting over the photo instead
- * of a separate white panel. The bottom gradient scrim only fades in on
- * hover (matching the destinations tiles' hover treatment) — at rest the
- * photo is undarkened, and the text stays legible via `text-shadow-sm`
- * rather than the scrim, since there's no hover on mobile.
+ * of a separate white panel. A permanent bottom scrim (fading out by ~55%
+ * of the card height) keeps the text legible over bright photos (beaches,
+ * skies, snow) — including on mobile where there's no hover — and a deeper
+ * scrim fades in on hover (matching the destinations tiles' hover
+ * treatment). The strikethrough original price sits in its own dark chip
+ * since small, thin text can't rely on the scrim alone.
  *
  * The photo, scrim, badge, and text layers are stacked via the CSS "grid
  * stack" technique (every layer shares `col-start-1 row-start-1` inside a
@@ -68,6 +70,11 @@ export function PackageCard({
 
       <div
         aria-hidden="true"
+        className="pointer-events-none relative col-start-1 row-start-1 bg-gradient-to-t from-black/75 from-0% via-black/35 via-30% to-transparent to-55%"
+      />
+
+      <div
+        aria-hidden="true"
         className="pointer-events-none relative col-start-1 row-start-1 bg-gradient-to-t from-black/90 via-black/10 to-transparent opacity-0 transition-opacity duration-700 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover/card:opacity-100"
       />
 
@@ -87,18 +94,18 @@ export function PackageCard({
       )}
 
       <div className="pointer-events-none relative col-start-1 row-start-1 flex flex-col justify-end gap-1 p-4">
-        <p className="truncate text-xs font-medium tracking-wide text-white/80 text-shadow-sm uppercase">
+        <p className="truncate text-xs font-semibold tracking-wide text-white/90 text-shadow-md text-shadow-black/50 uppercase">
           {pkg.duration_label ?? "Duration TBA"}
         </p>
 
-        <h3 className="line-clamp-2 font-heading text-[20px] leading-[1.2] font-semibold text-white text-shadow-sm">
+        <h3 className="line-clamp-2 font-heading text-[20px] leading-[1.2] font-semibold text-white text-shadow-md text-shadow-black/50">
           {pkg.name}
         </h3>
 
         <div className="flex items-center justify-between gap-2 pt-1">
           <div className="flex items-center gap-1.5">
             {price.original ? (
-              <span className="text-xs text-white/70 text-shadow-sm line-through">
+              <span className="rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white/90 line-through decoration-white/80 backdrop-blur-sm">
                 {price.original}
               </span>
             ) : null}

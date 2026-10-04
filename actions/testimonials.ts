@@ -13,7 +13,7 @@ export type TestimonialValues = {
   customerName: string;
   quote: string;
   rating: number;
-  photoStoragePath?: string;
+  photoStoragePaths?: string[];
 };
 
 /**
@@ -41,7 +41,7 @@ export async function createTestimonial(
       customer_name: values.customerName,
       quote: values.quote,
       rating: values.rating,
-      photo_storage_path: values.photoStoragePath || null,
+      photo_storage_paths: values.photoStoragePaths ?? [],
       sort_order: count ?? 0,
     })
     .select("id")
@@ -70,7 +70,7 @@ export async function updateTestimonial(
       customer_name: values.customerName,
       quote: values.quote,
       rating: values.rating,
-      photo_storage_path: values.photoStoragePath || null,
+      photo_storage_paths: values.photoStoragePaths ?? [],
     })
     .eq("id", id)
     .select("id")

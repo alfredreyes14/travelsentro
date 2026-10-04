@@ -168,9 +168,9 @@ export default async function HomePage() {
       customerName: testimonial.customer_name,
       quote: testimonial.quote,
       rating: testimonial.rating,
-      photoUrl: testimonial.photo_storage_path
-        ? getPublicImageUrl(testimonial.photo_storage_path)
-        : null,
+      photoUrls: (testimonial.photo_storage_paths ?? []).map(
+        getPublicImageUrl
+      ),
     })
   );
 
