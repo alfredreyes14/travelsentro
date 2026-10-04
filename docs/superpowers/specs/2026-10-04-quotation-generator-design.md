@@ -45,7 +45,7 @@ Migration: `supabase/migrations/20261004120000_create_quotes_schema.sql`
 ```sql
 create table quotes (
   id uuid primary key default gen_random_uuid(),
-  quote_no text unique not null,          -- set by trigger, TSQ-000001
+  quote_no text unique not null default '',  -- overwritten by trigger, TSQ-000001
   title text not null,
   customer_name text,
   contact_id uuid references contacts(id) on delete set null,
@@ -60,7 +60,7 @@ create table quotes (
   inclusions jsonb not null default '[]',    -- [{label}]
   exclusions jsonb not null default '[]',    -- [{label}]
   bring_items jsonb not null default '[]',   -- [{label}]
-  created_by uuid references profiles(id),
+  created_by uuid references profiles(id) on delete set null default auth.uid(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -79,11 +79,11 @@ create table quotes (
 ## Architecture
 
 ```
-/admin/quotes/new ──────────────────────────────────────────────┐
-  ├─ ?package=<id> → server loads package → packageToQuoteValues │
-  ├─ Import from Flyer button → extractQuoteFromPoster()         │  QuoteForm
-  └─ blank                                                       │  (in-memory)
-                                                                 ▼
+/admin/quotes/new ───────────────────────────────────────────────┐
+  ├─ Copy from a package picker → getPackageQuoteValues()          │
+  ├─ Import from Flyer button   → extractQuoteFromPoster()         │  QuoteForm
+  └─ blank                        (both via PosterImportProvider)  │  (in-memory)
+                                                                   ▼
                                         createQuote() → insert → redirect /admin/quotes/[id]
 /admin/quotes/[id]  → QuoteForm (edit) → updateQuote()
                     → Download PDF → /admin/quotes/[id]/pdf
@@ -96,26 +96,18 @@ create table quotes (
 
 `lib/pdf/package-pdf.tsx` is split:
 
-- `lib/pdf/itinerary-pdf.tsx` — `ItineraryPdfData` (source-neutral shape below), `ItineraryPdfDocument`, `renderItineraryPdf(data, logoSrc)`. This is today's `PackagePdfDocument` JSX and styles, moved verbatim, reading from `ItineraryPdfData` instead of the package row.
+- `lib/pdf/itinerary-pdf.tsx` — `ItineraryPdfData`, `ItineraryPdfDocument`, `renderItineraryPdf(data, logoSrc)`. This is today's `PackagePdfDocument` JSX and styles, moved verbatim, reading from `ItineraryPdfData` instead of the package row.
 - `lib/pdf/package-pdf.tsx` — keeps `fetchPackageForPdf`, `LOCAL_LOGO_PATH`, adds `packageToPdfData(pkg)`; `renderPackagePdf` becomes `renderItineraryPdf(packageToPdfData(pkg), logoSrc)`.
 - `lib/pdf/quote-pdf.ts` — `fetchQuoteForPdf(supabase, id)` and `quoteToPdfData(quote)`.
 
 ```ts
-type ItineraryPdfData = {
-  title: string;
-  durationLabel: string | null;
-  pricePerPax: number;
-  discountAmount: number | null;
-  itinerary: { dayNumber: number; title: string; description: string }[];
-  inclusions: string[];   // already sorted
-  exclusions: string[];
-  bringItems: string[];
-  travelDates: { from: string; to: string; additionalFee: number | null }[]; // already sorted
-  remarks: string | null;
-};
+// The PDF input IS the shared form content shape -- one less mapping layer.
+type ItineraryPdfData = { title: string; content: ItineraryContentValues };
 ```
 
-Sorting (itinerary by day, inclusions by `sort_order`, travel dates by from/to) moves into `packageToPdfData`; quotes are already in display order by array position, with travel dates sorted the same way in `quoteToPdfData`.
+- `lib/packages/package-content.ts` — `packageRowToContentValues(pkg)`: package row + child rows → `ItineraryContentValues` in display order (days by `day_number`, inclusions by `sort_order`, dates by from/to). Used by the package PDF, the package edit page's form defaults, and "copy from package".
+- `lib/quotes/quote-row.ts` — `quoteValuesToRow` / `quoteRowToFormValues` (jsonb re-validated with zod on read; malformed data throws).
+- Day numbers print as array index + 1; travel dates are sorted inside the template so quotes print chronologically like packages.
 
 **Regression requirement:** package PDFs must render identically after the split. `scripts/verify-package-pdf.ts`, `verify-admin-package-pdf.ts` and `verify-public-package-pdf.ts` must pass unchanged.
 
@@ -131,7 +123,7 @@ Sorting (itinerary by day, inclusions by `sort_order`, travel dates by from/to) 
 - `components/admin/itinerary-fields/itinerary-days-fields.tsx`
 - `components/admin/itinerary-fields/inclusion-lists-fields.tsx` (inclusions, exclusions, bring items)
 
-Each takes the `useForm` control (typed against a shared `ItineraryContentValues` subset) and owns its own `useFieldArray`. The shared zod pieces move to `components/admin/itinerary-content-schema.ts`:
+Each reads the form through `useFormContext<ItineraryContentValues>()` and owns its own `useFieldArray`. Price/discount/duration/remarks move to `itinerary-fields/pricing-fields.tsx`; the remove-row confirmation becomes `useRemoveConfirmation(noun)`; PackageForm's poster-import apply/confirm logic becomes `components/admin/use-form-import.tsx`, shared by both forms. The shared zod pieces move to `components/admin/itinerary-content-schema.ts`:
 
 ```ts
 export const itineraryContentSchema = z.object({
@@ -146,16 +138,16 @@ export const itineraryContentSchema = z.object({
 
 `PackageForm` renders the extracted components in place of its inline tab bodies; its behavior (remove confirmations, tab-error jumping in `onInvalid`, poster import reset) must be unchanged.
 
-`components/admin/quote-form.tsx` — tabs: **Details** (title, customer name, contact picker, price per pax, discount, duration, remarks), **Travel Dates**, **Itinerary**, **Inclusions**. Uses `FormActionBar` like `PackageForm`; unsaved-change protection comes from the existing layout-level `NavigationGuard`, same as packages.
+`components/admin/quote-form.tsx` — tabs: **Details** (title, customer name, contact picker, price per pax, discount, duration, remarks), **Travel Dates**, **Itinerary**, **Inclusions**. Uses `FormActionBar` like `PackageForm`. Like packages, there is no unsaved-changes navigation prompt (the layout's `NavigationGuard` only guards an in-flight flyer read).
 
 Contact picker: a combobox over `contacts` (name + email), readable by all authenticated staff under existing RLS. Picking a contact fills `customerName` if empty; the name stays editable.
 
 ### 4. Pages and actions
 
-- `app/admin/(dashboard)/quotes/page.tsx` — `requirePermissionOrRedirect("can_manage_quotes")`; table of quote no., title, customer, updated date, Download PDF, Delete. **New Quote** dropdown: Blank / From Package (opens a package picker → `/admin/quotes/new?package=<id>`) / From Flyer (`/admin/quotes/new?flyer=1`, which shows a prominent "Upload a flyer to start" prompt above the empty form — browsers block opening a file picker without a click, so it is not auto-opened).
-- `app/admin/(dashboard)/quotes/new/page.tsx` — Server Component. With `?package=<id>`, loads a non-deleted, published package with its children via the user's own client and maps it with `packageToQuoteValues` (pure, `lib/quotes/from-package.ts`); missing/unreadable package → `notFound()`. Renders `QuoteForm` with `source` / `sourcePackageId` hidden values and the flyer import button.
+- `app/admin/(dashboard)/quotes/page.tsx` — `requirePermissionOrRedirect("can_manage_quotes")`; table of quote no., title, customer, updated date, Download PDF, Delete. **New Quote** button → `/admin/quotes/new`.
+- `app/admin/(dashboard)/quotes/new/page.tsx` — Server Component. Header holds the two import controls: a **Copy from a package** combobox (published, non-deleted packages) and **Import from Flyer**. Both feed `QuoteForm` through `PosterImportProvider`, so the "Replace what you've entered?" confirmation applies to either, and each sets the quote's `source` / `source_package_id`. Starting blank is just typing into the form. (Replaces an earlier `?package=` / `?flyer=1` URL design: one import channel instead of two, and no file-picker-without-a-click problem.)
 - `app/admin/(dashboard)/quotes/[id]/page.tsx` — loads the quote, renders `QuoteForm` in edit mode plus a Download PDF link.
-- `actions/quotes.ts` — `createQuote`, `updateQuote`, `deleteQuote`, each `requirePermission("can_manage_quotes")`, parse with `quoteFormSchema` server-side, return `ActionResult`, `revalidatePath("/admin/quotes")`.
+- `actions/quotes.ts` — `createQuote`, `updateQuote`, `deleteQuote`, `getPackageQuoteValues` (a published package's content as quote values, via `packageRowToContentValues`), each `requirePermission("can_manage_quotes")`, parse with `quoteFormSchema` server-side, return `ActionResult`, `revalidatePath("/admin/quotes")`.
 - Sidebar: Quotes entry in `app/admin/(dashboard)/layout.tsx` / `admin-nav.tsx`, shown when `role === "admin" || can_manage_quotes`.
 - Users: `can_manage_quotes` toggle in `account-form.tsx` / `account-form-schema.ts`, badge in `users-table.tsx`, persisted in `actions/users.ts`. Add `"can_manage_quotes"` to the permission union in `lib/auth/dal.ts`.
 
@@ -175,7 +167,8 @@ The quote page reuses `PosterImportBanner` and the `PosterImportContext` pattern
 
 - Flyer import: existing `poster-error.ts` messages (unsupported file, too large, empty file, missing API key, exhausted credits, generic) are shared unchanged.
 - Server actions: zod failure → `{ ok: false, error }` shown via the form's existing toast pattern; DB error → logged, generic message.
-- `?package=<id>` not found / not readable → `notFound()`.
+- Copy from a package where the package is no longer published / readable → toast "That package isn't available anymore."; form untouched.
+- Malformed stored quote jsonb → opening the quote hits the admin error boundary; the PDF route returns a logged 500.
 - PDF route: 404 for missing quote, 500 with logged error on render failure.
 - Permission denial: `requirePermissionOrRedirect` on pages/route → forbidden page; `requirePermission` in actions; RLS as the backstop.
 
@@ -187,12 +180,12 @@ Following the repo's `scripts/verify-*.ts` convention (add npm scripts for each)
 - `verify-quote-pdf.ts` — inserts a fixture quote (service-role client, cleaned up afterward), fetches it with `fetchQuoteForPdf`, renders via `quoteToPdfData` → `renderItineraryPdf`, and asserts a `%PDF-` signature and a non-trivial size — the same checks `verify-package-pdf.ts` uses. Also asserts `quoteToPdfData` and `packageToPdfData` produce deep-equal `ItineraryPdfData` for equivalent fixture content (the "identical layout" guarantee, checked at the data boundary).
 - `verify-quote-rls.ts` — a staff user without `can_manage_quotes` cannot select/insert/update/delete quotes; with it, can; admin always can; `quote_no` is trigger-assigned even if supplied.
 - `verify-poster-extraction.ts` — extend with `mapPosterToQuoteValues` cases (destination fields dropped, `name` → `title`).
-- `verify-quote-from-package.ts` — `packageToQuoteValues` copies every field and orders itinerary/inclusions correctly.
+- `verify-quote-values.ts` (offline) — package content ordering/null handling, quote row round trip, package→quote content equality (full and sparse fixtures), malformed jsonb throws, offline PDF render.
 - `npm run lint` and `npm run build` clean.
 - Manual: create one quote via each entry path, edit it, download the PDF, compare side-by-side with the source package's itinerary PDF.
 
 ## Components Touched
 
-**New:** quotes migration; `lib/pdf/itinerary-pdf.tsx`, `lib/pdf/quote-pdf.ts`; `lib/packages/extract-poster.ts`; `lib/quotes/from-package.ts`, `lib/quotes/poster-mapping.ts`; `actions/quotes.ts`, `actions/quote-poster.ts`; `components/admin/itinerary-content-schema.ts`, `components/admin/itinerary-fields/*`, `components/admin/quote-form.tsx`, `components/admin/quote-form-schema.ts`, `components/admin/quote-table.tsx`; `app/admin/(dashboard)/quotes/{page,loading}.tsx`, `quotes/new/page.tsx`, `quotes/[id]/page.tsx`, `quotes/[id]/pdf/route.ts`; verify scripts above.
+**New:** quotes migration; `lib/pdf/itinerary-pdf.tsx`, `lib/pdf/quote-pdf.ts`; `lib/packages/extract-poster.ts`, `lib/packages/package-content.ts`; `lib/quotes/quote-row.ts`, `lib/quotes/poster-mapping.ts`; `actions/quotes.ts`, `actions/quote-poster.ts`; `components/admin/itinerary-content-schema.ts`, `components/admin/itinerary-fields/*`, `components/admin/use-form-import.tsx`, `components/admin/quote-form.tsx`, `components/admin/quote-form-schema.ts`, `components/admin/quote-table.tsx`, `components/admin/quote-package-picker.tsx`; `app/admin/(dashboard)/quotes/{page,loading}.tsx`, `quotes/new/page.tsx`, `quotes/[id]/page.tsx`, `quotes/[id]/pdf/route.ts`; verify scripts above.
 
-**Modified:** `lib/pdf/package-pdf.tsx`; `actions/package-poster.ts`; `lib/packages/poster-prompt.ts`; `components/admin/package-form.tsx`, `package-form-schema.ts`, `poster-import-button.tsx`; `lib/auth/dal.ts`; `app/admin/(dashboard)/layout.tsx`, `components/admin/admin-nav.tsx`; `components/admin/account-form.tsx`, `account-form-schema.ts`, `users-table.tsx`; `actions/users.ts`; `types/database.ts`; `package.json` scripts.
+**Modified:** `lib/pdf/package-pdf.tsx`; `actions/package-poster.ts`; `lib/packages/poster-prompt.ts`, `lib/packages/poster-mapping.ts` (`UnmappedField.field` widened to string); `components/admin/package-form.tsx`, `package-form-schema.ts`, `poster-import-button.tsx`, `poster-import-context.tsx`; `app/admin/(dashboard)/packages/[id]/page.tsx`; `lib/auth/dal.ts`; `app/admin/(dashboard)/layout.tsx`, `components/admin/admin-nav.tsx`; `components/admin/account-form.tsx`, `account-form-schema.ts`, `users-table.tsx`; `actions/users.ts`; `types/database.ts`; `package.json` scripts.
