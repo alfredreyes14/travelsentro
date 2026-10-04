@@ -28,7 +28,8 @@
     "verify:format-price": "tsx scripts/verify-format-price.ts",
     "verify:shuffle": "tsx scripts/verify-shuffle.ts",
     "verify:quote-rls": "tsx --env-file=.env.local scripts/verify-quote-rls.ts",
-    "verify:quote-values": "tsx scripts/verify-quote-values.ts"
+    "verify:quote-values": "tsx scripts/verify-quote-values.ts",
+    "verify:quote-pdf": "tsx --env-file=.env.local scripts/verify-quote-pdf.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",

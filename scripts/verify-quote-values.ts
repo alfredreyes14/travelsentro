@@ -8,6 +8,13 @@
  * Run via `npm run verify:quote-values`.
  */
 import { itineraryContentSchema } from "../components/admin/itinerary-content-schema";
+import type { QuoteFormValues } from "../components/admin/quote-form-schema";
+import { quoteFormSchema } from "../components/admin/quote-form-schema";
+import {
+  quoteRowToFormValues,
+  quoteValuesToRow,
+  type QuoteContentRow,
+} from "../lib/quotes/quote-row";
 import {
   packageRowToContentValues,
   type PackageContentRow,
@@ -114,6 +121,81 @@ function checkPackageContentValidates(): void {
   );
 }
 
+/** What PostgREST hands back: the inserted patch after a JSON round trip. */
+function simulateStoredRow(values: QuoteFormValues): QuoteContentRow {
+  return JSON.parse(JSON.stringify(quoteValuesToRow(values))) as QuoteContentRow;
+}
+
+function checkQuoteRoundTrip(): void {
+  const values: QuoteFormValues = {
+    ...packageRowToContentValues(FULL_PACKAGE),
+    title: "Coron for the Santos family",
+    customerName: "Maria Santos",
+    contactId: "",
+  };
+  const back = quoteRowToFormValues(simulateStoredRow(values));
+  record(
+    "quote values survive quoteValuesToRow -> JSON -> quoteRowToFormValues",
+    canonical(back) === canonical(values) && quoteFormSchema.safeParse(back).success,
+    canonical(back)
+  );
+}
+
+function checkPackageToQuoteMatches(): void {
+  for (const [label, fixture] of [["full", FULL_PACKAGE], ["sparse", SPARSE_PACKAGE]] as const) {
+    const packageContent = packageRowToContentValues(fixture);
+    const quote = quoteRowToFormValues(
+      simulateStoredRow({ ...packageContent, title: "x", customerName: "", contactId: "" })
+    );
+    const { title: _t, customerName: _c, contactId: _id, ...quoteContent } = quote;
+    void _t; void _c; void _id;
+    record(
+      `a quote copied from a ${label} package carries identical itinerary content`,
+      canonical(quoteContent) === canonical(packageContent),
+      canonical(quoteContent)
+    );
+  }
+}
+
+function checkEmptyOptionalsBecomeNull(): void {
+  const row = quoteValuesToRow({
+    ...packageRowToContentValues(SPARSE_PACKAGE),
+    title: "  Trimmed  ",
+    customerName: "   ",
+    contactId: "",
+    remarks: "",
+  });
+  record(
+    "quoteValuesToRow stores blank optionals as null and trims text",
+    row.title === "Trimmed" &&
+      row.customer_name === null &&
+      row.contact_id === null &&
+      row.remarks === null &&
+      row.discount_amount === null,
+    JSON.stringify(row)
+  );
+}
+
+function checkCorruptJsonbThrows(): void {
+  const row = simulateStoredRow({
+    ...packageRowToContentValues(FULL_PACKAGE),
+    title: "x",
+    customerName: "",
+    contactId: "",
+  });
+  let threw = false;
+  try {
+    quoteRowToFormValues({ ...row, itinerary: [{ title: 42 }] });
+  } catch {
+    threw = true;
+  }
+  record(
+    "quoteRowToFormValues throws on malformed stored jsonb (never renders half a quote)",
+    threw,
+    threw ? "threw" : "returned without error"
+  );
+}
+
 async function checkItineraryPdfRenders(): Promise<void> {
   const buffer = await renderItineraryPdf(
     { title: "Coron Island Escape", content: packageRowToContentValues(FULL_PACKAGE) },
@@ -131,6 +213,10 @@ async function main(): Promise<void> {
   checkPackageContentOrdering();
   checkPackageContentSparse();
   checkPackageContentValidates();
+  checkQuoteRoundTrip();
+  checkPackageToQuoteMatches();
+  checkEmptyOptionalsBecomeNull();
+  checkCorruptJsonbThrows();
   await checkItineraryPdfRenders();
 
   console.log("\nverify-quote-values\n");
