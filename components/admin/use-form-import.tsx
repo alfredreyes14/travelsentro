@@ -20,23 +20,39 @@ import { usePosterImport, type FormImport } from "./poster-import-context";
  * package copied into a quote) to `form`. An import replaces the whole
  * form: on an untouched form it applies straight away; if the admin has
  * already typed something, it asks first. Render `dialog` inside the form.
- * `onApplied` runs once the import actually lands (e.g. switch to the
- * Details tab, record the quote's source).
+ * `onApplied` runs when the import is accepted (e.g. switch to the Details
+ * tab, record the quote's source). On an untouched form that is DURING
+ * RENDER, before the reset effect; after the dialog's Replace, it is in the
+ * click handler.
+ *
+ * Opt-in options: `confirmAfterImport` also asks before a repeat import
+ * (an applied import makes its values the form's defaults, so isDirty alone
+ * would let a second import silently replace the first); `preserveFields`
+ * keeps those fields' current values across an import.
  */
 export function useFormImport<V extends FieldValues>({
   form,
   emptyValues,
   noun,
   onApplied,
+  confirmAfterImport = false,
+  preserveFields,
 }: {
   form: UseFormReturn<V>;
   emptyValues: V;
   noun: string;
+  /**
+   * May run during render: only set state owned by the component calling
+   * this hook, and never read form values here.
+   */
   onApplied: (applied: FormImport) => void;
+  /** Also confirm when an earlier import was already applied to this form. */
+  confirmAfterImport?: boolean;
+  /** Fields whose current values survive an import. */
+  preserveFields?: (keyof V)[];
 }): { dialog: React.ReactNode } {
   const { extraction, importSeq } = usePosterImport();
   const [pendingImport, setPendingImport] = useState<{
-    values: V;
     source: FormImport;
   } | null>(null);
   // Tracks which importSeq has already been handled -- dialog opened, or
@@ -45,9 +61,25 @@ export function useFormImport<V extends FieldValues>({
   // the Details tab) on unrelated re-renders once importSeq itself stops
   // changing.
   const [handledImportSeq, setHandledImportSeq] = useState(0);
+  // The importSeq whose render-time decision was "ask first". The effect
+  // skips its reset for exactly that seq, so render and effect can't disagree.
+  const [promptedImportSeq, setPromptedImportSeq] = useState(0);
+  // Whether an import has been applied to this form (confirmAfterImport).
+  const [hasAppliedImport, setHasAppliedImport] = useState(false);
 
-  const merge = (source: FormImport): V =>
-    ({ ...emptyValues, ...(source.values as Partial<V>) }) as V;
+  // Read form.getValues() only at apply time (effect / Replace click), never
+  // during render.
+  const merge = (source: FormImport): V => {
+    const merged = {
+      ...emptyValues,
+      ...(source.values as Partial<V>),
+    } as V;
+    if (preserveFields?.length) {
+      const current = form.getValues();
+      for (const field of preserveFields) merged[field] = current[field];
+    }
+    return merged;
+  };
 
   /**
    * Keyed on importSeq, not on `extraction`, so re-importing a poster that
@@ -72,16 +104,18 @@ export function useFormImport<V extends FieldValues>({
 
   if (importSeq !== 0 && importSeq !== handledImportSeq && extraction !== null) {
     setHandledImportSeq(importSeq);
-    if (isFormDirty) {
-      setPendingImport({ values: merge(extraction), source: extraction });
+    if (isFormDirty || (confirmAfterImport && hasAppliedImport)) {
+      setPromptedImportSeq(importSeq);
+      setPendingImport({ source: extraction });
     } else {
+      setHasAppliedImport(true);
       onApplied(extraction);
     }
   }
 
   useEffect(() => {
     if (importSeq === 0 || extraction === null) return;
-    if (isFormDirty) return; // handled above, during render
+    if (promptedImportSeq === importSeq) return; // handled above, during render
 
     form.reset(merge(extraction));
     // form and extraction are stable for a given importSeq; re-running on
@@ -107,7 +141,8 @@ export function useFormImport<V extends FieldValues>({
           <AlertDialogAction
             onClick={() => {
               if (pendingImport) {
-                form.reset(pendingImport.values);
+                form.reset(merge(pendingImport.source));
+                setHasAppliedImport(true);
                 onApplied(pendingImport.source);
               }
               setPendingImport(null);

@@ -104,6 +104,8 @@ export function QuoteForm({
     form,
     emptyValues: EMPTY_QUOTE_VALUES,
     noun: "content",
+    confirmAfterImport: true,
+    preserveFields: ["customerName", "contactId"],
     onApplied: (applied) => {
       setActiveTab("details");
       if (applied.origin?.source === "package") {
@@ -132,16 +134,18 @@ export function QuoteForm({
         const result = await createQuote(values, origin);
         if (result.ok && result.id) {
           toast.success("Quote created.");
+          // Stay disabled while navigating so a second click can't create
+          // a duplicate quote.
           router.push(`/admin/quotes/${result.id}`);
+          return;
         } else if (!result.ok) {
           toast.error(result.error);
         }
       }
     } catch {
       toast.error(GENERIC_ERROR_MESSAGE);
-    } finally {
-      setIsSubmitting(false);
     }
+    setIsSubmitting(false);
   }
 
   function onInvalid(errors: FieldErrors<QuoteFormValues>) {
@@ -272,6 +276,20 @@ export function QuoteForm({
         {importDialog}
 
         <FormActionBar>
+          {quoteId &&
+            (form.formState.isDirty ? (
+              <Button type="button" variant="outline" size="lg" disabled>
+                Save to download PDF
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="lg"
+                render={<a href={`/admin/quotes/${quoteId}/pdf`} download />}
+              >
+                Download PDF
+              </Button>
+            ))}
           <Button type="submit" size="lg" disabled={isSubmitting}>
             {isSubmitting ? "Saving..." : quoteId ? "Save Changes" : "Create Quote"}
           </Button>

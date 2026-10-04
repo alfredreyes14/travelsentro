@@ -7,7 +7,6 @@ import { quoteRowToFormValues } from "@/lib/quotes/quote-row";
 import { PageHeader } from "@/components/admin/page-header";
 import { PosterImportProvider } from "@/components/admin/poster-import-context";
 import { QuoteForm } from "@/components/admin/quote-form";
-import { Button } from "@/components/ui/button";
 
 export const metadata: Metadata = {
   title: "Edit Quote | TravelSentro Admin",
@@ -42,15 +41,7 @@ export default async function EditQuotePage({
     // this page imports.
     <PosterImportProvider>
       <div className="flex flex-col gap-6">
-        <PageHeader title={`Quote ${quote.quote_no}`} description={quote.title}>
-          <Button
-            variant="outline"
-            size="lg"
-            render={<a href={`/admin/quotes/${quote.id}/pdf`} download />}
-          >
-            Download PDF
-          </Button>
-        </PageHeader>
+        <PageHeader title={`Quote ${quote.quote_no}`} description={quote.title} />
 
         <QuoteForm
           quoteId={quote.id}
