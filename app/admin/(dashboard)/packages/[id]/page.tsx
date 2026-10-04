@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { requirePermissionOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { packageRowToContentValues } from "@/lib/packages/package-content";
 import { PackageForm } from "@/components/admin/package-form";
 import type { PackageFormValues } from "@/components/admin/package-form-schema";
 import { Button } from "@/components/ui/button";
@@ -78,35 +79,6 @@ export default async function EditPackagePage({
 
   const pkg = data as PackageDetail;
 
-  const itinerary = [...pkg.itinerary_days]
-    .sort((a, b) => a.day_number - b.day_number)
-    .map((day) => ({ title: day.title, description: day.description }));
-
-  const inclusions = pkg.package_inclusions
-    .filter((item) => item.kind === "included")
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((item) => ({ label: item.label }));
-  const exclusions = pkg.package_inclusions
-    .filter((item) => item.kind === "excluded")
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((item) => ({ label: item.label }));
-  const bringItems = pkg.package_inclusions
-    .filter((item) => item.kind === "bring")
-    .sort((a, b) => a.sort_order - b.sort_order)
-    .map((item) => ({ label: item.label }));
-
-  const travelDates = [...pkg.package_travel_dates]
-    .sort(
-      (a, b) =>
-        a.travel_date_from.localeCompare(b.travel_date_from) ||
-        a.travel_date_to.localeCompare(b.travel_date_to)
-    )
-    .map((date) => ({
-      dateFrom: date.travel_date_from,
-      dateTo: date.travel_date_to,
-      additionalFee: date.additional_fee ?? undefined,
-    }));
-
   const photos = pkg.package_photos.map((photo) => ({
     id: photo.id,
     storagePath: photo.storage_path,
@@ -127,17 +99,9 @@ export default async function EditPackagePage({
       : activeDestinations;
 
   const defaultValues: Partial<PackageFormValues> = {
+    ...packageRowToContentValues(pkg),
     name: pkg.name,
-    pricePerPax: pkg.price_per_pax,
-    discountAmount: pkg.discount_amount ?? undefined,
-    durationLabel: pkg.duration_label ?? "",
     destinationId: pkg.destination_id ?? "",
-    remarks: pkg.remarks ?? "",
-    travelDates,
-    itinerary,
-    inclusions,
-    exclusions,
-    bringItems,
   };
 
   // createDraftPackage inserts with destination_id unset, and updatePackage
