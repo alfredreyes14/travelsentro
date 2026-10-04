@@ -12,6 +12,8 @@ import {
   packageRowToContentValues,
   type PackageContentRow,
 } from "../lib/packages/package-content";
+import { renderItineraryPdf } from "../lib/pdf/itinerary-pdf";
+import { LOCAL_LOGO_PATH } from "../lib/pdf/package-pdf";
 
 type CheckResult = { name: string; pass: boolean; detail: string };
 const results: CheckResult[] = [];
@@ -112,10 +114,24 @@ function checkPackageContentValidates(): void {
   );
 }
 
-function main(): void {
+async function checkItineraryPdfRenders(): Promise<void> {
+  const buffer = await renderItineraryPdf(
+    { title: "Coron Island Escape", content: packageRowToContentValues(FULL_PACKAGE) },
+    LOCAL_LOGO_PATH
+  );
+  const signature = buffer.subarray(0, 5).toString("ascii");
+  record(
+    "renderItineraryPdf produces a well-formed PDF offline",
+    signature === "%PDF-" && buffer.length > 1000,
+    `signature=${JSON.stringify(signature)} length=${buffer.length}`
+  );
+}
+
+async function main(): Promise<void> {
   checkPackageContentOrdering();
   checkPackageContentSparse();
   checkPackageContentValidates();
+  await checkItineraryPdfRenders();
 
   console.log("\nverify-quote-values\n");
   for (const r of results) {
@@ -126,4 +142,7 @@ function main(): void {
   if (failed > 0) process.exit(1);
 }
 
-main();
+main().catch((error) => {
+  console.error("verify-quote-values failed:", error);
+  process.exit(1);
+});
