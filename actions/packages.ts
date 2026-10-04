@@ -162,6 +162,11 @@ export async function updatePackage(
   revalidatePath("/packages");
   revalidatePath(`/packages/${updated.slug}`);
   revalidatePath("/admin/packages");
+  revalidatePath("/admin/content");
+  // "layout", not the default "page" -- the upsell popup renders this
+  // package's live price/discount in the shared (public)/layout.tsx, which
+  // wraps every public route.
+  revalidatePath("/", "layout");
   return { ok: true };
 }
 
@@ -224,50 +229,6 @@ export async function publishPackage(
   revalidatePath("/packages");
   revalidatePath(`/packages/${data.slug}`);
   revalidatePath("/admin/packages");
-  return { ok: true };
-}
-
-/**
- * Narrow discount-only update -- mirrors publishPackage/featurePackage's
- * shape rather than reusing updatePackage(), which requires the entire
- * PackageFormValues object (name, duration, destination, travel dates,
- * itinerary...) and would be far too heavy for "just change the discount"
- * call sites like the upsell popup's Add/Edit Item form. Mirrors
- * package-form-schema.ts's discountAmount rule (positive) server-side,
- * since this bypasses that Zod schema entirely. discountAmount is added ON
- * TOP of price_per_pax to inflate the displayed struck-through price, so
- * there's no upper bound tying it to price_per_pax.
- */
-export async function updatePackageDiscount(
-  id: string,
-  discountAmount: number | null
-): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
-
-  if (discountAmount !== null && discountAmount <= 0) {
-    return { ok: false, error: "Discount must be a positive number." };
-  }
-
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("packages")
-    .update({ discount_amount: discountAmount })
-    .eq("id", id)
-    .select("slug")
-    .single();
-
-  if (error || !data) {
-    return { ok: false, error: GENERIC_ERROR_MESSAGE };
-  }
-
-  revalidatePath("/packages");
-  revalidatePath(`/packages/${data.slug}`);
-  revalidatePath("/admin/packages");
-  revalidatePath("/admin/content");
-  // "layout", not the default "page" -- the upsell popup renders in the
-  // shared (public)/layout.tsx, which wraps every public route.
-  revalidatePath("/", "layout");
   return { ok: true };
 }
 
