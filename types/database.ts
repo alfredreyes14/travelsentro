@@ -122,55 +122,23 @@ export type Database = {
       hero_slides: {
         Row: {
           created_at: string;
-          cta_label: string | null;
-          external_link: string | null;
-          focal_x: number | null;
-          focal_y: number | null;
-          headline: string | null;
           id: string;
-          image_storage_path: string | null;
-          package_id: string | null;
-          slide_type: string;
+          image_storage_path: string;
           sort_order: number;
-          subheading: string | null;
         };
         Insert: {
           created_at?: string;
-          cta_label?: string | null;
-          external_link?: string | null;
-          focal_x?: number | null;
-          focal_y?: number | null;
-          headline?: string | null;
           id?: string;
-          image_storage_path?: string | null;
-          package_id?: string | null;
-          slide_type: string;
+          image_storage_path: string;
           sort_order?: number;
-          subheading?: string | null;
         };
         Update: {
           created_at?: string;
-          cta_label?: string | null;
-          external_link?: string | null;
-          focal_x?: number | null;
-          focal_y?: number | null;
-          headline?: string | null;
           id?: string;
-          image_storage_path?: string | null;
-          package_id?: string | null;
-          slide_type?: string;
+          image_storage_path?: string;
           sort_order?: number;
-          subheading?: string | null;
         };
-        Relationships: [
-          {
-            foreignKeyName: "hero_slides_package_id_fkey";
-            columns: ["package_id"];
-            isOneToOne: false;
-            referencedRelation: "packages";
-            referencedColumns: ["id"];
-          },
-        ];
+        Relationships: [];
       };
       inquiries: {
         Row: {

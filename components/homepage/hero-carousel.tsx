@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import Autoplay from "embla-carousel-autoplay";
 
 import {
@@ -12,18 +11,12 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { Button } from "@/components/ui/button";
 
 const DEFAULT_HERO_IMAGE = "/default-hero.jpg";
 
 export type HeroSlideDisplay = {
   id: string;
-  slideType: "package" | "promo";
-  imageUrl: string | null;
-  headline: string;
-  subheading: string | null;
-  ctaLabel: string | null;
-  ctaHref: string | null;
+  imageUrl: string;
 };
 
 /**
@@ -31,6 +24,9 @@ export type HeroSlideDisplay = {
  * awareness. Autoplays every 5s with stopOnInteraction, pauses on
  * hover/focus, and never auto-advances when the visitor has
  * prefers-reduced-motion enabled (RESEARCH.md Pitfall 6 / WCAG 2.2.2).
+ * Slides are plain admin-uploaded images shown whole at 16:9 on every
+ * screen size (the admin recommends 1920x1080), so banners with text baked
+ * in are never cropped -- no overlay text is drawn on top.
  * Falls back to a single static default hero image (no carousel chrome)
  * when the backend has no hero slides configured yet -- the carousel only
  * appears once there's actual admin-managed slide content to page through.
@@ -77,43 +73,15 @@ export function HeroCarousel({ slides }: { slides: HeroSlideDisplay[] }) {
       <CarouselContent>
         {slides.map((slide, index) => (
           <CarouselItem key={slide.id}>
-            <div className="relative aspect-[4/5] w-full overflow-hidden md:aspect-video">
-              {slide.imageUrl ? (
-                <Image
-                  src={slide.imageUrl}
-                  alt={slide.headline}
-                  fill
-                  sizes="100vw"
-                  priority={index === 0}
-                  className="object-cover"
-                />
-              ) : (
-                <div className="h-full w-full bg-secondary/10" />
-              )}
-
-              <div className="absolute inset-0 bg-gradient-to-t from-secondary/80 via-secondary/20 to-transparent" />
-
-              <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-6 sm:p-8">
-                <h2 className="font-heading text-[28px] leading-[1.2] font-semibold text-white">
-                  {slide.headline}
-                </h2>
-                {slide.subheading && (
-                  <p className="max-w-xl text-base leading-[1.5] text-white/90">
-                    {slide.subheading}
-                  </p>
-                )}
-                {slide.ctaLabel && slide.ctaHref && (
-                  <div>
-                    <Button
-                      render={<Link href={slide.ctaHref} />}
-                      nativeButton={false}
-                      size="lg"
-                    >
-                      {slide.ctaLabel}
-                    </Button>
-                  </div>
-                )}
-              </div>
+            <div className="relative aspect-video w-full overflow-hidden bg-secondary/10">
+              <Image
+                src={slide.imageUrl}
+                alt={`TravelSentro featured image ${index + 1} of ${slides.length}`}
+                fill
+                sizes="100vw"
+                priority={index === 0}
+                className="object-cover"
+              />
             </div>
           </CarouselItem>
         ))}

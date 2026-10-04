@@ -41,20 +41,6 @@ type PackageWithPhotos = Database["public"]["Tables"]["packages"]["Row"] & {
   package_photos: PackagePhotoRef[];
 };
 
-// Supabase's untyped client (no <Database> generic passed to createClient(),
-// matching this project's existing convention in app/(public)/packages/page.tsx)
-// returns joined/embedded rows as `any` -- this manual shape mirrors the exact
-// select() below and is cast onto the raw result, same pattern as
-// PackageWithPhotos above.
-type HeroSlideRow = Database["public"]["Tables"]["hero_slides"]["Row"] & {
-  packages:
-    | (Pick<
-        Database["public"]["Tables"]["packages"]["Row"],
-        "id" | "slug" | "name" | "is_published" | "deleted_at"
-      > & { package_photos: PackagePhotoRef[] })
-    | null;
-};
-
 /** Resolves the first photo (by display_order) to a public image URL. */
 function firstPhotoUrl(photos: PackagePhotoRef[]): string | null {
   const [firstPhoto] = [...photos].sort(
@@ -76,17 +62,10 @@ export default async function HomePage() {
     { data: testimonialsData, error: testimonialsError },
     { data: destinationsData, error: destinationsError },
   ] = await Promise.all([
-    // (1) Hero slides -- package-linked or promo. hero_slides has
-    // unconditional public-read RLS but packages does not, so a
-    // package-type slide whose linked package has since been
-    // unpublished/soft-deleted comes back with `packages: null` under
-    // RLS -- filtered out below before render, never rendered broken
-    // (RESEARCH.md Pitfall 1).
+    // (1) Hero slides -- plain admin-uploaded images, in carousel order.
     supabase
       .from("hero_slides")
-      .select(
-        "*, packages(id, slug, name, is_published, deleted_at, package_photos(storage_path, display_order))"
-      )
+      .select("id, image_storage_path")
       .order("sort_order", { ascending: true }),
     // (3) Featured packages -- same query shape as
     // app/(public)/packages/page.tsx, reusing the existing is_featured
@@ -117,35 +96,17 @@ export default async function HomePage() {
     console.error("Failed to load hero slides:", slidesError.message);
   }
 
-  const slides: HeroSlideDisplay[] = ((rawSlides ?? []) as HeroSlideRow[])
-    .filter((slide) => slide.slide_type === "promo" || slide.packages !== null)
-    .map((slide): HeroSlideDisplay => {
-      if (slide.slide_type === "package" && slide.packages) {
-        return {
-          id: slide.id,
-          slideType: "package",
-          imageUrl: firstPhotoUrl(slide.packages.package_photos),
-          headline: slide.packages.name,
-          subheading: slide.subheading,
-          ctaLabel: "View Package",
-          ctaHref: `/packages/${slide.packages.slug}`,
-        };
-      }
-
-      const imageUrl = slide.image_storage_path
-        ? getPublicImageUrl(slide.image_storage_path)
-        : null;
-
-      return {
-        id: slide.id,
-        slideType: "promo",
-        imageUrl,
-        headline: slide.headline ?? "",
-        subheading: slide.subheading,
-        ctaLabel: slide.cta_label || null,
-        ctaHref: slide.cta_label ? (slide.external_link ?? null) : null,
-      };
-    });
+  const slides: HeroSlideDisplay[] = (rawSlides ?? []).map(
+    (
+      slide: Pick<
+        Database["public"]["Tables"]["hero_slides"]["Row"],
+        "id" | "image_storage_path"
+      >
+    ) => ({
+      id: slide.id,
+      imageUrl: getPublicImageUrl(slide.image_storage_path),
+    })
+  );
 
   if (featuredError) {
     console.error("Failed to load featured packages:", featuredError.message);
@@ -209,11 +170,10 @@ export default async function HomePage() {
       <div>
         <div className="relative">
           <HeroCarousel slides={slides} />
-          {/* Below md, the hero is a tall aspect-[4/5] image and the search
-              card stacks into a taller column — centering it as an overlay
-              covers the bottom-anchored headline. So it flows in normal
-              document order on mobile and only becomes an absolute overlay
-              once the hero switches to the short aspect-video layout. */}
+          {/* Below md, the 16:9 hero is too short to hold the search card,
+              which stacks into a taller column there — so it flows in normal
+              document order under the image on mobile and only becomes a
+              centered overlay from md up. */}
           <div className="px-4 py-4 sm:px-8 sm:py-6 md:pointer-events-none md:absolute md:inset-0 md:z-20 md:flex md:items-center md:justify-center md:p-8">
             <div className="mx-auto w-full max-w-4xl md:pointer-events-auto">
               <HeroSearchBar

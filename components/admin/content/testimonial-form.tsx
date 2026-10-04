@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { createTestimonial, updateTestimonial } from "@/actions/testimonials";
 import { uploadSiteContentImage } from "@/actions/site-content-uploads";
 import { readFileAsBase64 } from "@/lib/read-file-as-base64";
+import { shrinkImageToFit, type ShrinkAttempt } from "@/lib/images/shrink-image";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import {
   MAX_TESTIMONIAL_PHOTOS,
@@ -30,6 +31,31 @@ import {
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
+
+// Testimonial photos are shown at most ~740px wide (the lightbox), so
+// anything past a 2000px long edge or ~2 MB is wasted upload time and
+// storage. It also keeps every request far below next.config.ts's 10 MB
+// Server Action body limit once base64-encoded (+33%) -- full-size phone
+// photos routinely blow past that and fail to upload at all.
+const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+const PASSTHROUGH_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const SHRINK_ATTEMPTS: ReadonlyArray<ShrinkAttempt> = [
+  { maxEdge: 2000, quality: 0.85 },
+  { maxEdge: 2000, quality: 0.7 },
+  { maxEdge: 1600, quality: 0.7 },
+  { maxEdge: 1400, quality: 0.6 },
+];
+
+/**
+ * Small web-friendly files upload untouched; anything larger (or in a
+ * format like HEIC) is downscaled/re-encoded in the browser first.
+ */
+async function prepareTestimonialPhoto(file: File): Promise<Blob> {
+  if (PASSTHROUGH_MIME_TYPES.includes(file.type) && file.size <= MAX_PHOTO_BYTES) {
+    return file;
+  }
+  return shrinkImageToFit(file, MAX_PHOTO_BYTES, SHRINK_ATTEMPTS);
+}
 
 export type TestimonialRecord = {
   id: string;
@@ -159,11 +185,21 @@ function TestimonialFormBody({
     let succeededCount = 0;
     try {
       for (const file of files) {
+        let prepared: Blob;
         try {
-          const base64 = await readFileAsBase64(file);
+          prepared = await prepareTestimonialPhoto(file);
+        } catch {
+          toast.error(
+            `Couldn't process ${file.name}. Please use a JPG, PNG, or WebP image.`
+          );
+          continue;
+        }
+
+        try {
+          const base64 = await readFileAsBase64(prepared);
           const result = await uploadSiteContentImage("testimonials", {
             name: file.name,
-            type: file.type,
+            type: prepared.type,
             base64,
           });
           if (result.ok && result.storagePath) {

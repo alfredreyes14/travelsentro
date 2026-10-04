@@ -4,31 +4,27 @@ import { revalidatePath } from "next/cache";
 
 import { requirePermission } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { deleteObject } from "@/lib/storage/r2-client";
 import type { ActionResult } from "@/lib/action-result";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
-export type HeroSlideValues = {
-  slideType: "package" | "promo";
-  packageId?: string;
-  imageStoragePath?: string;
-  headline?: string;
-  subheading?: string;
-  ctaLabel?: string;
-  externalLink?: string;
-};
-
 /**
- * Creates a new hero slide, appending it to the end of the carousel's
- * current order (mirrors createPackage's count-based sort_order append).
- * hero_slides has no deleted_at column, so the count query has no soft-
- * delete filter unlike packages'.
+ * Creates a new image-only hero slide, appending it to the end of the
+ * carousel's current order (mirrors createPackage's count-based sort_order
+ * append). The image must already be uploaded via uploadSiteContentImage
+ * ("hero-slides") -- the folder prefix check keeps a client from pointing a
+ * slide at some other entity's R2 object.
  */
 export async function createSlide(
-  values: HeroSlideValues
+  imageStoragePath: string
 ): Promise<ActionResult & { id?: string }> {
   await requirePermission("can_manage_packages");
+
+  if (!imageStoragePath.startsWith("hero-slides/")) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
 
   const supabase = await createClient();
 
@@ -39,13 +35,7 @@ export async function createSlide(
   const { data: created, error: createError } = await supabase
     .from("hero_slides")
     .insert({
-      slide_type: values.slideType,
-      package_id: values.packageId || null,
-      image_storage_path: values.imageStoragePath ?? null,
-      headline: values.headline ?? null,
-      subheading: values.subheading ?? null,
-      cta_label: values.ctaLabel ?? null,
-      external_link: values.externalLink ?? null,
+      image_storage_path: imageStoragePath,
       sort_order: count ?? 0,
     })
     .select("id")
@@ -61,58 +51,32 @@ export async function createSlide(
 }
 
 /**
- * Updates a hero slide's content fields. Never touches sort_order -- that's
- * reorderSlides' concern only, mirroring updatePackage never touching
- * is_published/sort_order.
- */
-export async function updateSlide(
-  id: string,
-  values: HeroSlideValues
-): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
-
-  const supabase = await createClient();
-
-  const { data: updated, error: updateError } = await supabase
-    .from("hero_slides")
-    .update({
-      slide_type: values.slideType,
-      package_id: values.packageId || null,
-      image_storage_path: values.imageStoragePath ?? null,
-      headline: values.headline ?? null,
-      subheading: values.subheading ?? null,
-      cta_label: values.ctaLabel ?? null,
-      external_link: values.externalLink ?? null,
-    })
-    .eq("id", id)
-    .select("id")
-    .single();
-
-  if (updateError || !updated) {
-    return { ok: false, error: GENERIC_ERROR_MESSAGE };
-  }
-
-  revalidatePath("/");
-  revalidatePath("/admin/content");
-  return { ok: true };
-}
-
-/**
- * Hard-deletes a hero slide -- no soft-delete requirement for this table,
- * unlike packages.
+ * Hard-deletes a hero slide and its R2 image -- no soft-delete requirement
+ * for this table, unlike packages. The image is only ever referenced by this
+ * one slide, so it's removed too rather than left orphaned. A failed R2
+ * delete is logged but doesn't fail the action: the slide is already gone
+ * from the homepage, which is what the admin asked for.
  */
 export async function deleteSlide(id: string): Promise<ActionResult> {
   await requirePermission("can_manage_packages");
 
   const supabase = await createClient();
 
-  const { error: deleteError } = await supabase
+  const { data: deleted, error: deleteError } = await supabase
     .from("hero_slides")
     .delete()
-    .eq("id", id);
+    .eq("id", id)
+    .select("image_storage_path")
+    .single();
 
-  if (deleteError) {
+  if (deleteError || !deleted) {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  try {
+    await deleteObject(deleted.image_storage_path);
+  } catch (error) {
+    console.error("Failed to delete hero slide image:", error);
   }
 
   revalidatePath("/");

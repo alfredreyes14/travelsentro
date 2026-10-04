@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
@@ -15,27 +15,19 @@ import {
 import {
   SortableContext,
   arrayMove,
+  rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
-  verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVerticalIcon } from "lucide-react";
+import { GripVerticalIcon, ImagePlusIcon, XIcon } from "lucide-react";
 
-import { deleteSlide, reorderSlides } from "@/actions/hero-slides";
-import {
-  HeroSlideForm,
-  type HeroSlidePackageOption,
-  type HeroSlideRecord,
-} from "./hero-slide-form";
+import { createSlide, deleteSlide, reorderSlides } from "@/actions/hero-slides";
+import { uploadSiteContentImage } from "@/actions/site-content-uploads";
+import { readFileAsBase64 } from "@/lib/read-file-as-base64";
+import { shrinkImageToFit, type ShrinkAttempt } from "@/lib/images/shrink-image";
+import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,46 +47,93 @@ import {
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
+// The hero renders every slide at 16:9, full viewport width. 1920x1080 covers
+// typical desktop screens; anything under MIN_RECOMMENDED_WIDTH gets a soft
+// "may look blurry" warning (the upload still goes through).
+const RECOMMENDED_ASPECT = 16 / 9;
+const ASPECT_TOLERANCE = 0.05;
+const MIN_RECOMMENDED_WIDTH = 1600;
+
+// Full-width hero images get a larger budget than testimonial photos, but
+// still stay well under next.config.ts's 10 MB Server Action body limit
+// once base64-encoded (+33%).
+const MAX_HERO_BYTES = 3 * 1024 * 1024;
+const PASSTHROUGH_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const SHRINK_ATTEMPTS: ReadonlyArray<ShrinkAttempt> = [
+  { maxEdge: 2560, quality: 0.85 },
+  { maxEdge: 1920, quality: 0.85 },
+  { maxEdge: 1920, quality: 0.75 },
+  { maxEdge: 1920, quality: 0.65 },
+];
+
 /**
- * Display-ready hero_slides row, as assembled server-side by 06-08's
- * /admin/content page: HeroSlideRecord's raw editable fields plus two
- * display-only fields this list needs but the form doesn't (packageName for
- * package-type slide titles, imageUrl resolved from either the linked
- * package's own photo or this slide's own imageStoragePath).
+ * Small web-friendly files upload untouched; anything larger (or in a
+ * format like HEIC) is downscaled/re-encoded in the browser first.
  */
-export type HeroSlideListItem = HeroSlideRecord & {
-  packageName: string | null;
-  imageUrl: string | null;
+async function prepareHeroImage(file: File): Promise<Blob> {
+  if (PASSTHROUGH_MIME_TYPES.includes(file.type) && file.size <= MAX_HERO_BYTES) {
+    return file;
+  }
+  return shrinkImageToFit(file, MAX_HERO_BYTES, SHRINK_ATTEMPTS);
+}
+
+/**
+ * Returns a warning for an image that isn't ~16:9 or is too small for a
+ * full-width hero, or null if it's fine. Undecodable files return null --
+ * prepareHeroImage reports those.
+ */
+async function getSizeWarning(file: File): Promise<string | null> {
+  let width: number;
+  let height: number;
+  try {
+    const bitmap = await createImageBitmap(file, {
+      imageOrientation: "from-image",
+    });
+    width = bitmap.width;
+    height = bitmap.height;
+    bitmap.close();
+  } catch {
+    return null;
+  }
+
+  if (width < MIN_RECOMMENDED_WIDTH) {
+    return `${file.name} is only ${width}px wide and may look blurry on large screens. 1920×1080 is recommended.`;
+  }
+  const aspect = width / height;
+  if (Math.abs(aspect - RECOMMENDED_ASPECT) / RECOMMENDED_ASPECT > ASPECT_TOLERANCE) {
+    return `${file.name} isn't 16:9 (${width}×${height}), so its edges will be cropped on the homepage.`;
+  }
+  return null;
+}
+
+export type HeroSlideListItem = {
+  id: string;
+  imageUrl: string;
 };
 
 /**
- * Combines drag-reorder (dnd-kit, mirrors sortable-package-list.tsx exactly)
- * with Dialog-wrapped add/edit HeroSlideForm and an AlertDialog delete
- * confirmation (mirrors users-table.tsx's exact composition).
+ * Image-only hero carousel manager: multi-file upload (each file becomes a
+ * slide appended to the end), drag-reorder (dnd-kit, same shape as
+ * photo-manager.tsx's grid) and AlertDialog-confirmed removal.
  */
 export function HeroSlidesList({
   initialSlides,
-  packages,
 }: {
   initialSlides: HeroSlideListItem[];
-  packages: HeroSlidePackageOption[];
 }) {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState(initialSlides);
   // Adjusts `items` when fresh props arrive after router.refresh() (Next.js
-  // preserves client state across refresh, so without this the list never
-  // reflects a create/edit until a hard page reload). Calling setState
-  // directly during render -- not in an Effect -- per React's documented
-  // "adjusting state when a prop changes" pattern.
+  // preserves client state across refresh). Calling setState directly
+  // during render -- not in an Effect -- per React's documented "adjusting
+  // state when a prop changes" pattern.
   const [prevInitialSlides, setPrevInitialSlides] = useState(initialSlides);
   if (initialSlides !== prevInitialSlides) {
     setPrevInitialSlides(initialSlides);
     setItems(initialSlides);
   }
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editingSlide, setEditingSlide] = useState<HeroSlideListItem | null>(
-    null
-  );
+  const [isUploading, setIsUploading] = useState(false);
   const [deletingSlide, setDeletingSlide] = useState<HeroSlideListItem | null>(
     null
   );
@@ -108,10 +147,70 @@ export function HeroSlidesList({
     })
   );
 
-  function handleMutationSuccess() {
-    setIsCreateOpen(false);
-    setEditingSlide(null);
-    router.refresh();
+  async function handleFilesSelected(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (files.length === 0) return;
+
+    setIsUploading(true);
+    let succeededCount = 0;
+    try {
+      // Sequential, never Promise.all: createSlide appends using the current
+      // row count as sort_order, so concurrent calls would collide. It also
+      // keeps the selection order as the carousel order.
+      for (const file of files) {
+        const warning = await getSizeWarning(file);
+
+        let prepared: Blob;
+        try {
+          prepared = await prepareHeroImage(file);
+        } catch {
+          toast.error(
+            `Couldn't process ${file.name}. Please use a JPG, PNG, or WebP image.`
+          );
+          continue;
+        }
+
+        try {
+          const upload = await uploadSiteContentImage("hero-slides", {
+            name: file.name,
+            type: prepared.type,
+            base64: await readFileAsBase64(prepared),
+          });
+          if (!upload.ok || !upload.storagePath) {
+            toast.error(`Failed to upload ${file.name}.`);
+            continue;
+          }
+
+          const created = await createSlide(upload.storagePath);
+          if (!created.ok || !created.id) {
+            toast.error(`Failed to upload ${file.name}.`);
+            continue;
+          }
+
+          const newItem: HeroSlideListItem = {
+            id: created.id,
+            imageUrl: getPublicImageUrl(upload.storagePath),
+          };
+          setItems((current) => [...current, newItem]);
+          succeededCount += 1;
+          if (warning) toast.warning(warning);
+        } catch {
+          toast.error(`Failed to upload ${file.name}.`);
+        }
+      }
+    } finally {
+      setIsUploading(false);
+    }
+
+    if (succeededCount > 0) {
+      toast.success(
+        succeededCount === 1
+          ? "Slide added."
+          : `${succeededCount} slides added.`
+      );
+      router.refresh();
+    }
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -148,7 +247,7 @@ export function HeroSlidesList({
       try {
         const result = await deleteSlide(target.id);
         if (result.ok) {
-          toast.success("Slide deleted.");
+          toast.success("Slide removed.");
           setItems((current) =>
             current.filter((item) => item.id !== target.id)
           );
@@ -164,32 +263,47 @@ export function HeroSlidesList({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger render={<Button size="lg" />}>
-            Add Slide
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add Slide</DialogTitle>
-            </DialogHeader>
-            <HeroSlideForm
-              mode="create"
-              packages={packages}
-              onSuccess={handleMutationSuccess}
-            />
-          </DialogContent>
-        </Dialog>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+          <p>
+            <span className="font-medium text-foreground">
+              Recommended: 1920 × 1080 px (16:9)
+            </span>{" "}
+            · JPG, PNG, or WebP
+          </p>
+          <p>
+            On desktop the search bar sits over the center of the image —
+            keep important text near the top or edges.
+          </p>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="sr-only"
+          tabIndex={-1}
+          onChange={handleFilesSelected}
+        />
+        <Button
+          size="lg"
+          className="shrink-0"
+          disabled={isUploading}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <ImagePlusIcon />
+          {isUploading ? "Uploading..." : "Add Images"}
+        </Button>
       </div>
 
       {items.length === 0 ? (
         <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-8 ring-1 ring-foreground/10">
           <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
-            No hero slides yet
+            No hero images yet
           </h2>
           <p className="text-base leading-[1.5] text-muted-foreground">
-            Add a photo or promotional slide to feature on the homepage
-            carousel.
+            Add images to feature in the homepage carousel. Until then, the
+            homepage shows a default image.
           </p>
         </div>
       ) : (
@@ -200,14 +314,14 @@ export function HeroSlidesList({
         >
           <SortableContext
             items={items.map((item) => item.id)}
-            strategy={verticalListSortingStrategy}
+            strategy={rectSortingStrategy}
           >
-            <div className="flex flex-col gap-3">
-              {items.map((item) => (
-                <HeroSlideRow
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {items.map((item, index) => (
+                <HeroSlideTile
                   key={item.id}
                   item={item}
-                  onEdit={() => setEditingSlide(item)}
+                  position={index + 1}
                   onDelete={() => setDeletingSlide(item)}
                 />
               ))}
@@ -216,35 +330,15 @@ export function HeroSlidesList({
         </DndContext>
       )}
 
-      <Dialog
-        open={editingSlide !== null}
-        onOpenChange={(open) => !open && setEditingSlide(null)}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Slide</DialogTitle>
-          </DialogHeader>
-          {editingSlide && (
-            <HeroSlideForm
-              mode="edit"
-              slide={editingSlide}
-              packages={packages}
-              onSuccess={handleMutationSuccess}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
       <AlertDialog
         open={deletingSlide !== null}
         onOpenChange={(open) => !open && setDeletingSlide(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this slide?</AlertDialogTitle>
+            <AlertDialogTitle>Remove this image?</AlertDialogTitle>
             <AlertDialogDescription>
-              This slide will be removed from the homepage carousel
-              immediately.
+              It will be removed from the homepage carousel immediately.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -254,7 +348,7 @@ export function HeroSlidesList({
               disabled={isDeleting}
               onClick={handleDelete}
             >
-              {isDeleting ? "Deleting..." : "Delete Slide"}
+              {isDeleting ? "Removing..." : "Remove Image"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -263,13 +357,13 @@ export function HeroSlidesList({
   );
 }
 
-function HeroSlideRow({
+function HeroSlideTile({
   item,
-  onEdit,
+  position,
   onDelete,
 }: {
   item: HeroSlideListItem;
-  onEdit: () => void;
+  position: number;
   onDelete: () => void;
 }) {
   const {
@@ -287,59 +381,54 @@ function HeroSlideRow({
     opacity: isDragging ? 0.6 : 1,
   };
 
-  const title =
-    item.slideType === "package"
-      ? (item.packageName ?? "Untitled package slide")
-      : (item.headline ?? "Untitled promo slide");
-
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-xl border border-border bg-card p-3"
+      className="flex flex-col gap-2 rounded-xl border border-border bg-card p-2"
     >
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <button
-              type="button"
-              className="flex size-11 items-center justify-center text-muted-foreground"
-              {...attributes}
-              {...listeners}
-            />
-          }
-        >
-          <GripVerticalIcon />
-          <span className="sr-only">Drag to reorder</span>
-        </TooltipTrigger>
-        <TooltipContent>Drag to reorder</TooltipContent>
-      </Tooltip>
-
-      {/* Plain <img>, not next/image -- R2's hostname is allow-listed in
-          next.config.ts's remotePatterns now, but this admin-only list row
-          thumbnail doesn't need next/image's optimization/lazy-loading, so
-          it's kept as a plain <img> intentionally. */}
-      {item.imageUrl ? (
-        <div className="relative size-16 shrink-0 overflow-hidden rounded-md bg-secondary/10">
-          <img src={item.imageUrl} alt="" className="size-full object-cover" />
-        </div>
-      ) : (
-        <div className="size-16 shrink-0 rounded-md bg-secondary/10" />
-      )}
-
-      <div className="flex-1">
-        <p className="font-medium">{title}</p>
-        <p className="text-sm text-muted-foreground capitalize">
-          {item.slideType} slide
-        </p>
+      {/* Plain <img>, not next/image -- admin-only thumbnail, no need for
+          next/image's optimization/lazy-loading. */}
+      <div className="relative aspect-video overflow-hidden rounded-md bg-secondary/10">
+        <img src={item.imageUrl} alt="" className="size-full object-cover" />
+        <span className="absolute top-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
+          {position}
+        </span>
       </div>
+      <div className="flex items-center justify-between">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                className="flex size-11 cursor-grab items-center justify-center text-muted-foreground active:cursor-grabbing"
+                {...attributes}
+                {...listeners}
+              />
+            }
+          >
+            <GripVerticalIcon />
+            <span className="sr-only">Drag to reorder</span>
+          </TooltipTrigger>
+          <TooltipContent>Drag to reorder</TooltipContent>
+        </Tooltip>
 
-      <Button variant="outline" size="sm" onClick={onEdit}>
-        Edit
-      </Button>
-      <Button variant="destructive" size="sm" onClick={onDelete}>
-        Delete
-      </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <button
+                type="button"
+                className="flex size-11 items-center justify-center text-destructive"
+                onClick={onDelete}
+              />
+            }
+          >
+            <XIcon />
+            <span className="sr-only">Remove image</span>
+          </TooltipTrigger>
+          <TooltipContent>Remove image</TooltipContent>
+        </Tooltip>
+      </div>
     </div>
   );
 }
