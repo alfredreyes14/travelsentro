@@ -77,6 +77,7 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
       canMessageCustomers: false,
       canEditCrm: false,
       canManageVouchers: false,
+      canManageQuotes: false,
     },
   });
 
@@ -260,6 +261,24 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="canManageQuotes"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
+                <FormLabel className="cursor-pointer">
+                  Manage Quotes
+                </FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
         </FormSection>
 
         <Button
@@ -293,6 +312,7 @@ function EditAccountForm({
       canMessageCustomers: account.can_message_customers,
       canEditCrm: account.can_edit_crm,
       canManageVouchers: account.can_manage_vouchers,
+      canManageQuotes: account.can_manage_quotes,
     },
   });
 
@@ -445,6 +465,24 @@ function EditAccountForm({
               <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
                 <FormLabel className="cursor-pointer">
                   Manage Vouchers
+                </FormLabel>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="canManageQuotes"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
+                <FormLabel className="cursor-pointer">
+                  Manage Quotes
                 </FormLabel>
                 <FormControl>
                   <Switch
