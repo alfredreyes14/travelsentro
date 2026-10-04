@@ -170,7 +170,7 @@ export default async function HomePage() {
       <div>
         <div className="relative">
           <HeroCarousel slides={slides} />
-          {/* Below md, the 16:9 hero is too short to hold the search card,
+          {/* Below md, the wide banner hero is too short to hold the search card,
               which stacks into a taller column there — so it flows in normal
               document order under the image on mobile and only becomes a
               centered overlay from md up. */}

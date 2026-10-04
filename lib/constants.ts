@@ -49,3 +49,9 @@ export const FACEBOOK_PAGE_ID = "446521218543410";
 export const CONTACT_EMAIL = "info@travelsentro.com";
 export const CONTACT_ADDRESS =
   "Level 21, Park Triangle Corporate Plaza, North Tower, 32nd St. Cor. 11th Ave., BGC, Taguig City";
+
+// Homepage hero banner size, matching public/default-hero.jpg. The hero
+// carousel frames every slide at this aspect ratio, and the admin recommends
+// uploading at exactly this size so banners show whole, uncropped.
+export const HERO_IMAGE_WIDTH = 2400;
+export const HERO_IMAGE_HEIGHT = 731;

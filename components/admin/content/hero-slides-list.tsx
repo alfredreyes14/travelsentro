@@ -27,6 +27,7 @@ import { uploadSiteContentImage } from "@/actions/site-content-uploads";
 import { readFileAsBase64 } from "@/lib/read-file-as-base64";
 import { shrinkImageToFit, type ShrinkAttempt } from "@/lib/images/shrink-image";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
+import { HERO_IMAGE_HEIGHT, HERO_IMAGE_WIDTH } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -47,12 +48,16 @@ import {
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
-// The hero renders every slide at 16:9, full viewport width. 1920x1080 covers
-// typical desktop screens; anything under MIN_RECOMMENDED_WIDTH gets a soft
-// "may look blurry" warning (the upload still goes through).
-const RECOMMENDED_ASPECT = 16 / 9;
+// The hero frames every slide at the default banner's ratio, full viewport
+// width. Off-ratio images or ones under MIN_RECOMMENDED_WIDTH get a soft
+// warning (the upload still goes through).
+const RECOMMENDED_SIZE = `${HERO_IMAGE_WIDTH} × ${HERO_IMAGE_HEIGHT}`;
+const RECOMMENDED_ASPECT = HERO_IMAGE_WIDTH / HERO_IMAGE_HEIGHT;
 const ASPECT_TOLERANCE = 0.05;
 const MIN_RECOMMENDED_WIDTH = 1600;
+const THUMBNAIL_FRAME_STYLE = {
+  aspectRatio: `${HERO_IMAGE_WIDTH} / ${HERO_IMAGE_HEIGHT}`,
+};
 
 // Full-width hero images get a larger budget than testimonial photos, but
 // still stay well under next.config.ts's 10 MB Server Action body limit
@@ -78,8 +83,8 @@ async function prepareHeroImage(file: File): Promise<Blob> {
 }
 
 /**
- * Returns a warning for an image that isn't ~16:9 or is too small for a
- * full-width hero, or null if it's fine. Undecodable files return null --
+ * Returns a warning for an image that isn't ~the banner's ratio or is too
+ * small for a full-width hero, or null if it's fine. Undecodable files return null --
  * prepareHeroImage reports those.
  */
 async function getSizeWarning(file: File): Promise<string | null> {
@@ -97,11 +102,11 @@ async function getSizeWarning(file: File): Promise<string | null> {
   }
 
   if (width < MIN_RECOMMENDED_WIDTH) {
-    return `${file.name} is only ${width}px wide and may look blurry on large screens. 1920×1080 is recommended.`;
+    return `${file.name} is only ${width}px wide and may look blurry on large screens. ${RECOMMENDED_SIZE} is recommended.`;
   }
   const aspect = width / height;
   if (Math.abs(aspect - RECOMMENDED_ASPECT) / RECOMMENDED_ASPECT > ASPECT_TOLERANCE) {
-    return `${file.name} isn't 16:9 (${width}×${height}), so its edges will be cropped on the homepage.`;
+    return `${file.name} is ${width}×${height}, not the ${RECOMMENDED_SIZE} banner shape, so parts of it will be cropped on the homepage.`;
   }
   return null;
 }
@@ -267,13 +272,13 @@ export function HeroSlidesList({
         <div className="flex flex-col gap-1 text-sm text-muted-foreground">
           <p>
             <span className="font-medium text-foreground">
-              Recommended: 1920 × 1080 px (16:9)
+              Recommended: {RECOMMENDED_SIZE} px
             </span>{" "}
-            · JPG, PNG, or WebP
+            · same size as the default banner · JPG, PNG, or WebP
           </p>
           <p>
-            On desktop the search bar sits over the center of the image —
-            keep important text near the top or edges.
+            On desktop the search bar sits over the center of the banner —
+            keep important text near the left or right edges.
           </p>
         </div>
         <input
@@ -389,7 +394,10 @@ function HeroSlideTile({
     >
       {/* Plain <img>, not next/image -- admin-only thumbnail, no need for
           next/image's optimization/lazy-loading. */}
-      <div className="relative aspect-video overflow-hidden rounded-md bg-secondary/10">
+      <div
+        className="relative overflow-hidden rounded-md bg-secondary/10"
+        style={THUMBNAIL_FRAME_STYLE}
+      >
         <img src={item.imageUrl} alt="" className="size-full object-cover" />
         <span className="absolute top-2 left-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-medium text-white">
           {position}

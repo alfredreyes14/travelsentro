@@ -11,8 +11,16 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { HERO_IMAGE_HEIGHT, HERO_IMAGE_WIDTH } from "@/lib/constants";
 
 const DEFAULT_HERO_IMAGE = "/default-hero.jpg";
+
+// Every slide -- and the default image -- is framed at the default banner's
+// own ratio, so uploads at the recommended size show whole and the hero
+// doesn't change height when the first slide is added.
+const HERO_FRAME_STYLE = {
+  aspectRatio: `${HERO_IMAGE_WIDTH} / ${HERO_IMAGE_HEIGHT}`,
+};
 
 export type HeroSlideDisplay = {
   id: string;
@@ -24,9 +32,10 @@ export type HeroSlideDisplay = {
  * awareness. Autoplays every 5s with stopOnInteraction, pauses on
  * hover/focus, and never auto-advances when the visitor has
  * prefers-reduced-motion enabled (RESEARCH.md Pitfall 6 / WCAG 2.2.2).
- * Slides are plain admin-uploaded images shown whole at 16:9 on every
- * screen size (the admin recommends 1920x1080), so banners with text baked
- * in are never cropped -- no overlay text is drawn on top.
+ * Slides are plain admin-uploaded images shown whole at the default
+ * banner's ratio on every screen size (the admin recommends that exact
+ * size), so banners with text baked in are never cropped -- no overlay text
+ * is drawn on top.
  * Falls back to a single static default hero image (no carousel chrome)
  * when the backend has no hero slides configured yet -- the carousel only
  * appears once there's actual admin-managed slide content to page through.
@@ -49,7 +58,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlideDisplay[] }) {
 
   if (slides.length === 0) {
     return (
-      <div className="relative h-72 w-full overflow-hidden sm:h-96 lg:h-112">
+      <div className="relative w-full overflow-hidden" style={HERO_FRAME_STYLE}>
         <Image
           src={DEFAULT_HERO_IMAGE}
           alt="TravelSentro"
@@ -73,7 +82,10 @@ export function HeroCarousel({ slides }: { slides: HeroSlideDisplay[] }) {
       <CarouselContent>
         {slides.map((slide, index) => (
           <CarouselItem key={slide.id}>
-            <div className="relative aspect-video w-full overflow-hidden bg-secondary/10">
+            <div
+              className="relative w-full overflow-hidden bg-secondary/10"
+              style={HERO_FRAME_STYLE}
+            >
               <Image
                 src={slide.imageUrl}
                 alt={`TravelSentro featured image ${index + 1} of ${slides.length}`}
