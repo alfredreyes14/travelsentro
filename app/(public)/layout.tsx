@@ -124,7 +124,7 @@ export default async function PublicLayout({
                 TravelSentro
               </p>
               <p className="text-sm text-primary-foreground/80">
-                Built for Agencies. Ready for Travelers.
+                Built for Business. Ready for Travelers.
               </p>
             </div>
 

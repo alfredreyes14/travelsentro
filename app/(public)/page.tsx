@@ -4,8 +4,7 @@ import { ViewTransition } from "react";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { HeroCarousel, type HeroSlideDisplay } from "@/components/homepage/hero-carousel";
-import { HeroSearchBar } from "@/components/homepage/hero-search-bar";
-import { WhyChooseUs } from "@/components/homepage/why-choose-us";
+import { HeroSearchBar } from "@/components/homepage/hero-search-bar";import { WhyChooseUs } from "@/components/homepage/why-choose-us";
 import { FeaturedPackagesGrid } from "@/components/homepage/featured-packages-grid";
 import { DestinationsSection } from "@/components/homepage/destinations-section";
 import { TestimonialsSection } from "@/components/homepage/testimonials-section";
@@ -16,13 +15,16 @@ import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
 import { readLogoFolder } from "@/lib/logos/read-logo-folder";
+import { buildPageMetadata } from "@/lib/seo/page-metadata";
 import type { Database } from "@/types/database";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPageMetadata({
   title: "TravelSentro | Philippines Tour Packages",
+  absoluteTitle: true,
   description:
     "Discover the Philippines with TravelSentro -- browse tour packages and reach out on WhatsApp, Facebook, or our inquiry form in under a minute.",
-};
+  path: "/",
+});
 
 // Homepage content (hero slides, featured packages, testimonials,
 // destinations, partners) is identical for every visitor and admin-managed,
@@ -168,6 +170,12 @@ export default async function HomePage() {
   return (
     <ViewTransition enter="slide-up" default="none">
       <div>
+        {/* The hero is an image carousel with no visible headline, so the
+            page's main heading is screen-reader-only -- still gives search
+            engines and assistive tech a top-level description of the page. */}
+        <h1 className="sr-only">
+          TravelSentro — Philippine and International Tour Packages
+        </h1>
         <div className="relative">
           <HeroCarousel slides={slides} />
           {/* Below md, the wide banner hero is too short to hold the search card,

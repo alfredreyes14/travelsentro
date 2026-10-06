@@ -2,7 +2,15 @@ import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { FACEBOOK_URL, SITE_URL } from "@/lib/constants";
+import {
+  CONTACT_ADDRESS,
+  CONTACT_EMAIL,
+  FACEBOOK_URL,
+  INSTAGRAM_URL,
+  SITE_URL,
+} from "@/lib/constants";
+import { WHATSAPP_NUMBER } from "@/lib/whatsapp";
+import { BASE_OPEN_GRAPH, SITE_NAME } from "@/lib/seo/page-metadata";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -27,9 +35,7 @@ export const metadata: Metadata = {
   },
   description: DEFAULT_DESCRIPTION,
   openGraph: {
-    type: "website",
-    siteName: "TravelSentro",
-    locale: "en_PH",
+    ...BASE_OPEN_GRAPH,
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
   },
@@ -43,14 +49,27 @@ export const metadata: Metadata = {
 // TravelAgency structured data (https://schema.org/TravelAgency) — one
 // business-level entity for the whole site, rendered once in the root
 // layout rather than per-page. Package pages add their own TouristTrip
-// JSON-LD on top of this.
+// JSON-LD on top of this. TravelAgency is a LocalBusiness subtype, so the
+// address/telephone fields are what make it eligible for local search
+// signals; addressLocality/Region are split out of CONTACT_ADDRESS by hand
+// since that constant is a single display string.
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "TravelAgency",
-  name: "TravelSentro",
+  name: SITE_NAME,
   url: SITE_URL,
   logo: `${SITE_URL}/logo.png`,
-  sameAs: [FACEBOOK_URL],
+  image: `${SITE_URL}/logo.png`,
+  email: CONTACT_EMAIL,
+  telephone: `+${WHATSAPP_NUMBER}`,
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: CONTACT_ADDRESS,
+    addressLocality: "Taguig City",
+    addressRegion: "Metro Manila",
+    addressCountry: "PH",
+  },
+  sameAs: [FACEBOOK_URL, INSTAGRAM_URL],
 };
 
 export default function RootLayout({

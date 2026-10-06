@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { requirePermission } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { packagePath } from "@/lib/packages/package-url";
 import type { ActionResult } from "@/lib/action-result";
 import {
   packageFormSchema,
@@ -147,7 +148,7 @@ export async function updatePackage(
       remarks: parsed.data.remarks || null,
     })
     .eq("id", id)
-    .select("slug")
+    .select("slug, name")
     .single();
 
   if (updateError || !updated) {
@@ -160,7 +161,7 @@ export async function updatePackage(
   }
 
   revalidatePath("/packages");
-  revalidatePath(`/packages/${updated.slug}`);
+  revalidatePath(packagePath(updated));
   revalidatePath("/admin/packages");
   revalidatePath("/admin/content");
   // "layout", not the default "page" -- the upsell popup renders this
@@ -187,7 +188,7 @@ export async function softDeletePackage(id: string): Promise<ActionResult> {
     .from("packages")
     .update({ deleted_at: new Date().toISOString(), is_published: false })
     .eq("id", id)
-    .select("slug")
+    .select("slug, name")
     .single();
 
   if (error || !data) {
@@ -195,7 +196,7 @@ export async function softDeletePackage(id: string): Promise<ActionResult> {
   }
 
   revalidatePath("/packages");
-  revalidatePath(`/packages/${data.slug}`);
+  revalidatePath(packagePath(data));
   revalidatePath("/admin/packages");
   return { ok: true };
 }
@@ -211,7 +212,7 @@ export async function publishPackage(
     .from("packages")
     .update({ is_published: isPublished })
     .eq("id", id)
-    .select("slug")
+    .select("slug, name")
     .single();
 
   // Postgres check_violation — packages_destination_required_if_published.
@@ -227,7 +228,7 @@ export async function publishPackage(
   }
 
   revalidatePath("/packages");
-  revalidatePath(`/packages/${data.slug}`);
+  revalidatePath(packagePath(data));
   revalidatePath("/admin/packages");
   return { ok: true };
 }
@@ -243,7 +244,7 @@ export async function featurePackage(
     .from("packages")
     .update({ is_featured: isFeatured })
     .eq("id", id)
-    .select("slug")
+    .select("slug, name")
     .single();
 
   if (error || !data) {
@@ -251,7 +252,7 @@ export async function featurePackage(
   }
 
   revalidatePath("/packages");
-  revalidatePath(`/packages/${data.slug}`);
+  revalidatePath(packagePath(data));
   revalidatePath("/admin/packages");
   return { ok: true };
 }

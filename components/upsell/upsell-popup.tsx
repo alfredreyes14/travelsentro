@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react";
 
+import { packagePath } from "@/lib/packages/package-url";
 import { shuffle } from "@/lib/upsell/shuffle";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -207,7 +208,7 @@ function UpsellCard({ item }: { item: UpsellItemDisplay }) {
   return (
     <DialogClose
       nativeButton={false}
-      render={<Link href={`/packages/${item.slug}`} />}
+      render={<Link href={packagePath(item)} />}
       className="group flex h-full overflow-hidden rounded-lg ring-1 ring-foreground/10 transition-shadow outline-none hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50 sm:flex-col"
     >
       <div className="relative w-36 shrink-0 bg-secondary/10 sm:aspect-[4/3] sm:w-full">

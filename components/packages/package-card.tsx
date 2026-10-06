@@ -6,6 +6,7 @@ import { FadeImage } from "@/components/motion/fade-image";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
 import { formatPackagePrice } from "@/lib/packages/format-price";
+import { packagePath } from "@/lib/packages/package-url";
 import type { Database } from "@/types/database";
 
 type PackageRow = Database["public"]["Tables"]["packages"]["Row"];
@@ -79,7 +80,7 @@ export function PackageCard({
       />
 
       <Link
-        href={`/packages/${pkg.slug}`}
+        href={packagePath(pkg)}
         aria-label={pkg.name}
         className="relative col-start-1 row-start-1"
       />

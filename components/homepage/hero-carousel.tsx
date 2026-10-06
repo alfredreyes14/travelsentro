@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/carousel";
 import { HERO_IMAGE_HEIGHT, HERO_IMAGE_WIDTH } from "@/lib/constants";
 
-const DEFAULT_HERO_IMAGE = "/default-hero.jpg";
+const DEFAULT_HERO_IMAGE = "/default-hero-palawan.jpg";
 
 // Every slide -- and the default image -- is framed at the default banner's
 // own ratio, so uploads at the recommended size show whole and the hero
@@ -61,7 +61,7 @@ export function HeroCarousel({ slides }: { slides: HeroSlideDisplay[] }) {
       <div className="relative w-full overflow-hidden" style={HERO_FRAME_STYLE}>
         <Image
           src={DEFAULT_HERO_IMAGE}
-          alt="TravelSentro"
+          alt="Island and white sandbar in Linapacan, Palawan, Philippines"
           fill
           sizes="100vw"
           priority

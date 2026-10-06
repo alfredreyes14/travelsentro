@@ -4,12 +4,14 @@ import { ViewTransition } from "react";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
+import { buildPageMetadata } from "@/lib/seo/page-metadata";
 
-export const metadata: Metadata = {
-  title: "Contact Us | TravelSentro",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Contact Us",
   description:
     "Get in touch with TravelSentro — ask a question, plan a trip, or say hello.",
-};
+  path: "/contact",
+});
 
 export default function ContactPage() {
   return (

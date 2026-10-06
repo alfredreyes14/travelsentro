@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/constants";
+import { packagePath } from "@/lib/packages/package-url";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
@@ -9,12 +10,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // scopes this to published, non-deleted packages.
   const { data: packages } = await supabase
     .from("packages")
-    .select("slug, created_at")
+    .select("slug, name, created_at")
     .eq("is_published", true);
 
   const packageEntries: MetadataRoute.Sitemap = (packages ?? []).map(
     (pkg) => ({
-      url: `${SITE_URL}/packages/${pkg.slug}`,
+      url: `${SITE_URL}${packagePath(pkg)}`,
       lastModified: pkg.created_at,
       changeFrequency: "weekly",
       priority: 0.8,

@@ -220,7 +220,7 @@ function TestimonialPhotos({
         renderTile(photoUrls[0]!, 0)
       )}
 
-      {hasMultiple && (
+      {hasMultiple ? (
         <div className="flex justify-center gap-1.5">
           {photoUrls.map((url, index) => (
             <button
@@ -238,6 +238,10 @@ function TestimonialPhotos({
             />
           ))}
         </div>
+      ) : (
+        // Reserve the dot row's height so a single photo lines up with
+        // multi-photo carousels in neighbouring cards.
+        <div aria-hidden className="h-1.5" />
       )}
 
       <PhotoLightbox
@@ -251,6 +255,64 @@ function TestimonialPhotos({
   );
 }
 
+/**
+ * Quote clamped to 5 lines so one long review doesn't stretch every card in
+ * its row. "Read more" appears only when the text is actually cut off, and
+ * opens the full review in a dialog rather than expanding in place -- an
+ * in-place expand would grow the grid row and stretch the sibling cards.
+ */
+function TestimonialQuote({
+  testimonial,
+}: {
+  testimonial: TestimonialDisplay;
+}) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [isClamped, setIsClamped] = useState(false);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setIsClamped(el.scrollHeight > el.clientHeight + 1);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [testimonial.quote]);
+
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <p
+        ref={ref}
+        className="line-clamp-5 text-base leading-[1.5] text-muted-foreground"
+      >
+        &ldquo;{testimonial.quote}&rdquo;
+      </p>
+      {isClamped && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="text-sm font-medium text-primary hover:underline focus-visible:underline focus-visible:outline-none"
+        >
+          Read more
+        </button>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="flex max-h-[85dvh] flex-col gap-3 sm:max-w-lg">
+          <DialogTitle className="font-heading text-[20px] leading-[1.2] font-semibold">
+            {testimonial.customerName}
+          </DialogTitle>
+          <StarRating rating={testimonial.rating} />
+          <p className="overflow-y-auto text-base leading-[1.5] text-muted-foreground">
+            &ldquo;{testimonial.quote}&rdquo;
+          </p>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 function TestimonialCard({ testimonial }: { testimonial: TestimonialDisplay }) {
   return (
     <Card className="flex flex-col items-start gap-3 p-4">
@@ -258,9 +320,7 @@ function TestimonialCard({ testimonial }: { testimonial: TestimonialDisplay }) {
         {testimonial.customerName}
       </h3>
       <StarRating rating={testimonial.rating} />
-      <p className="text-base leading-[1.5] text-muted-foreground">
-        &ldquo;{testimonial.quote}&rdquo;
-      </p>
+      <TestimonialQuote testimonial={testimonial} />
       {testimonial.photoUrls.length > 0 && (
         // mt-auto pins photos to the card's bottom edge so they line up
         // across a row even when quotes differ in length.

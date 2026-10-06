@@ -5,7 +5,7 @@ import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
 
 export const metadata: Metadata = {
-  title: "Coming Soon — TravelSentro",
+  title: "Coming Soon",
   description:
     "TravelSentro's new site is on its way. Message us on WhatsApp or Facebook and we'll help you plan your next trip.",
 };

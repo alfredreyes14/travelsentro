@@ -6,7 +6,10 @@ import { buildWhatsAppLink } from "@/lib/whatsapp";
 import { FACEBOOK_URL } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: "Unsubscribe | TravelSentro",
+  title: "Unsubscribe",
+  // Per-contact signed links -- never meant to be indexed, on top of the
+  // /unsubscribe disallow in app/robots.ts.
+  robots: { index: false, follow: false },
 };
 
 /**

@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { CONTACT_EMAIL, CONTACT_ADDRESS } from "@/lib/constants";
+import { buildPageMetadata } from "@/lib/seo/page-metadata";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy | TravelSentro",
+export const metadata: Metadata = buildPageMetadata({
+  title: "Privacy Policy",
   description:
     "How TravelSentro collects, uses, and protects your information when you browse our site or reach out about a tour package.",
-};
+  path: "/privacy-policy",
+});
 
 const LAST_UPDATED = "August 16, 2026";
 

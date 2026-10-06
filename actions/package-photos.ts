@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { requirePermission } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { packagePath } from "@/lib/packages/package-url";
 import { uploadObject, deleteObject } from "@/lib/storage/r2-client";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -56,7 +57,7 @@ export async function uploadPhotos(
 
   const { data: pkg, error: pkgError } = await supabase
     .from("packages")
-    .select("slug")
+    .select("slug, name")
     .eq("id", packageId)
     .single();
 
@@ -114,7 +115,7 @@ export async function uploadPhotos(
     });
   }
 
-  revalidatePath(`/packages/${pkg.slug}`);
+  revalidatePath(packagePath(pkg));
   return { ok: true, photos: uploaded };
 }
 
@@ -140,7 +141,7 @@ export async function deletePhoto(photoId: string): Promise<ActionResult> {
 
   const { data: pkg, error: pkgError } = await supabase
     .from("packages")
-    .select("slug")
+    .select("slug, name")
     .eq("id", photo.package_id)
     .single();
 
@@ -163,7 +164,7 @@ export async function deletePhoto(photoId: string): Promise<ActionResult> {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
-  revalidatePath(`/packages/${pkg.slug}`);
+  revalidatePath(packagePath(pkg));
   return { ok: true };
 }
 
@@ -181,7 +182,7 @@ export async function reorderPhotos(
 
   const { data: pkg, error: pkgError } = await supabase
     .from("packages")
-    .select("slug")
+    .select("slug, name")
     .eq("id", packageId)
     .single();
 
@@ -202,6 +203,6 @@ export async function reorderPhotos(
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
-  revalidatePath(`/packages/${pkg.slug}`);
+  revalidatePath(packagePath(pkg));
   return { ok: true };
 }

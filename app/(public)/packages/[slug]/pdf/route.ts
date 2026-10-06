@@ -1,5 +1,6 @@
 import { fetchPackageForPdf, renderPackagePdf } from "@/lib/pdf/package-pdf";
 import { createClient } from "@/lib/supabase/server";
+import { packageCodeFromSegment } from "@/lib/packages/package-url";
 
 /**
  * Public PDF download for a single published package. Same
@@ -14,7 +15,11 @@ export async function GET(
   const { slug } = await params;
   const supabase = await createClient();
 
-  const pkg = await fetchPackageForPdf(supabase, { slug });
+  // The segment is the readable "<name>-tsp-000032" form (or a bare code)
+  // -- see lib/packages/package-url.ts.
+  const pkg = await fetchPackageForPdf(supabase, {
+    slug: packageCodeFromSegment(slug),
+  });
   if (!pkg) {
     return Response.json({ error: "Not found" }, { status: 404 });
   }

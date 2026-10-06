@@ -26,6 +26,7 @@
     "verify:messenger-webhook": "tsx scripts/verify-messenger-webhook.ts",
     "verify:upsell-rls": "tsx --env-file=.env.local scripts/verify-upsell-rls.ts",
     "verify:format-price": "tsx scripts/verify-format-price.ts",
+    "verify:package-url": "tsx scripts/verify-package-url.ts",
     "verify:shuffle": "tsx scripts/verify-shuffle.ts",
     "verify:quote-rls": "tsx --env-file=.env.local scripts/verify-quote-rls.ts",
     "verify:quote-values": "tsx scripts/verify-quote-values.ts",

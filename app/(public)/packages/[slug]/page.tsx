@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import { ViewTransition, cache } from "react";
 import {
@@ -29,6 +29,13 @@ import { StickyCtaBar } from "@/components/packages/sticky-cta-bar";
 import { Reveal } from "@/components/motion/reveal";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { SITE_URL } from "@/lib/constants";
+import { buildPackageDescription } from "@/lib/packages/package-description";
+import {
+  packageCodeFromSegment,
+  packagePath,
+  packageSegment,
+} from "@/lib/packages/package-url";
+import { BASE_OPEN_GRAPH, SITE_NAME } from "@/lib/seo/page-metadata";
 import type { Database } from "@/types/database";
 
 const SECTION_CARD =
@@ -39,12 +46,16 @@ type PackageDetail = Database["public"]["Tables"]["packages"]["Row"] & {
   itinerary_days: Database["public"]["Tables"]["itinerary_days"]["Row"][];
   package_inclusions: Database["public"]["Tables"]["package_inclusions"]["Row"][];
   package_travel_dates: Database["public"]["Tables"]["package_travel_dates"]["Row"][];
+  destinations: Pick<Database["public"]["Tables"]["destinations"]["Row"], "name"> | null;
 };
 
 // Shared between generateMetadata and the page component (both need the
 // same row) — React's cache() memoizes it per-request so the query only
 // runs once, same pattern the Next.js docs recommend for this exact split.
-const getPackageBySlug = cache(async (slug: string) => {
+// Looks the package up by the code at the end of the URL segment only (see
+// lib/packages/package-url.ts) -- the readable name prefix is ignored here
+// and checked against the current name by the page, which redirects.
+const getPackageBySegment = cache(async (segment: string) => {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -54,9 +65,10 @@ const getPackageBySlug = cache(async (slug: string) => {
       package_photos(storage_path, display_order, alt_text),
       itinerary_days(day_number, title, description),
       package_inclusions(kind, label, sort_order),
-      package_travel_dates(travel_date_from, travel_date_to, additional_fee)`
+      package_travel_dates(travel_date_from, travel_date_to, additional_fee),
+      destinations(name)`
     )
-    .eq("slug", slug)
+    .eq("slug", packageCodeFromSegment(segment))
     .eq("is_published", true)
     .single();
 
@@ -64,37 +76,43 @@ const getPackageBySlug = cache(async (slug: string) => {
   return data as PackageDetail;
 });
 
+function describePackage(pkg: PackageDetail): string {
+  return buildPackageDescription({
+    name: pkg.name,
+    durationLabel: pkg.duration_label,
+    destinationName: pkg.destinations?.name ?? null,
+    pricePerPax: pkg.price_per_pax,
+    inclusions: pkg.package_inclusions
+      .filter((item) => item.kind === "included")
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((item) => item.label),
+  });
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const pkg = await getPackageBySlug(slug);
+  const pkg = await getPackageBySegment(slug);
   if (!pkg) return {};
 
-  const price = pkg.price_per_pax;
-  const description = [
-    pkg.duration_label,
-    `from ₱${price.toLocaleString("en-PH")} per pax`,
-    pkg.remarks,
-  ]
-    .filter(Boolean)
-    .join(" — ")
-    .slice(0, 160);
+  const description = describePackage(pkg);
   const [firstPhoto] = [...pkg.package_photos].sort(
     (a, b) => a.display_order - b.display_order
   );
   const imageUrl = firstPhoto
     ? getPublicImageUrl(firstPhoto.storage_path)
     : undefined;
-  const canonicalPath = `/packages/${pkg.slug}`;
+  const canonicalPath = packagePath(pkg);
 
   return {
     title: pkg.name,
     description,
     alternates: { canonical: canonicalPath },
     openGraph: {
+      ...BASE_OPEN_GRAPH,
       title: pkg.name,
       description,
       url: canonicalPath,
@@ -123,9 +141,15 @@ export default async function PackageDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const pkg = await getPackageBySlug(slug);
+  const pkg = await getPackageBySegment(slug);
 
   if (!pkg) notFound();
+
+  // Bare-code URLs (/packages/TSP-000032, the format before readable URLs)
+  // and URLs carrying a package's old name both land here -- send them to
+  // the one current URL so links and search results consolidate on it.
+  if (slug !== packageSegment(pkg)) permanentRedirect(packagePath(pkg));
+  const pageUrl = `${SITE_URL}${packagePath(pkg)}`;
 
   const photos = [...pkg.package_photos]
     .sort((a, b) => a.display_order - b.display_order)
@@ -157,12 +181,12 @@ export default async function PackageDetailPage({
     "@context": "https://schema.org",
     "@type": "TouristTrip",
     name: pkg.name,
-    description: pkg.remarks || pkg.name,
+    description: describePackage(pkg),
     image: photos.map((photo) => photo.url),
-    url: `${SITE_URL}/packages/${pkg.slug}`,
+    url: pageUrl,
     provider: {
       "@type": "TravelAgency",
-      name: "TravelSentro",
+      name: SITE_NAME,
       url: SITE_URL,
     },
     offers: {
@@ -170,8 +194,31 @@ export default async function PackageDetailPage({
       price: pkg.price_per_pax,
       priceCurrency: "PHP",
       availability: "https://schema.org/InStock",
-      url: `${SITE_URL}/packages/${pkg.slug}`,
+      url: pageUrl,
     },
+  };
+
+  // BreadcrumbList (https://schema.org/BreadcrumbList) -- lets Google show
+  // "travelsentro.com › Packages › <name>" in results instead of the bare
+  // TSP-code URL.
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Packages",
+        item: `${SITE_URL}/packages`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: pkg.name,
+        item: pageUrl,
+      },
+    ],
   };
 
   return (
@@ -180,6 +227,10 @@ export default async function PackageDetailPage({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(packageJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
         />
         <Link
         href="/packages"
@@ -241,7 +292,7 @@ export default async function PackageDetailPage({
             packageSlug={pkg.slug}
             variant="icon-label"
           />
-          <PackagePdfCta slug={pkg.slug} variant="icon-label" />
+          <PackagePdfCta slug={packageSegment(pkg)} variant="icon-label" />
         </div>
       </section>
 

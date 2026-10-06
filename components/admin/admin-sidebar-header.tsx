@@ -43,7 +43,7 @@ export function AdminSidebarHeader() {
       >
         <Image
           src="/logo.png"
-          alt="TravelSentro — Built for Agencies. Ready for Travelers."
+          alt="TravelSentro — Built for Business. Ready for Travelers."
           width={873}
           height={241}
           className="h-10 w-auto"

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Mail, SearchX } from "lucide-react";
-import { ViewTransition } from "react";
+import { ViewTransition, cache } from "react";
 
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
@@ -10,6 +10,7 @@ import { PackagesPagination } from "@/components/packages/pagination";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { MONTH_OPTIONS } from "@/lib/months";
+import { buildPageMetadata } from "@/lib/seo/page-metadata";
 import type { Database } from "@/types/database";
 
 const PAGE_SIZE = 6;
@@ -26,42 +27,28 @@ function monthDateRange(year: number, month: number): { from: string; to: string
   };
 }
 
-export const metadata: Metadata = {
-  title: "Tour Packages | TravelSentro",
-  description:
-    "Browse TravelSentro's tour packages across the Philippines and reach out on WhatsApp or Facebook to start planning your trip.",
+const PACKAGES_DESCRIPTION =
+  "Browse TravelSentro's tour packages across the Philippines and reach out on WhatsApp or Facebook to start planning your trip.";
+
+type PackagesSearchParams = {
+  destination?: string;
+  month?: string;
+  year?: string;
+  page?: string;
 };
 
-type PackageWithPhotos = Database["public"]["Tables"]["packages"]["Row"] & {
-  package_photos: Pick<
-    Database["public"]["Tables"]["package_photos"]["Row"],
-    "storage_path" | "display_order"
-  >[];
-};
-
-export default async function PackagesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{
-    destination?: string;
-    month?: string;
-    year?: string;
-    page?: string;
-  }>;
-}) {
-  const {
-    destination: destinationSlug,
-    month: monthParam,
-    year: yearParam,
-    page: pageParam,
-  } = await searchParams;
-  const supabase = await createClient();
+/** Normalizes the raw query string into the filters this page acts on --
+ * shared by generateMetadata and the page so both agree on what counts as
+ * an active filter. */
+function parseFilters(params: PackagesSearchParams) {
+  const { destination: destinationSlug, month: monthParam, year: yearParam } =
+    params;
 
   // An invalid/missing page (non-integer, < 1) silently falls back to page 1
   // rather than erroring — same "ignore, don't break" treatment as the
   // month/year filter below.
   const pageNum = (() => {
-    const n = Number(pageParam);
+    const n = Number(params.page);
     return Number.isInteger(n) && n >= 1 ? n : 1;
   })();
 
@@ -82,20 +69,116 @@ export default async function PackagesPage({
     ? `${MONTH_OPTIONS[monthNum - 1].label} ${yearNum}`
     : null;
 
-  // Looked up separately (not derived from the packages join below) so the
-  // heading still shows a real destination name even when zero packages
-  // match -- an inner-joined query returns zero rows in that case, which
-  // would otherwise leave destinationName with nothing to read from.
-  let destinationName: string | null = null;
-  if (destinationSlug) {
-    const { data: destinationRow } = await supabase
-      .from("destinations")
-      .select("name")
-      .eq("slug", destinationSlug)
-      .eq("is_active", true)
-      .maybeSingle();
-    destinationName = destinationRow?.name ?? destinationSlug;
+  return {
+    destinationSlug,
+    monthParam,
+    yearParam,
+    pageNum,
+    monthNum,
+    yearNum,
+    hasDateFilter,
+    monthYearLabel,
+    hasAnyFilter: Boolean(destinationSlug) || hasDateFilter,
+  };
+}
+
+// Looked up separately (not derived from the packages join) so the heading
+// still shows a real destination name even when zero packages match -- an
+// inner-joined query returns zero rows in that case, which would otherwise
+// leave the name with nothing to read from. cache() dedupes the lookup
+// between generateMetadata and the page within one request.
+const getDestinationName = cache(async (slug: string) => {
+  const supabase = await createClient();
+  const { data: destinationRow } = await supabase
+    .from("destinations")
+    .select("name")
+    .eq("slug", slug)
+    .eq("is_active", true)
+    .maybeSingle();
+  return destinationRow?.name ?? slug;
+});
+
+/** A natural-language description of the active search, e.g. "a Palawan
+ * trip in August 2026", "a Palawan trip", "a trip in August 2026", or null
+ * when no filter is active. */
+function describeSearch(
+  destinationName: string | null,
+  monthYearLabel: string | null
+): string | null {
+  if (destinationName && monthYearLabel)
+    return `a ${destinationName} trip in ${monthYearLabel}`;
+  if (destinationName) return `a ${destinationName} trip`;
+  if (monthYearLabel) return `a trip in ${monthYearLabel}`;
+  return null;
+}
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: Promise<PackagesSearchParams>;
+}): Promise<Metadata> {
+  const { destinationSlug, monthYearLabel, pageNum, hasAnyFilter } =
+    parseFilters(await searchParams);
+
+  // Filtered views are internal search results -- an open-ended set of
+  // query-string combinations that Google advises against indexing.
+  // noindex,follow keeps the package links on them crawlable. No canonical
+  // here: pairing noindex with a canonical to another URL sends Google
+  // conflicting signals.
+  if (hasAnyFilter) {
+    const destinationName = destinationSlug
+      ? await getDestinationName(destinationSlug)
+      : null;
+    const title = `Packages for ${describeSearch(destinationName, monthYearLabel)}`;
+    return {
+      ...buildPageMetadata({
+        title,
+        description: PACKAGES_DESCRIPTION,
+        path: "/packages",
+      }),
+      alternates: undefined,
+      robots: { index: false, follow: true },
+    };
   }
+
+  // Unfiltered pagination pages each canonicalize to themselves (Google's
+  // guidance for paginated lists) rather than all pointing at page 1, which
+  // would hide packages that only appear on later pages.
+  return buildPageMetadata({
+    title: pageNum > 1 ? `Tour Packages — Page ${pageNum}` : "Tour Packages",
+    description: PACKAGES_DESCRIPTION,
+    path: pageNum > 1 ? `/packages?page=${pageNum}` : "/packages",
+  });
+}
+
+type PackageWithPhotos = Database["public"]["Tables"]["packages"]["Row"] & {
+  package_photos: Pick<
+    Database["public"]["Tables"]["package_photos"]["Row"],
+    "storage_path" | "display_order"
+  >[];
+};
+
+export default async function PackagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<PackagesSearchParams>;
+}) {
+  const {
+    destinationSlug,
+    monthParam,
+    yearParam,
+    pageNum,
+    monthNum,
+    yearNum,
+    hasDateFilter,
+    monthYearLabel,
+    hasAnyFilter,
+  } = parseFilters(await searchParams);
+  const supabase = await createClient();
+
+  const destinationName = destinationSlug
+    ? await getDestinationName(destinationSlug)
+    : null;
 
   // destinations!inner / package_travel_dates!inner are required, not the
   // default to-one embed -- PostgREST only restricts which *parent* rows
@@ -159,19 +242,9 @@ export default async function PackagesPage({
   // exact situation (see app/admin/(dashboard)/crm/[id]/page.tsx:64).
   const rows = (packages ?? []) as unknown as PackageWithPhotos[];
 
-  // A natural-language description of the active search, reused for the
-  // heading, the empty-state copy, and the pre-filled inquiry message --
-  // e.g. "a Palawan trip in August 2026", "a Palawan trip", "a trip in
-  // August 2026", or null when no filter is active.
-  const searchDescription =
-    destinationName && monthYearLabel
-      ? `a ${destinationName} trip in ${monthYearLabel}`
-      : destinationName
-        ? `a ${destinationName} trip`
-        : monthYearLabel
-          ? `a trip in ${monthYearLabel}`
-          : null;
-  const hasAnyFilter = Boolean(destinationSlug) || hasDateFilter;
+  // Reused for the heading, the empty-state copy, and the pre-filled
+  // inquiry message.
+  const searchDescription = describeSearch(destinationName, monthYearLabel);
   const totalPages = Math.max(Math.ceil((count ?? 0) / PAGE_SIZE), 1);
 
   // Preserves the active destination/month/year filters across page links —
