@@ -19,8 +19,8 @@ export default function ComingSoonPage() {
       <Image
         src="/logo.png"
         alt="TravelSentro"
-        width={873}
-        height={241}
+        width={1600}
+        height={386}
         priority
         className="h-16 w-auto sm:h-20"
       />

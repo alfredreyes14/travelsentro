@@ -38,8 +38,8 @@ export function SiteHeader() {
           <Image
             src="/logo.png"
             alt="TravelSentro — Built for Business. Ready for Travelers."
-            width={873}
-            height={241}
+            width={1600}
+            height={386}
             priority
             className="h-14 w-auto sm:h-16"
           />
@@ -91,8 +91,8 @@ export function SiteHeader() {
                 <Image
                   src="/logo.png"
                   alt="TravelSentro — Built for Business. Ready for Travelers."
-                  width={873}
-                  height={241}
+                  width={1600}
+                  height={386}
                   className="h-10 w-auto"
                 />
               </SheetClose>

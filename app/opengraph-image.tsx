@@ -33,7 +33,7 @@ export default async function Image() {
         <img
           src={logoSrc}
           width={520}
-          height={144}
+          height={125}
           alt="TravelSentro"
           style={{ objectFit: "contain" }}
         />
