@@ -23,6 +23,7 @@ import type { Database } from "@/types/database";
 const FOOTER_LINKS = [
   { href: "/", label: "Home" },
   { href: "/packages", label: "Packages" },
+  { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact Us" },
   { href: "/privacy-policy", label: "Privacy Policy" },
 ];

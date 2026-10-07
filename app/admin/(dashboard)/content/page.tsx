@@ -9,6 +9,8 @@ import {
   type HeroSlideListItem,
 } from "@/components/admin/content/hero-slides-list";
 import { TestimonialsList } from "@/components/admin/content/testimonials-list";
+import { FaqsList } from "@/components/admin/content/faqs-list";
+import type { FaqRecord } from "@/components/admin/content/faq-form";
 import type { TestimonialRecord } from "@/components/admin/content/testimonial-form";
 import {
   UpsellItemsList,
@@ -25,7 +27,7 @@ import {
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
-  title: "Homepage Content | TravelSentro Admin",
+  title: "Site Content | TravelSentro Admin",
 };
 
 type PackagePhotoRow = Pick<
@@ -59,6 +61,7 @@ export default async function AdminContentPage() {
     { data: testimonialRows, error: testimonialsError },
     { data: upsellItemRows, error: upsellItemsError },
     { data: publishedPackageRows, error: publishedPackagesError },
+    { data: faqRows, error: faqsError },
   ] = await Promise.all([
     supabase
       .from("hero_slides")
@@ -78,6 +81,7 @@ export default async function AdminContentPage() {
       .eq("is_published", true)
       .is("deleted_at", null)
       .order("name"),
+    supabase.from("faqs").select("*").order("sort_order", { ascending: true }),
   ]);
 
   if (heroSlidesError) {
@@ -96,6 +100,10 @@ export default async function AdminContentPage() {
     );
   }
 
+  if (faqsError) {
+    console.error("Failed to load FAQs:", faqsError.message);
+  }
+
   const heroSlides: HeroSlideListItem[] = (heroSlideRows ?? []).map((row) => ({
     id: row.id,
     imageUrl: getPublicImageUrl(row.image_storage_path),
@@ -110,6 +118,13 @@ export default async function AdminContentPage() {
       photoStoragePaths: row.photo_storage_paths ?? [],
     })
   );
+
+  const faqs: FaqRecord[] = (faqRows ?? []).map((row) => ({
+    id: row.id,
+    question: row.question,
+    answer: row.answer,
+    isPublished: row.is_published,
+  }));
 
   // Unlike the public anon client, an authenticated can_manage_packages
   // session's `packages` RLS policy ("manage_packages can read all
@@ -152,8 +167,8 @@ export default async function AdminContentPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        title="Homepage Content"
-        description="Manage the hero carousel and homepage content sections — changes go live on the public site immediately."
+        title="Site Content"
+        description="Manage the hero carousel, homepage sections, and FAQs — changes go live on the public site immediately."
       />
 
       <Tabs defaultValue="hero-slides">
@@ -161,6 +176,7 @@ export default async function AdminContentPage() {
           <TabsTrigger value="hero-slides">{"Hero Slides"}</TabsTrigger>
           <TabsTrigger value="testimonials">{"Testimonials"}</TabsTrigger>
           <TabsTrigger value="upsell-popup">{"Upsell Popup"}</TabsTrigger>
+          <TabsTrigger value="faqs">{"FAQs"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="hero-slides" keepMounted className="pt-4">
@@ -176,6 +192,10 @@ export default async function AdminContentPage() {
             initialItems={upsellItems}
             packageOptions={upsellPackageOptions}
           />
+        </TabsContent>
+
+        <TabsContent value="faqs" keepMounted className="pt-4">
+          <FaqsList initialItems={faqs} />
         </TabsContent>
       </Tabs>
     </div>
