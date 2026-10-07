@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ContactClickTracker } from "@/components/analytics/contact-click-tracker";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
@@ -121,7 +122,7 @@ export default async function PublicLayout({
 
       <footer className="bg-primary text-primary-foreground">
         <div className="mx-auto max-w-6xl px-6 py-12 sm:px-8">
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-3 lg:grid-cols-[3fr_2fr_2fr]">
             <div className="flex flex-col gap-2">
               <p className="font-heading text-lg font-semibold">
                 TravelSentro
@@ -129,6 +130,17 @@ export default async function PublicLayout({
               <p className="text-sm text-primary-foreground/80">
                 Built for Business. Ready for Travelers.
               </p>
+              {/* Dark-footer variant of /2026_registration.png: navy text
+                  recolored white, QR on its own white tile so it stays
+                  scannable. */}
+              <Image
+                src="/2026_registration_dark.png"
+                alt="BIR Registered 2026 — RSN 044RC20260000012881"
+                width={2918}
+                height={906}
+                sizes="(min-width: 640px) 448px, 100vw"
+                className="mt-4 h-auto w-full max-w-md"
+              />
             </div>
 
             <div className="flex flex-col gap-2 text-sm">
