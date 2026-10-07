@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { PackageCard } from "@/components/packages/package-card";
 import { PackagesPagination } from "@/components/packages/pagination";
+import { PackageSearch } from "@/components/packages/package-search";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { MONTH_OPTIONS } from "@/lib/months";
@@ -14,6 +15,21 @@ import { buildPageMetadata } from "@/lib/seo/page-metadata";
 import type { Database } from "@/types/database";
 
 const PAGE_SIZE = 6;
+const MAX_QUERY_LENGTH = 100;
+
+/** Escapes LIKE wildcards so a typed "%" or "_" matches literally. PostgREST
+ * also treats "*" as a wildcard alias in like/ilike, so it's dropped. */
+function toIlikePattern(query: string): string {
+  const escaped = query.replace(/\*/g, "").replace(/[\\%_]/g, "\\$&");
+  return `%${escaped}%`;
+}
+
+/** Wraps a value in double quotes for a PostgREST .or() filter string, so
+ * user text containing commas/parens/dots can't break out of its condition.
+ * Inside quotes PostgREST treats backslash as an escape for `"` and `\`. */
+function quoteOrValue(value: string): string {
+  return `"${value.replace(/[\\"]/g, "\\$&")}"`;
+}
 
 /** First/last day of the given month as "YYYY-MM-DD" strings (UTC-based, no
  * timezone drift), used to match package_travel_dates.travel_date_from
@@ -35,6 +51,7 @@ type PackagesSearchParams = {
   month?: string;
   year?: string;
   page?: string;
+  q?: string;
 };
 
 /** Normalizes the raw query string into the filters this page acts on --
@@ -43,6 +60,10 @@ type PackagesSearchParams = {
 function parseFilters(params: PackagesSearchParams) {
   const { destination: destinationSlug, month: monthParam, year: yearParam } =
     params;
+
+  // Blank/whitespace-only queries (e.g. submitting an empty search box) are
+  // treated as no search at all.
+  const query = params.q?.trim().slice(0, MAX_QUERY_LENGTH) || null;
 
   // An invalid/missing page (non-integer, < 1) silently falls back to page 1
   // rather than erroring — same "ignore, don't break" treatment as the
@@ -78,7 +99,13 @@ function parseFilters(params: PackagesSearchParams) {
     yearNum,
     hasDateFilter,
     monthYearLabel,
-    hasAnyFilter: Boolean(destinationSlug) || hasDateFilter,
+    query,
+    hasAnyFilter: Boolean(destinationSlug) || hasDateFilter || Boolean(query),
+    // The search box is only offered on the plain /packages listing -- any
+    // destination/month/year param (e.g. arriving from the homepage hero
+    // search) hides it. Its own `q` and `page` params don't count, so the
+    // box stays put while browsing search results.
+    showSearch: !destinationSlug && !monthParam && !yearParam,
   };
 }
 
@@ -99,17 +126,20 @@ const getDestinationName = cache(async (slug: string) => {
 });
 
 /** A natural-language description of the active search, e.g. "a Palawan
- * trip in August 2026", "a Palawan trip", "a trip in August 2026", or null
- * when no filter is active. */
+ * trip in August 2026", "a Palawan trip", "a trip in August 2026",
+ * "“El Nido”", or null when no filter is active. */
 function describeSearch(
   destinationName: string | null,
-  monthYearLabel: string | null
+  monthYearLabel: string | null,
+  query: string | null = null
 ): string | null {
+  let base: string | null = null;
   if (destinationName && monthYearLabel)
-    return `a ${destinationName} trip in ${monthYearLabel}`;
-  if (destinationName) return `a ${destinationName} trip`;
-  if (monthYearLabel) return `a trip in ${monthYearLabel}`;
-  return null;
+    base = `a ${destinationName} trip in ${monthYearLabel}`;
+  else if (destinationName) base = `a ${destinationName} trip`;
+  else if (monthYearLabel) base = `a trip in ${monthYearLabel}`;
+  if (!query) return base;
+  return base ? `${base} matching “${query}”` : `“${query}”`;
 }
 
 export async function generateMetadata({
@@ -117,7 +147,7 @@ export async function generateMetadata({
 }: {
   searchParams: Promise<PackagesSearchParams>;
 }): Promise<Metadata> {
-  const { destinationSlug, monthYearLabel, pageNum, hasAnyFilter } =
+  const { destinationSlug, monthYearLabel, query, pageNum, hasAnyFilter } =
     parseFilters(await searchParams);
 
   // Filtered views are internal search results -- an open-ended set of
@@ -129,7 +159,7 @@ export async function generateMetadata({
     const destinationName = destinationSlug
       ? await getDestinationName(destinationSlug)
       : null;
-    const title = `Packages for ${describeSearch(destinationName, monthYearLabel)}`;
+    const title = `Packages for ${describeSearch(destinationName, monthYearLabel, query)}`;
     return {
       ...buildPageMetadata({
         title,
@@ -172,7 +202,9 @@ export default async function PackagesPage({
     yearNum,
     hasDateFilter,
     monthYearLabel,
+    query,
     hasAnyFilter,
+    showSearch,
   } = parseFilters(await searchParams);
   const supabase = await createClient();
 
@@ -204,27 +236,47 @@ export default async function PackagesPage({
       "package_travel_dates!inner(travel_date_from, travel_date_to)"
     );
 
-  let query = supabase
+  let dbQuery = supabase
     .from("packages")
     .select(selectParts.join(", "), { count: "exact" })
     .eq("is_published", true);
 
   if (destinationSlug) {
-    query = query
+    dbQuery = dbQuery
       .eq("destinations.slug", destinationSlug)
       .eq("destinations.is_active", true);
   }
 
   if (hasDateFilter) {
     const { from, to } = monthDateRange(yearNum, monthNum);
-    query = query
+    dbQuery = dbQuery
       .gte("package_travel_dates.travel_date_from", from)
       .lte("package_travel_dates.travel_date_from", to);
   }
 
+  if (query) {
+    const pattern = toIlikePattern(query);
+
+    // PostgREST can't OR a parent column with an embedded table's column in
+    // one filter, so matching destinations are resolved to ids first and the
+    // package filter becomes "name matches OR destination is one of these".
+    // is_active = true for the same reason as the destination filter above.
+    const { data: matchingDestinations } = await supabase
+      .from("destinations")
+      .select("id")
+      .ilike("name", pattern)
+      .eq("is_active", true);
+    const destinationIds = (matchingDestinations ?? []).map((d) => d.id);
+
+    const conditions = [`name.ilike.${quoteOrValue(pattern)}`];
+    if (destinationIds.length > 0)
+      conditions.push(`destination_id.in.(${destinationIds.join(",")})`);
+    dbQuery = dbQuery.or(conditions.join(","));
+  }
+
   // Featured packages lead, then newest first. (The admin panel no longer
   // exposes manual drag-ordering, so `sort_order` is no longer authored.)
-  const { data: packages, error, count } = await query
+  const { data: packages, error, count } = await dbQuery
     .order("is_featured", { ascending: false })
     .order("created_at", { ascending: false })
     .range((pageNum - 1) * PAGE_SIZE, pageNum * PAGE_SIZE - 1);
@@ -244,10 +296,14 @@ export default async function PackagesPage({
 
   // Reused for the heading, the empty-state copy, and the pre-filled
   // inquiry message.
-  const searchDescription = describeSearch(destinationName, monthYearLabel);
+  const searchDescription = describeSearch(
+    destinationName,
+    monthYearLabel,
+    query
+  );
   const totalPages = Math.max(Math.ceil((count ?? 0) / PAGE_SIZE), 1);
 
-  // Preserves the active destination/month/year filters across page links —
+  // Preserves the active destination/month/year/search filters across page links —
   // `page` is only included once it's not the default, so page-1 URLs stay
   // clean (matches how `/packages` with no filters has no query string).
   function buildPageHref(page: number): string {
@@ -255,6 +311,7 @@ export default async function PackagesPage({
     if (destinationSlug) params.set("destination", destinationSlug);
     if (monthParam) params.set("month", monthParam);
     if (yearParam) params.set("year", yearParam);
+    if (query) params.set("q", query);
     if (page > 1) params.set("page", String(page));
     const qs = params.toString();
     return qs ? `/packages?${qs}` : "/packages";
@@ -263,24 +320,38 @@ export default async function PackagesPage({
   return (
     <ViewTransition enter="slide-up" default="none">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8 lg:py-16">
-        {rows.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
-              {searchDescription
-                ? `Packages for ${searchDescription}`
-                : "Tour Packages"}
-            </h1>
-            <p className="max-w-xl text-base leading-[1.5] text-muted-foreground">
-              Browse our tour packages and reach out on WhatsApp or Facebook
-              to start planning your trip.
-            </p>
-            {hasAnyFilter ? (
-              <Link
-                href="/packages"
-                className="w-fit text-sm text-primary underline underline-offset-2"
-              >
-                Clear filter
-              </Link>
+        {/* Heading left, search right on desktop; stacked on mobile. The
+            search's lg:ml-auto keeps it right-aligned even when the heading
+            is hidden (empty results). */}
+        {rows.length > 0 || showSearch ? (
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            {rows.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
+                  {searchDescription
+                    ? `Packages for ${searchDescription}`
+                    : "Tour Packages"}
+                </h1>
+                <p className="max-w-xl text-base leading-[1.5] text-muted-foreground">
+                  Browse our tour packages and reach out on WhatsApp or Facebook
+                  to start planning your trip.
+                </p>
+                {hasAnyFilter ? (
+                  <Link
+                    href="/packages"
+                    className="w-fit text-sm text-primary underline underline-offset-2"
+                  >
+                    Clear filter
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
+
+            {showSearch ? (
+              <PackageSearch
+                defaultQuery={query ?? undefined}
+                className="lg:ml-auto lg:max-w-md lg:shrink-0"
+              />
             ) : null}
           </div>
         ) : null}

@@ -127,7 +127,7 @@ photoUrl, durationLabel, pricePerPax, discountAmount) and renders
 - On mount: reads `sessionStorage.getItem("ts-upsell-seen")`. If already
   set, does nothing — the popup only ever shows once per browser session,
   full stop, regardless of how it was previously closed. If unset, starts
-  a ~1.5s `setTimeout`, then on fire: shuffles `items` (Fisher–Yates) into
+  a ~5s `setTimeout`, then on fire: shuffles `items` (Fisher–Yates) into
   local state, sets the sessionStorage flag, and opens the dialog. The
   `setTimeout` is cleared on unmount, so React Strict Mode's dev-only
   double-mount doesn't double-fire it.
@@ -165,7 +165,7 @@ server, per this project's standard practice for frontend changes:
 - Admin can add/remove packages in the new tab; popup reflects changes
   immediately across multiple public routes (not just `/`) after the
   `revalidatePath("/", "layout")` call.
-- Fresh session: popup opens ~1.5s after first load, on any public route
+- Fresh session: popup opens ~5s after first load, on any public route
   (home, packages list, package detail, contact).
 - Does **not** reopen on client-side `Link` navigation within the same
   session; does reopen in a new tab / after clearing sessionStorage.

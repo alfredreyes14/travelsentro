@@ -12,7 +12,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 const SESSION_STORAGE_KEY = "ts-upsell-seen";
-const OPEN_DELAY_MS = 1500;
+const OPEN_DELAY_MS = 5000;
 const PAGE_SIZE = 3;
 
 // Literal class strings (not interpolated) so Tailwind picks them up.
