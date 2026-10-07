@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MetaPixel } from "@/components/analytics/meta-pixel";
 import { SiteHeader } from "@/components/layout/site-header";
 import {
   UpsellPopup,
@@ -236,6 +237,7 @@ export default async function PublicLayout({
       </footer>
 
       <UpsellPopup items={upsellItems} />
+      <MetaPixel />
     </>
   );
 }
