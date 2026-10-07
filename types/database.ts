@@ -23,6 +23,24 @@ export type Database = {
   };
   public: {
     Tables: {
+      booking_terms: {
+        Row: {
+          content: string;
+          id: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          content?: string;
+          id?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          content?: string;
+          id?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       contacts: {
         Row: {
           created_at: string;

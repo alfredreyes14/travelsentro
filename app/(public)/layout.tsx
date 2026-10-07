@@ -25,6 +25,7 @@ const FOOTER_LINKS = [
   { href: "/packages", label: "Packages" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact Us" },
+  { href: "/booking-terms", label: "Booking Terms" },
   { href: "/privacy-policy", label: "Privacy Policy" },
 ];
 

@@ -11,6 +11,10 @@ import {
 import { TestimonialsList } from "@/components/admin/content/testimonials-list";
 import { FaqsList } from "@/components/admin/content/faqs-list";
 import type { FaqRecord } from "@/components/admin/content/faq-form";
+import {
+  BookingTermsForm,
+  type BookingTermsRecord,
+} from "@/components/admin/content/booking-terms-form";
 import type { TestimonialRecord } from "@/components/admin/content/testimonial-form";
 import {
   UpsellItemsList,
@@ -62,6 +66,7 @@ export default async function AdminContentPage() {
     { data: upsellItemRows, error: upsellItemsError },
     { data: publishedPackageRows, error: publishedPackagesError },
     { data: faqRows, error: faqsError },
+    { data: bookingTermsRow, error: bookingTermsError },
   ] = await Promise.all([
     supabase
       .from("hero_slides")
@@ -82,6 +87,7 @@ export default async function AdminContentPage() {
       .is("deleted_at", null)
       .order("name"),
     supabase.from("faqs").select("*").order("sort_order", { ascending: true }),
+    supabase.from("booking_terms").select("content, updated_at").maybeSingle(),
   ]);
 
   if (heroSlidesError) {
@@ -102,6 +108,9 @@ export default async function AdminContentPage() {
 
   if (faqsError) {
     console.error("Failed to load FAQs:", faqsError.message);
+  }
+  if (bookingTermsError) {
+    console.error("Failed to load booking terms:", bookingTermsError.message);
   }
 
   const heroSlides: HeroSlideListItem[] = (heroSlideRows ?? []).map((row) => ({
@@ -125,6 +134,11 @@ export default async function AdminContentPage() {
     answer: row.answer,
     isPublished: row.is_published,
   }));
+
+  const bookingTerms: BookingTermsRecord = {
+    content: bookingTermsRow?.content ?? "",
+    updatedAt: bookingTermsRow?.updated_at ?? null,
+  };
 
   // Unlike the public anon client, an authenticated can_manage_packages
   // session's `packages` RLS policy ("manage_packages can read all
@@ -168,7 +182,7 @@ export default async function AdminContentPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Site Content"
-        description="Manage the hero carousel, homepage sections, and FAQs — changes go live on the public site immediately."
+        description="Manage the hero carousel, homepage sections, FAQs, and booking terms — changes go live on the public site immediately."
       />
 
       <Tabs defaultValue="hero-slides">
@@ -177,6 +191,7 @@ export default async function AdminContentPage() {
           <TabsTrigger value="testimonials">{"Testimonials"}</TabsTrigger>
           <TabsTrigger value="upsell-popup">{"Upsell Popup"}</TabsTrigger>
           <TabsTrigger value="faqs">{"FAQs"}</TabsTrigger>
+          <TabsTrigger value="booking-terms">{"Booking Terms"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="hero-slides" keepMounted className="pt-4">
@@ -196,6 +211,10 @@ export default async function AdminContentPage() {
 
         <TabsContent value="faqs" keepMounted className="pt-4">
           <FaqsList initialItems={faqs} />
+        </TabsContent>
+
+        <TabsContent value="booking-terms" keepMounted className="pt-4">
+          <BookingTermsForm initialTerms={bookingTerms} />
         </TabsContent>
       </Tabs>
     </div>
