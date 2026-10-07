@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { ContactClickTracker } from "@/components/analytics/contact-click-tracker";
+import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { MetaPixel } from "@/components/analytics/meta-pixel";
 import { SiteHeader } from "@/components/layout/site-header";
 import {
@@ -238,6 +240,8 @@ export default async function PublicLayout({
 
       <UpsellPopup items={upsellItems} />
       <MetaPixel />
+      <GoogleAnalytics />
+      <ContactClickTracker />
     </>
   );
 }

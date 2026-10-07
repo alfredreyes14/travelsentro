@@ -18,7 +18,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { trackMetaEvent } from "@/lib/analytics/meta-pixel";
+import { trackLead } from "@/lib/analytics/events";
 
 // Touch-friendly sizing (44px min) for this form specifically — the shared
 // Input/Button primitives default shorter (h-8/h-9) for density-first admin
@@ -78,7 +78,7 @@ export function InquiryForm({
 
       if (res.ok && result.ok) {
         toast.success("Inquiry sent! We'll get back to you soon.");
-        trackMetaEvent("Lead", packageName ? { content_name: packageName } : undefined);
+        trackLead(packageName);
         form.reset();
         setRequestId(crypto.randomUUID());
       } else {
