@@ -15,7 +15,38 @@ import {
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
+const UNSAVED_PACKAGE_ERROR =
+  "Save this package before publishing or featuring it.";
+
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * Rejects publishing/featuring a package that has never been saved.
+ * createDraftPackage leaves destination_id unset and every save requires
+ * one, so a null destination_id is what "never saved" means (the same test
+ * as isUnsavedDraft on the edit page). Turning either flag OFF is always
+ * allowed, so callers only run this when switching one on.
+ */
+async function ensureSavedBeforeGoingLive(
+  supabase: SupabaseServerClient,
+  packageId: string
+): Promise<ActionResult> {
+  const { data, error } = await supabase
+    .from("packages")
+    .select("destination_id")
+    .eq("id", packageId)
+    .single();
+
+  if (error || !data) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  if (data.destination_id === null) {
+    return { ok: false, error: UNSAVED_PACKAGE_ERROR };
+  }
+
+  return { ok: true };
+}
 
 /**
  * Atomically replaces a package's itinerary_days/package_inclusions/
@@ -119,10 +150,10 @@ export async function createDraftPackage(): Promise<void> {
 
 /**
  * Updates a package's full Details/Travel Dates/Itinerary/Inclusions
- * content -- the only save path now that every package gets a real id at
- * creation time (see createDraftPackage). Never touches
- * is_published/is_featured/sort_order -- those stay 02-04's concern only
- * (publish/feature switches, drag-reorder).
+ * content plus its Published/Featured flags -- the only save path now that
+ * every package gets a real id at creation time (see createDraftPackage).
+ * Never touches sort_order. The list page's per-row switches still go
+ * through publishPackage/featurePackage.
  */
 export async function updatePackage(
   id: string,
@@ -137,6 +168,15 @@ export async function updatePackage(
 
   const supabase = await createClient();
 
+  // Checked against the row as it is BEFORE this save, so a package's first
+  // save can't also publish/feature it.
+  if (parsed.data.isPublished || parsed.data.isFeatured) {
+    const savedCheck = await ensureSavedBeforeGoingLive(supabase, id);
+    if (!savedCheck.ok) {
+      return savedCheck;
+    }
+  }
+
   const { data: updated, error: updateError } = await supabase
     .from("packages")
     .update({
@@ -146,10 +186,21 @@ export async function updatePackage(
       duration_label: parsed.data.durationLabel,
       destination_id: parsed.data.destinationId,
       remarks: parsed.data.remarks || null,
+      is_published: parsed.data.isPublished,
+      is_featured: parsed.data.isFeatured,
     })
     .eq("id", id)
     .select("slug, name")
     .single();
+
+  // Postgres check_violation — packages_destination_required_if_published.
+  // packageFormSchema already requires a destination, so this is a backstop.
+  if (updateError?.code === "23514") {
+    return {
+      ok: false,
+      error: "Assign a destination to this package before publishing it.",
+    };
+  }
 
   if (updateError || !updated) {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
@@ -168,6 +219,32 @@ export async function updatePackage(
   // package's live price/discount in the shared (public)/layout.tsx, which
   // wraps every public route.
   revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+/**
+ * Discards a package the admin started adding but never saved (the Cancel
+ * button on the Add Package form). Only a never-saved draft -- destination
+ * still null, see isUnsavedDraft on the edit page -- is soft-deleted; if the
+ * package has been saved since the page loaded, it's left alone and this
+ * still succeeds, since the admin only asked to leave the form.
+ */
+export async function discardDraftPackage(id: string): Promise<ActionResult> {
+  await requirePermission("can_manage_packages");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("packages")
+    .update({ deleted_at: new Date().toISOString(), is_published: false })
+    .eq("id", id)
+    .is("destination_id", null)
+    .is("deleted_at", null);
+
+  if (error) {
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  revalidatePath("/admin/packages");
   return { ok: true };
 }
 
@@ -208,6 +285,14 @@ export async function publishPackage(
   await requirePermission("can_manage_packages");
 
   const supabase = await createClient();
+
+  if (isPublished) {
+    const savedCheck = await ensureSavedBeforeGoingLive(supabase, id);
+    if (!savedCheck.ok) {
+      return savedCheck;
+    }
+  }
+
   const { data, error } = await supabase
     .from("packages")
     .update({ is_published: isPublished })
@@ -240,6 +325,14 @@ export async function featurePackage(
   await requirePermission("can_manage_packages");
 
   const supabase = await createClient();
+
+  if (isFeatured) {
+    const savedCheck = await ensureSavedBeforeGoingLive(supabase, id);
+    if (!savedCheck.ok) {
+      return savedCheck;
+    }
+  }
+
   const { data, error } = await supabase
     .from("packages")
     .update({ is_featured: isFeatured })

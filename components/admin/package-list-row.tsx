@@ -36,6 +36,10 @@ import { TableCell, TableRow } from "@/components/ui/table";
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
+// An unsaved draft can only have its switches turned OFF (e.g. a draft that
+// was flagged before this rule existed) -- never on.
+const UNSAVED_HINT = "Save this package before publishing or featuring it.";
+
 export function PackageListRow({
   item,
   onMutated,
@@ -127,21 +131,27 @@ export function PackageListRow({
           {item.travelWindowLabel}
         </TableCell>
         <TableCell>
-          <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2"
+            title={item.isUnsavedDraft ? UNSAVED_HINT : undefined}
+          >
             <Switch
               checked={isPublished}
               onCheckedChange={handlePublishChange}
-              disabled={isPending}
+              disabled={isPending || (item.isUnsavedDraft && !isPublished)}
             />
             <span className="text-sm text-muted-foreground">Published</span>
           </div>
         </TableCell>
         <TableCell>
-          <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2"
+            title={item.isUnsavedDraft ? UNSAVED_HINT : undefined}
+          >
             <Switch
               checked={isFeatured}
               onCheckedChange={handleFeatureChange}
-              disabled={isPending}
+              disabled={isPending || (item.isUnsavedDraft && !isFeatured)}
             />
             <span className="text-sm text-muted-foreground">Featured</span>
           </div>

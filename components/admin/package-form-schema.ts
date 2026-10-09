@@ -8,6 +8,8 @@ import {
 export const packageFormSchema = itineraryContentSchema.extend({
   name: z.string().min(1, "Please enter a package name"),
   destinationId: z.string().min(1, "Please select a destination"),
+  isPublished: z.boolean(),
+  isFeatured: z.boolean(),
 });
 
 export type PackageFormValues = z.infer<typeof packageFormSchema>;
@@ -26,4 +28,6 @@ export const EMPTY_DEFAULTS: PackageFormValues = {
   ...EMPTY_ITINERARY_CONTENT,
   name: "",
   destinationId: "",
+  isPublished: false,
+  isFeatured: false,
 };

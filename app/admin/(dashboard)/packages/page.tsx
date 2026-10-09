@@ -38,6 +38,11 @@ export type AdminPackageListItem = {
   name: string;
   isPublished: boolean;
   isFeatured: boolean;
+  /**
+   * Never saved (still no destination -- see createDraftPackage). Can't be
+   * published or featured until it is.
+   */
+  isUnsavedDraft: boolean;
   destinationName: string | null;
   /** Sorted ascending by `from`; drives the travel-date range filter. */
   travelDates: AdminPackageTravelDate[];
@@ -130,6 +135,7 @@ export default async function AdminPackagesPage() {
       name: pkg.name,
       isPublished: pkg.is_published,
       isFeatured: pkg.is_featured,
+      isUnsavedDraft: pkg.destination_id === null,
       destinationName: pkg.destinations?.name ?? null,
       travelDates,
       travelWindowLabel: formatTravelWindow(travelDates),

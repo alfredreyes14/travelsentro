@@ -98,12 +98,6 @@ export default async function EditPackagePage({
       ? [...activeDestinations, currentDestination]
       : activeDestinations;
 
-  const defaultValues: Partial<PackageFormValues> = {
-    ...packageRowToContentValues(pkg),
-    name: pkg.name,
-    destinationId: pkg.destination_id ?? "",
-  };
-
   // createDraftPackage inserts with destination_id unset, and updatePackage
   // can't succeed without one (packageFormSchema requires destinationId).
   // So a null destination means this package has never been saved -- i.e.
@@ -111,10 +105,25 @@ export default async function EditPackagePage({
   // offered.
   const isUnsavedDraft = pkg.destination_id === null;
 
+  const defaultValues: Partial<PackageFormValues> = {
+    ...packageRowToContentValues(pkg),
+    name: pkg.name,
+    destinationId: pkg.destination_id ?? "",
+    // An unsaved draft can't be published/featured (the form disables both
+    // switches until the first save), so always start it from off --
+    // otherwise a draft flagged before this rule existed would show a
+    // locked-on switch and its first save would be rejected.
+    isPublished: isUnsavedDraft ? false : pkg.is_published,
+    isFeatured: isUnsavedDraft ? false : pkg.is_featured,
+  };
+
   return (
     <PosterImportProvider>
       <div className="flex flex-col gap-6">
-        <PageHeader title="Edit Package" description={`${pkg.name} · ${pkg.slug}`}>
+        <PageHeader
+          title={isUnsavedDraft ? "Add Package" : "Edit Package"}
+          description={`${pkg.name} · ${pkg.slug}`}
+        >
           <div className="flex flex-wrap items-center gap-3">
             {isUnsavedDraft ? <PosterImportButton /> : null}
             <Button
@@ -134,6 +143,7 @@ export default async function EditPackagePage({
           defaultValues={defaultValues}
           initialPhotos={photos}
           destinations={destinationOptions}
+          isUnsavedDraft={isUnsavedDraft}
         />
       </div>
     </PosterImportProvider>
