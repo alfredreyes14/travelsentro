@@ -29,6 +29,7 @@ import {
 } from "@/actions/package-photos";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
+import { prepareWatermarkCheckImage } from "@/lib/images/prepare-watermark-check-image";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -173,6 +174,7 @@ export function PhotoManager({
           name: file.name,
           type: file.type,
           base64: await readFileAsBase64(file),
+          checkImage: await prepareWatermarkCheckImage(file),
         }))
       );
 
@@ -189,6 +191,11 @@ export function PhotoManager({
         if (result.ok) {
           setPhotos((current) => [...current, ...(result.photos ?? [])]);
           succeededCount += 1;
+        } else if (result.watermarked) {
+          // Its own toast, so the admin knows which photo to replace and why.
+          toast.error(`Couldn't upload ${file.name}`, {
+            description: result.error,
+          });
         } else {
           failedNames.push(file.name);
         }
@@ -276,7 +283,9 @@ export function PhotoManager({
           className="text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-secondary-foreground"
         />
         {isUploading ? (
-          <p className="text-sm text-muted-foreground">Uploading...</p>
+          <p className="text-sm text-muted-foreground">
+            Checking and uploading...
+          </p>
         ) : null}
       </div>
 

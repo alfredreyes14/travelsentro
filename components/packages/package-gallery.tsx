@@ -46,18 +46,23 @@ const MAX_VISIBLE_PHOTOS = 5;
 export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
   const [open, setOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [zoom, setZoom] = useState(MIN_ZOOM);
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
 
   // Reset zoom when the reader pages to a different photo inside the
   // lightbox (arrow buttons, swipe, or arrow keys) -- a zoom level chosen
-  // for one poster rarely makes sense for the next.
+  // for one poster rarely makes sense for the next. Also tracks which slide
+  // is showing so only that slide sizes the lightbox (see CarouselItem).
   useEffect(() => {
     if (!carouselApi) return;
-    const reset = () => setZoom(MIN_ZOOM);
-    carouselApi.on("select", reset);
+    const onSelect = () => {
+      setZoom(MIN_ZOOM);
+      setActiveIndex(carouselApi.selectedScrollSnap());
+    };
+    carouselApi.on("select", onSelect);
     return () => {
-      carouselApi.off("select", reset);
+      carouselApi.off("select", onSelect);
     };
   }, [carouselApi]);
 
@@ -102,6 +107,7 @@ export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
               type="button"
               onClick={() => {
                 setSelectedIndex(index);
+                setActiveIndex(index);
                 setZoom(MIN_ZOOM);
                 setOpen(true);
               }}
@@ -223,7 +229,16 @@ export function PackageGallery({ photos }: { photos: GalleryPhoto[] }) {
           >
             <CarouselContent>
               {photos.map((photo, index) => (
-                <CarouselItem key={photo.url}>
+                <CarouselItem
+                  key={photo.url}
+                  // Embla's flex track is as tall as its tallest slide, so
+                  // one full-height poster would leave a landscape photo
+                  // sitting on a tall band of empty dialog. Collapsing the
+                  // off-screen slides to h-0 lets only the visible slide
+                  // set the height; their content still overflows and is
+                  // clipped by the carousel viewport mid-swipe.
+                  className={cn(index !== activeIndex && "h-0")}
+                >
                   {/*
                    * These "photos" are usually full-height itinerary
                    * posters, not landscape snapshots -- a fixed aspect-ratio

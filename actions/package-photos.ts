@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { packagePath } from "@/lib/packages/package-url";
 import { uploadObject, deleteObject } from "@/lib/storage/r2-client";
+import { checkImageForWatermark } from "@/lib/packages/watermark-check";
 import type { ActionResult } from "@/lib/action-result";
 
 const GENERIC_ERROR_MESSAGE =
@@ -15,6 +16,12 @@ export type UploadPhotoInput = {
   name: string;
   type: string;
   base64: string;
+  /**
+   * Downscaled copy used only for the watermark check, sent when the
+   * original is too large (or an unsupported type) for the vision API's
+   * inline-image limit. Omitted when the original can be checked as-is.
+   */
+  checkImage?: { type: string; base64: string };
 };
 
 export type UploadedPhoto = {
@@ -40,7 +47,7 @@ function extensionFromMimeType(type: string): string {
 export async function uploadPhotos(
   packageId: string,
   files: UploadPhotoInput[]
-): Promise<ActionResult & { photos?: UploadedPhoto[] }> {
+): Promise<ActionResult & { photos?: UploadedPhoto[]; watermarked?: boolean }> {
   // AUTH-05 — gate independent of D-13's nav hiding. This is now the sole
   // authorization check on this write path: images live on R2, accessed via
   // a single full-access credential rather than per-request Storage RLS, so
@@ -63,6 +70,25 @@ export async function uploadPhotos(
 
   if (pkgError || !pkg) {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  // Reject third-party watermarked photos (stock sites, other agencies)
+  // before anything is written, so a rejection never leaves part of the
+  // batch uploaded. Fails open -- see checkImageForWatermark.
+  for (const file of files) {
+    const watermark = await checkImageForWatermark({
+      base64: file.checkImage?.base64 ?? file.base64,
+      mimeType: file.checkImage?.type ?? file.type,
+    });
+    if (watermark.status === "watermarked") {
+      return {
+        ok: false,
+        watermarked: true,
+        error: watermark.description
+          ? `This photo appears to have a watermark (${watermark.description}). Please upload a photo without third-party watermarks.`
+          : "This photo appears to have a watermark. Please upload a photo without third-party watermarks.",
+      };
+    }
   }
 
   const { data: existingPhotos, error: existingError } = await supabase

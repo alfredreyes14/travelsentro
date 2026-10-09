@@ -43,6 +43,21 @@ in `.env.local`):
 
     npm run verify:poster-extraction:live -- ./poster.jpg
 
+### Package photo watermark check (Claude vision)
+
+Every photo uploaded on the package Photos tab is checked for third-party
+watermarks (stock-photo marks, photographer copyrights, other agencies'
+logos or handles) before it is stored; watermarked photos are rejected with
+a toast naming what was found. TravelSentro's own logo is allowed.
+
+| Variable | Required | Default | Notes |
+|---|---|---|---|
+| `ANTHROPIC_API_KEY` | yes | — | Shared with poster import. |
+| `WATERMARK_CHECK_MODEL` | no | `claude-opus-5-5` | Must accept `output_config.effort` (so not `claude-haiku-4-5`). |
+
+The check fails open: if it can't run (no key, out of credits, API error),
+the photo uploads anyway and the reason is logged server-side.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
