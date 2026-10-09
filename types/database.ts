@@ -726,6 +726,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      visa_services: {
+        Row: {
+          country: string;
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_published: boolean;
+          photo_storage_path: string | null;
+          price: number | null;
+          processing_time: string | null;
+          requirements: string | null;
+          sort_order: number;
+        };
+        Insert: {
+          country: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_published?: boolean;
+          photo_storage_path?: string | null;
+          price?: number | null;
+          processing_time?: string | null;
+          requirements?: string | null;
+          sort_order?: number;
+        };
+        Update: {
+          country?: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_published?: boolean;
+          photo_storage_path?: string | null;
+          price?: number | null;
+          processing_time?: string | null;
+          requirements?: string | null;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
       vouchers: {
         Row: {
           code: string | null;

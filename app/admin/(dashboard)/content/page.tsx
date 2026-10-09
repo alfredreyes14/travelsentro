@@ -11,6 +11,8 @@ import {
 import { TestimonialsList } from "@/components/admin/content/testimonials-list";
 import { FaqsList } from "@/components/admin/content/faqs-list";
 import type { FaqRecord } from "@/components/admin/content/faq-form";
+import { VisaServicesList } from "@/components/admin/content/visa-services-list";
+import type { VisaServiceRecord } from "@/components/admin/content/visa-service-form";
 import {
   BookingTermsForm,
   type BookingTermsRecord,
@@ -67,6 +69,7 @@ export default async function AdminContentPage() {
     { data: publishedPackageRows, error: publishedPackagesError },
     { data: faqRows, error: faqsError },
     { data: bookingTermsRow, error: bookingTermsError },
+    { data: visaServiceRows, error: visaServicesError },
   ] = await Promise.all([
     supabase
       .from("hero_slides")
@@ -88,6 +91,10 @@ export default async function AdminContentPage() {
       .order("name"),
     supabase.from("faqs").select("*").order("sort_order", { ascending: true }),
     supabase.from("booking_terms").select("content, updated_at").maybeSingle(),
+    supabase
+      .from("visa_services")
+      .select("*")
+      .order("sort_order", { ascending: true }),
   ]);
 
   if (heroSlidesError) {
@@ -112,6 +119,9 @@ export default async function AdminContentPage() {
   if (bookingTermsError) {
     console.error("Failed to load booking terms:", bookingTermsError.message);
   }
+  if (visaServicesError) {
+    console.error("Failed to load visa services:", visaServicesError.message);
+  }
 
   const heroSlides: HeroSlideListItem[] = (heroSlideRows ?? []).map((row) => ({
     id: row.id,
@@ -134,6 +144,19 @@ export default async function AdminContentPage() {
     answer: row.answer,
     isPublished: row.is_published,
   }));
+
+  const visaServices: VisaServiceRecord[] = (visaServiceRows ?? []).map(
+    (row) => ({
+      id: row.id,
+      country: row.country,
+      description: row.description,
+      processingTime: row.processing_time,
+      price: row.price,
+      requirements: row.requirements,
+      photoStoragePath: row.photo_storage_path,
+      isPublished: row.is_published,
+    })
+  );
 
   const bookingTerms: BookingTermsRecord = {
     content: bookingTermsRow?.content ?? "",
@@ -182,7 +205,7 @@ export default async function AdminContentPage() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Site Content"
-        description="Manage the hero carousel, homepage sections, FAQs, and booking terms — changes go live on the public site immediately."
+        description="Manage the hero carousel, homepage sections, visa services, FAQs, and booking terms — changes go live on the public site immediately."
       />
 
       <Tabs defaultValue="hero-slides">
@@ -190,6 +213,7 @@ export default async function AdminContentPage() {
           <TabsTrigger value="hero-slides">{"Hero Slides"}</TabsTrigger>
           <TabsTrigger value="testimonials">{"Testimonials"}</TabsTrigger>
           <TabsTrigger value="upsell-popup">{"Upsell Popup"}</TabsTrigger>
+          <TabsTrigger value="visa-services">{"Visa Services"}</TabsTrigger>
           <TabsTrigger value="faqs">{"FAQs"}</TabsTrigger>
           <TabsTrigger value="booking-terms">{"Booking Terms"}</TabsTrigger>
         </TabsList>
@@ -207,6 +231,10 @@ export default async function AdminContentPage() {
             initialItems={upsellItems}
             packageOptions={upsellPackageOptions}
           />
+        </TabsContent>
+
+        <TabsContent value="visa-services" keepMounted className="pt-4">
+          <VisaServicesList initialItems={visaServices} />
         </TabsContent>
 
         <TabsContent value="faqs" keepMounted className="pt-4">

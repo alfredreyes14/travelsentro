@@ -6,6 +6,7 @@ import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { HeroCarousel, type HeroSlideDisplay } from "@/components/homepage/hero-carousel";
 import { HeroSearchBar } from "@/components/homepage/hero-search-bar";import { WhyChooseUs } from "@/components/homepage/why-choose-us";
 import { FeaturedPackagesGrid } from "@/components/homepage/featured-packages-grid";
+import { VisaServicesSection } from "@/components/homepage/visa-services-section";
 import { DestinationsSection } from "@/components/homepage/destinations-section";
 import { TestimonialsSection } from "@/components/homepage/testimonials-section";
 import { PartnerAffiliations } from "@/components/homepage/partner-affiliations";
@@ -61,6 +62,7 @@ export default async function HomePage() {
     { data: featuredData, error: featuredError },
     { data: testimonialsData, error: testimonialsError },
     { data: destinationsData, error: destinationsError },
+    { data: visaServicesData, error: visaServicesError },
   ] = await Promise.all([
     // (1) Hero slides -- plain admin-uploaded images, in carousel order.
     supabase
@@ -89,6 +91,14 @@ export default async function HomePage() {
       .from("destinations")
       .select("*")
       .eq("is_active", true)
+      .order("sort_order", { ascending: true }),
+    // (3.5) Visa services -- admin-managed, shown below Featured Packages.
+    // Public read RLS already scopes this to is_published = true; the
+    // query-layer filter is kept too, same as every other section.
+    supabase
+      .from("visa_services")
+      .select("*")
+      .eq("is_published", true)
       .order("sort_order", { ascending: true }),
   ]);
 
@@ -150,6 +160,27 @@ export default async function HomePage() {
         : null,
     })
   );
+  if (visaServicesError) {
+    console.error("Failed to load visa services:", visaServicesError.message);
+  }
+
+  const visaServices = (visaServicesData ?? []).map(
+    (v: Database["public"]["Tables"]["visa_services"]["Row"]) => ({
+      id: v.id,
+      country: v.country,
+      description: v.description,
+      processingTime: v.processing_time,
+      price: v.price,
+      requirements: (v.requirements ?? "")
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0),
+      photoUrl: v.photo_storage_path
+        ? getPublicImageUrl(v.photo_storage_path)
+        : null,
+    })
+  );
+
   const localDestinations = destinationTiles.filter(
     (d) => d.region === "local"
   );
@@ -195,6 +226,11 @@ export default async function HomePage() {
         <Reveal>
           <FeaturedPackagesGrid items={featuredItems} />
         </Reveal>
+        {visaServices.length > 0 && (
+          <Reveal>
+            <VisaServicesSection services={visaServices} />
+          </Reveal>
+        )}
         <Reveal>
           <DestinationsSection
             local={localDestinations}

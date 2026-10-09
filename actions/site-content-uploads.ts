@@ -17,6 +17,7 @@ const ALLOWED_FOLDERS = [
   "hero-slides",
   "testimonials",
   "destinations",
+  "visa-services",
 ] as const;
 
 export type UploadImageInput = {
@@ -41,7 +42,7 @@ function extensionFromMimeType(type: string): string {
  * afterward and revalidates.
  */
 export async function uploadSiteContentImage(
-  folder: "hero-slides" | "testimonials" | "destinations",
+  folder: (typeof ALLOWED_FOLDERS)[number],
   file: UploadImageInput
 ): Promise<ActionResult & { storagePath?: string }> {
   await requirePermission("can_manage_packages");
