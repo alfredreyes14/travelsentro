@@ -10,6 +10,7 @@ import {
   MapPinIcon,
   TicketIcon,
   FileTextIcon,
+  HandshakeIcon,
 } from "lucide-react";
 
 import { useNavigationGuard } from "./navigation-guard";
@@ -66,6 +67,14 @@ export function AdminNav({
       href: "/admin/packages/destinations",
       label: "Destinations",
       icon: MapPinIcon,
+      show: canManagePackages,
+    },
+    // Homepage brand-partner / corporate-client logos. Reuses
+    // canManagePackages like Content above -- no new permission toggle.
+    {
+      href: "/admin/partners",
+      label: "Partners",
+      icon: HandshakeIcon,
       show: canManagePackages,
     },
     // CRM-03: universal read -- every authenticated Admin/Staff sees
