@@ -125,8 +125,8 @@ It is used in two places so the rule lives once:
   `partners` rows ordered by `sort_order`, splits them by `partner_type`,
   and renders a `PageHeader` ("Partners" / "Manage the Brand Partners and
   Corporate Clients logos shown on the homepage, and where each one
-  links.") over a two-tab `Tabs` (`brand-partners` default,
-  `corporate-clients`), each tab holding one `PartnersList`. Tabs use
+  links.") over a two-tab `Tabs` (tab values are the partner types,
+  `brand_partner` default), each tab holding one `PartnersList`. Tabs use
   `keepMounted` like `/admin/content`.
 - `app/admin/(dashboard)/partners/loading.tsx`: skeleton, matching the
   other module pages.
@@ -135,11 +135,13 @@ It is used in two places so the rule lives once:
 
 - `partner-form-schema.ts` — zod schema:
   - `name`: trimmed, required ("Please enter a name").
-  - `logoStoragePath`: required ("Please upload a logo").
+  - `logoStoragePath`: required ("Please upload a logo"). The form
+    rejects files that are not SVG/PNG/JPG/WebP or are over 2 MB before
+    uploading.
   - `linkUrl`: optional string, validated through `normalizePartnerLink`.
   - `isPublished`: boolean.
-- `partner-form.tsx` — `PartnerForm`, same create/edit dispatch shape as
-  `visa-service-form.tsx`. Takes `partnerType` as a prop (the tab decides
+- `partner-form.tsx` — `PartnerForm`, one component for both add and edit
+  (an optional `partner` prop means edit). Takes `partnerType` as a prop (the tab decides
   the type; it is not a user-editable field). Fields in order: Name, Logo
   (file input, `accept="image/svg+xml,image/png,image/jpeg,image/webp"`,
   preview thumbnail with `object-contain` on a white tile so transparent
@@ -164,7 +166,8 @@ Mirrors `actions/visa-services.ts`. Every action starts with
 
 - `createPartner(partnerType, values)` — validates `partnerType` against
   the two allowed values and `values` against the schema, normalizes the
-  link, appends at `sort_order = count of rows with that partner_type`.
+  link, appends at that partner type's highest `sort_order` + 1 (not a
+  row count, so adding after a delete cannot collide).
 - `updatePartner(id, values)` — same validation; does not change
   `partner_type`.
 - `togglePartnerPublished(id, isPublished)`.
@@ -257,10 +260,12 @@ script does not depend on `public/`:
 | `corporate-clients/sga.svg` | `corporate_client` | SGA |
 | `corporate-clients/paynamics.png` | `corporate_client` | Paynamics |
 
-For each entry: skip if a row with the same `partner_type` and `name`
-already exists (so the script is safe to re-run); otherwise upload to
-`partners/<type>-<basename>` in R2 and insert the row with `link_url`
-null, `is_published` true and `sort_order` in file order. The script
+For each entry: skip if a row already has its storage key, or the same
+`partner_type` and `name` (so the script is safe to re-run, including
+after staff rename a seeded partner); otherwise upload to the fixed key
+`partners/seed-<type>-<basename>` in R2 and insert the row with
+`link_url` null, `is_published` true and `sort_order` after the type's
+current last row. The script
 prints the Supabase host it is about to write to before doing anything.
 
 Names are derived from the filenames; staff rename them and add the
