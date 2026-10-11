@@ -196,6 +196,10 @@ export function PartnersList({
         </div>
       ) : (
         <DndContext
+          // A stable id: dnd-kit otherwise numbers its aria-describedby
+          // from a module-level counter that keeps climbing on the
+          // server, so the server HTML and the client disagree on hydrate.
+          id={`partners-dnd-${partnerType}`}
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
