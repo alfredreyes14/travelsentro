@@ -2,6 +2,7 @@
 
 import { requirePermission } from "@/lib/auth/dal";
 import { uploadObject, deleteObject } from "@/lib/storage/r2-client";
+import { extensionFromMimeType } from "@/lib/storage/image-extension";
 import type { ActionResult } from "@/lib/action-result";
 
 const GENERIC_ERROR_MESSAGE =
@@ -18,6 +19,7 @@ const ALLOWED_FOLDERS = [
   "testimonials",
   "destinations",
   "visa-services",
+  "partners",
 ] as const;
 
 export type UploadImageInput = {
@@ -25,11 +27,6 @@ export type UploadImageInput = {
   type: string;
   base64: string;
 };
-
-function extensionFromMimeType(type: string): string {
-  const subtype = type.split("/")[1];
-  return subtype ? subtype.replace("jpeg", "jpg") : "jpg";
-}
 
 /**
  * Uploads a single image to R2 and returns its object key. Unlike
