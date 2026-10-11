@@ -102,9 +102,10 @@ One pure helper, `lib/partners/link.ts`:
   An empty string is valid and yields `url: null`. Input with no scheme
   gets `https://` prepended (so `paynamics.com` becomes
   `https://paynamics.com`). The result is `ok: true` only if it parses
-  with `new URL()`, its protocol is `http:` or `https:`, and its hostname
-  contains a dot; anything else (including `javascript:` and `mailto:`
-  links) is `ok: false`.
+  with `new URL()`, its protocol is `http:` or `https:`, its hostname
+  contains a dot, and it carries no username or password (so an email
+  address such as `info@example.com` is rejected); anything else
+  (including `javascript:` and `mailto:` links) is `ok: false`.
 
 It is used in two places so the rule lives once:
 

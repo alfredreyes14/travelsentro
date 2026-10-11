@@ -2440,13 +2440,13 @@ Expected: clean working tree.
 
 ## Rollout handoff
 
-Do not push. Report this to the user, per environment (`staging` first, then `master`):
+Do not push. The work was executed in the `.worktrees/partners-module` worktree on branch `partners-module` (cut from `staging`), so the pushes below name that branch. Report this to the user, per environment (`staging` first, then `master`):
 
 1. **Push the admin module** — everything up to the `partners-push-a` branch:
    `git push origin partners-push-a:staging`
    The migration applies through the "Supabase migrations" workflow and Vercel deploys. The public site is unchanged.
 2. **Seed** — with `.env.local` pointed at that environment's Supabase project and R2 bucket: `npm run seed:partners`. Expect `4 created, 0 skipped`. Then open `/admin/partners`, rename the four entries and add their website links.
-3. **Push the homepage switch** — `git push origin staging`. The two sections now read from the database.
+3. **Push the homepage switch** — `git push origin partners-module:staging`. The two sections now read from the database. Do not merge the branch as a single pull request: one push would take the four live logos off the homepage until the seed is run.
 4. Delete the marker when both environments are done: `git branch -D partners-push-a`.
 
 If step 3 ever ships before step 2, nothing breaks: the two sections show their "coming soon" placeholder until the seed is run.

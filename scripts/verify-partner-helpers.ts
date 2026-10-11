@@ -33,6 +33,10 @@ const LINK_CASES: ReadonlyArray<{ input: string; expected: string | null }> = [
   { input: "my site.com", expected: "INVALID" },
   { input: "https://", expected: "INVALID" },
   { input: `https://example.com/${"a".repeat(2100)}`, expected: "INVALID" },
+  // An email address or a URL carrying a username is not a website link.
+  { input: "info@paynamics.com", expected: "INVALID" },
+  { input: "https://user:pass@example.com", expected: "INVALID" },
+  { input: "good.com@evil.com", expected: "INVALID" },
 ];
 
 function checkLink(input: string, expected: string | null): CheckResult {

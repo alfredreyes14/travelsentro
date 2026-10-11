@@ -15,8 +15,9 @@ const OTHER_SCHEME = /^[a-z][a-z0-9+.-]*:(?!\d+(\/|$))/i;
  *
  * A blank input is valid and means "no link". A link typed without a
  * scheme gets https:// prepended. Anything that isn't an http(s) address
- * with a dotted hostname is rejected -- the result is rendered as an href
- * on the public homepage, so a javascript: URL must never get through.
+ * with a dotted hostname and no username is rejected -- the result is
+ * rendered as an href on the public homepage, so a javascript: URL must
+ * never get through.
  */
 export function normalizePartnerLink(input: string): PartnerLinkResult {
   const trimmed = input.trim();
@@ -40,6 +41,9 @@ export function normalizePartnerLink(input: string): PartnerLinkResult {
     return { ok: false };
   }
   if (!parsed.hostname.includes(".")) return { ok: false };
+  // "info@example.com" parses as a URL with a username -- an email address
+  // typed into the link field, not a website.
+  if (parsed.username || parsed.password) return { ok: false };
 
   // URL#href always adds a trailing slash to a bare origin; drop it unless
   // the admin typed one, so "paynamics.com" is stored as typed plus scheme.

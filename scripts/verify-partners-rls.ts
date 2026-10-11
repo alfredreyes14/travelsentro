@@ -6,10 +6,15 @@
  * scripts/verify-upsell-rls.ts's CheckResult/PASS-FAIL structure.
  *
  * Run via `npm run verify:partners-rls` with NEXT_PUBLIC_SUPABASE_URL,
- * NEXT_PUBLIC_SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY pointed at a
- * project that has 20261011120000_partners_module.sql applied (the local
- * stack, until it's pushed elsewhere). It inserts and then deletes its own
- * rows, all named with a unique prefix.
+ * NEXT_PUBLIC_SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY pointed at
+ * the local Supabase stack with 20261011120000_partners_module.sql
+ * applied. It inserts and then deletes its own rows, all named with a
+ * unique prefix.
+ *
+ * One fixture row is published, so for a moment it is publicly readable.
+ * `.env.local` points at a hosted project by default, so the script
+ * refuses any host other than the local stack unless `--allow-remote` is
+ * passed.
  */
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/database";
@@ -112,8 +117,18 @@ async function checkBlankNameRejected(service: Client): Promise<CheckResult> {
 }
 
 async function main() {
+  const { host, hostname } = new URL(SUPABASE_URL!);
+  const isLocal = hostname === "127.0.0.1" || hostname === "localhost";
+  if (!isLocal && !process.argv.includes("--allow-remote")) {
+    throw new Error(
+      `Refusing to run against ${host}: this script writes a publicly readable row. ` +
+        "Point NEXT_PUBLIC_SUPABASE_URL and the two keys at the local Supabase stack, " +
+        "or pass --allow-remote if you really mean to use a hosted project."
+    );
+  }
+
   await ensureWebSocketPolyfill();
-  console.log(`\nverify-partners-rls -> ${new URL(SUPABASE_URL!).host}\n`);
+  console.log(`\nverify-partners-rls -> ${host}\n`);
 
   const options = { auth: { persistSession: false } };
   const anon = createClient<Database>(SUPABASE_URL!, SUPABASE_ANON_KEY!, options);
