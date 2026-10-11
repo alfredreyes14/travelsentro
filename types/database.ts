@@ -475,24 +475,30 @@ export type Database = {
         Row: {
           created_at: string;
           id: string;
+          is_published: boolean;
           link_url: string | null;
           logo_storage_path: string;
+          name: string;
           partner_type: string;
           sort_order: number;
         };
         Insert: {
           created_at?: string;
           id?: string;
+          is_published?: boolean;
           link_url?: string | null;
           logo_storage_path: string;
+          name: string;
           partner_type: string;
           sort_order?: number;
         };
         Update: {
           created_at?: string;
           id?: string;
+          is_published?: boolean;
           link_url?: string | null;
           logo_storage_path?: string;
+          name?: string;
           partner_type?: string;
           sort_order?: number;
         };
