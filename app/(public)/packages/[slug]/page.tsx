@@ -259,7 +259,9 @@ export default async function PackageDetailPage({
                   pkg.price_per_pax + pkg.discount_amount
                 ).toLocaleString("en-PH")}
               </span>
-            ) : null}
+            ) : (
+              <span className="text-sm text-muted-foreground">Starts at</span>
+            )}
             <Badge className="h-9 rounded-full px-4 text-[15px] font-bold tabular-nums shadow-sm">
               &#8369;
               {pkg.price_per_pax.toLocaleString("en-PH")} / pax

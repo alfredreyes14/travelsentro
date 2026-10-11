@@ -66,7 +66,7 @@ function VisaServiceCard({ service }: { service: VisaServiceCardData }) {
             )}
             {service.price && (
               <span className="text-muted-foreground">
-                Starting at{" "}
+                Starts at{" "}
                 <span className="font-semibold text-foreground">
                   ₱{service.price.toLocaleString("en-PH")}
                 </span>

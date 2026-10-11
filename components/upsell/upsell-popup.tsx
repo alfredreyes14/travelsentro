@@ -238,12 +238,16 @@ function UpsellCard({ item }: { item: UpsellItemDisplay }) {
         {/* Original + final price alone communicate the discount -- the
             struck-through number is the "was", the bold orange number is
             the "now". No separate savings badge repeating it a third time. */}
-        <div className="mt-auto flex flex-wrap items-baseline gap-x-2">
+        <div className="mt-auto flex flex-col">
           {item.priceOriginal ? (
             <span className="text-xs text-muted-foreground line-through sm:text-sm">
               {item.priceOriginal}
             </span>
-          ) : null}
+          ) : (
+            <span className="text-xs text-muted-foreground sm:text-sm">
+              Starts at
+            </span>
+          )}
           <span className="text-xl font-bold text-secondary sm:text-2xl">
             {item.priceFinal}
           </span>

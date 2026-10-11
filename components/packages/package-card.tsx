@@ -12,8 +12,8 @@ import type { Database } from "@/types/database";
 type PackageRow = Database["public"]["Tables"]["packages"]["Row"];
 
 /**
- * Immersive overlay card: full-bleed photo with name, duration, "₱X / pax"
- * badge, and icon-only WhatsApp/Facebook CTAs sitting over the photo instead
+ * Immersive overlay card: full-bleed photo with name, duration, "Starts at"
+ * label (undiscounted packages only) over a "₱X / pax" badge, and icon-only WhatsApp/Facebook CTAs sitting over the photo instead
  * of a separate white panel. A permanent bottom scrim (fading out by ~55%
  * of the card height) keeps the text legible over bright photos (beaches,
  * skies, snow) — including on mobile where there's no hover — and a deeper
@@ -104,18 +104,25 @@ export function PackageCard({
         </h3>
 
         <div className="flex items-center justify-between gap-2 pt-1">
-          <div className="flex items-center gap-1.5">
-            {price.original ? (
-              <span className="rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white/90 line-through decoration-white/80 backdrop-blur-sm">
-                {price.original}
+          <div className="flex flex-col gap-0.5">
+            {price.original ? null : (
+              <span className="text-xs font-medium text-white/90 text-shadow-md text-shadow-black/50">
+                Starts at
               </span>
-            ) : null}
-            <Badge
-              variant="secondary"
-              className="h-auto px-3 py-1 text-sm font-semibold shadow-md"
-            >
-              {price.final}
-            </Badge>
+            )}
+            <div className="flex items-center gap-1.5">
+              {price.original ? (
+                <span className="rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white/90 line-through decoration-white/80 backdrop-blur-sm">
+                  {price.original}
+                </span>
+              ) : null}
+              <Badge
+                variant="secondary"
+                className="h-auto px-3 py-1 text-sm font-semibold shadow-md"
+              >
+                {price.final}
+              </Badge>
+            </div>
           </div>
 
           <div className="pointer-events-auto flex shrink-0 items-center gap-2">
