@@ -9,6 +9,7 @@
     "lint": "eslint",
     "seed": "tsx --env-file=.env.local scripts/seed.ts",
     "seed:admin": "tsx --env-file=.env.local scripts/seed-admin.ts",
+    "seed:partners": "tsx --env-file=.env.local scripts/seed-partner-logos.ts",
     "verify:permission-denial": "tsx --env-file=.env.local scripts/verify-permission-denial.ts",
     "verify:r2-storage": "tsx --env-file=.env.local scripts/verify-r2-storage.ts",
     "verify:auth-confirm": "tsx --env-file=.env.local scripts/verify-auth-confirm-reachable.ts",
