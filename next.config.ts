@@ -54,10 +54,12 @@ const nextConfig: NextConfig = {
   },
   serverExternalPackages: ["@react-pdf/renderer"],
   // The homepage reads public/logos/** via fs.readdirSync at render time
-  // (lib/logos/read-logo-folder.ts) so partner/client logos can be added by
-  // dropping a file in, with no DB row. Next's file tracer can't see that
-  // dynamic fs call, so without this the folder is missing from the
-  // deployed function and reads silently return [] in production.
+  // (lib/logos/read-logo-folder.ts) so airline and travel-partner logos can
+  // be added by dropping a file in, with no DB row. Next's file tracer
+  // can't see that dynamic fs call, so without this the folder is missing
+  // from the deployed function and reads silently return [] in production.
+  // (Brand partner and corporate client logos are admin-managed and live
+  // in R2, not here.)
   outputFileTracingIncludes: {
     "/": ["public/logos/**/*"],
   },

@@ -1,12 +1,12 @@
-import { FadeImage } from "@/components/motion/fade-image";
+import { PartnerLogo } from "@/components/homepage/partner-logo";
 import type { LogoFile } from "@/lib/logos/read-logo-folder";
 
 /**
- * Homepage Corporate Clients logo band -- sourced straight from
- * public/logos/corporate partners (see read-logo-folder.ts), independently
- * conditional from PartnerAffiliations' own visibility check. Renders a
- * muted placeholder message (rather than disappearing) when the folder has
- * no logos yet.
+ * Homepage Corporate Clients logo band -- admin-managed (/admin/partners,
+ * `partners` rows with partner_type = 'corporate_client'), independently
+ * conditional from PartnerAffiliations' own visibility check. A logo links
+ * to the client's website when one is set. Renders a muted placeholder
+ * message (rather than disappearing) when there are no visible logos yet.
  */
 export function CorporateClients({ logos }: { logos: LogoFile[] }) {
   if (logos.length === 0) {
@@ -40,14 +40,7 @@ export function CorporateClients({ logos }: { logos: LogoFile[] }) {
         </div>
         <div className="flex flex-wrap items-center justify-center gap-12">
           {logos.map((logo) => (
-            <FadeImage
-              key={logo.id}
-              src={logo.src}
-              alt={logo.alt}
-              width={280}
-              height={140}
-              className="h-auto max-h-28 w-auto max-w-64 object-contain"
-            />
+            <PartnerLogo key={logo.id} logo={logo} />
           ))}
         </div>
       </div>

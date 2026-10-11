@@ -13,7 +13,7 @@ import { PartnerAffiliations } from "@/components/homepage/partner-affiliations"
 import { CorporateClients } from "@/components/homepage/corporate-clients";
 import { Reveal } from "@/components/motion/reveal";
 import { GetInTouchSection } from "@/components/inquiry/get-in-touch-section";
-import { readLogoFolder } from "@/lib/logos/read-logo-folder";
+import { readLogoFolder, type LogoFile } from "@/lib/logos/read-logo-folder";
 import { buildPageMetadata } from "@/lib/seo/page-metadata";
 import type { Database } from "@/types/database";
 
@@ -53,9 +53,9 @@ function firstPhotoUrl(photos: PackagePhotoRef[]): string | null {
 export default async function HomePage() {
   const supabase = createPublicClient();
 
-  // All four sections are independent reads (no query depends on another's
-  // result), so they run concurrently instead of as a 4-request waterfall.
-  // Partner/client logos are no longer part of this -- they're read
+  // All sections are independent reads (no query depends on another's
+  // result), so they run concurrently instead of as a request waterfall.
+  // Airline and Travel Partner logos are not part of this -- they're read
   // synchronously from public/logos/** below, not queried from Supabase.
   const [
     { data: rawSlides, error: slidesError },
@@ -63,6 +63,7 @@ export default async function HomePage() {
     { data: testimonialsData, error: testimonialsError },
     { data: destinationsData, error: destinationsError },
     { data: visaServicesData, error: visaServicesError },
+    { data: partnersData, error: partnersError },
   ] = await Promise.all([
     // (1) Hero slides -- plain admin-uploaded images, in carousel order.
     supabase
@@ -98,6 +99,15 @@ export default async function HomePage() {
     supabase
       .from("visa_services")
       .select("*")
+      .eq("is_published", true)
+      .order("sort_order", { ascending: true }),
+    // (5) Brand partners + corporate clients -- admin-managed
+    // (/admin/partners), split by partner_type below. Public read RLS
+    // already scopes this to is_published = true; the query-layer filter
+    // is kept too, same as every other section.
+    supabase
+      .from("partners")
+      .select("id, partner_type, name, logo_storage_path, link_url")
       .eq("is_published", true)
       .order("sort_order", { ascending: true }),
   ]);
@@ -188,13 +198,39 @@ export default async function HomePage() {
     (d) => d.region === "international"
   );
 
-  // Partner/client logos come straight from public/logos/** -- dropping a
-  // new file into one of these folders is enough to make it appear, no DB
-  // row or admin upload step involved.
+  // Airline and Travel Partner logos come straight from public/logos/** --
+  // dropping a new file into one of these folders is enough to make it
+  // appear, no DB row or admin upload step involved.
   const airlineLogos = readLogoFolder("airlines");
   const operatorLogos = readLogoFolder("operators");
-  const brandPartnerLogos = readLogoFolder("brand-partners");
-  const corporateClientLogos = readLogoFolder("corporate partners");
+
+  if (partnersError) {
+    console.error("Failed to load partners:", partnersError.message);
+  }
+
+  type PartnerRow = Pick<
+    Database["public"]["Tables"]["partners"]["Row"],
+    "id" | "partner_type" | "name" | "logo_storage_path" | "link_url"
+  >;
+
+  // The database constraint already guarantees link_url is http(s); the
+  // check is repeated here because this value becomes an href.
+  function partnerLogosOf(partnerType: string): LogoFile[] {
+    return ((partnersData ?? []) as PartnerRow[])
+      .filter((partner) => partner.partner_type === partnerType)
+      .map((partner) => ({
+        id: partner.id,
+        src: getPublicImageUrl(partner.logo_storage_path),
+        alt: partner.name,
+        href:
+          partner.link_url && /^https?:\/\//i.test(partner.link_url)
+            ? partner.link_url
+            : undefined,
+      }));
+  }
+
+  const brandPartnerLogos = partnerLogosOf("brand_partner");
+  const corporateClientLogos = partnerLogosOf("corporate_client");
 
   return (
     <ViewTransition enter="slide-up" default="none">

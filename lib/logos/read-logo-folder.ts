@@ -7,6 +7,8 @@ export type LogoFile = {
   id: string;
   src: string;
   alt: string;
+  /** Set only for admin-managed partner logos that have a website link. */
+  href?: string;
 };
 
 function toAltText(fileName: string): string {
@@ -19,8 +21,9 @@ function toAltText(fileName: string): string {
 /**
  * Reads image files directly out of a public/logos subfolder so dropping a
  * new logo file into the folder is enough to make it appear on the site --
- * no DB row, no admin upload step (per user request, replacing the old
- * Supabase-backed partners table for these homepage sections).
+ * no DB row, no admin upload step. Used for the Airlines and Travel
+ * Partners marquees only; Brand Partners and Corporate Clients are managed
+ * in the admin (/admin/partners) and come from the `partners` table.
  *
  * Next.js's build-time file tracer can't see this dynamic fs.readdir call,
  * so next.config.ts's outputFileTracingIncludes explicitly bundles

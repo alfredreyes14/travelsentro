@@ -1,5 +1,5 @@
-import { FadeImage } from "@/components/motion/fade-image";
 import { LogoMarquee } from "@/components/homepage/logo-marquee";
+import { PartnerLogo } from "@/components/homepage/partner-logo";
 import type { LogoFile } from "@/lib/logos/read-logo-folder";
 
 function LogoGroup({
@@ -23,14 +23,7 @@ function LogoGroup({
       ) : (
         <div className="flex flex-wrap items-center justify-center gap-12">
           {logos.map((logo) => (
-            <FadeImage
-              key={logo.id}
-              src={logo.src}
-              alt={logo.alt}
-              width={280}
-              height={140}
-              className="h-auto max-h-28 w-auto max-w-64 object-contain"
-            />
+            <PartnerLogo key={logo.id} logo={logo} />
           ))}
         </div>
       )}
@@ -40,10 +33,12 @@ function LogoGroup({
 
 /**
  * Homepage Partner Affiliations section -- three independently conditional
- * sub-groups (Airlines, Operators, Brand Partners), each sourced straight
- * from its own public/logos subfolder (see read-logo-folder.ts). Renders a
- * muted placeholder message (rather than disappearing) when no folder has
- * any logos yet, matching CorporateClients' own visibility check.
+ * sub-groups. Airlines and Travel Partners are sourced straight from their
+ * own public/logos subfolders (see read-logo-folder.ts); Brand Partners is
+ * admin-managed (/admin/partners) and its logos link to the partner's
+ * website when one is set. Renders a muted placeholder message (rather
+ * than disappearing) when no group has any logos yet, matching
+ * CorporateClients' own visibility check.
  */
 export function PartnerAffiliations({
   airlines,
