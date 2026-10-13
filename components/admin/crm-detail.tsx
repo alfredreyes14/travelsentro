@@ -34,6 +34,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import type { ContactFormValues } from "@/lib/crm/contact-schema";
+import type { ClientType } from "@/lib/crm/stage";
 import {
   CONTACT_STATUSES,
   STATUS_BADGE_CLASSNAME,
@@ -95,11 +97,17 @@ export function CrmDetail({
   inquiries,
   messages,
   canEdit,
+  clientType,
+  formValues,
+  existingTags,
 }: {
   contact: CrmDetailContact;
   inquiries: CrmDetailInquiry[];
   messages: CrmDetailMessage[];
   canEdit: boolean;
+  clientType: ClientType;
+  formValues: ContactFormValues;
+  existingTags: string[];
 }) {
   const router = useRouter();
   const [status, setStatus] = useState<ContactStatus>(contact.status);
@@ -220,12 +228,15 @@ export function CrmDetail({
               >
                 Edit Contact
               </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
+              <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
                 <DialogHeader>
                   <DialogTitle>Edit Contact</DialogTitle>
                 </DialogHeader>
                 <ContactEditForm
-                  contact={contact}
+                  contactId={contact.id}
+                  clientType={clientType}
+                  defaultValues={formValues}
+                  existingTags={existingTags}
                   onSuccess={() => {
                     setIsEditOpen(false);
                     router.refresh();

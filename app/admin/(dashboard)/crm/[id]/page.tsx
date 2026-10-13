@@ -9,6 +9,8 @@ import {
   type CrmDetailInquiry,
   type CrmDetailMessage,
 } from "@/components/admin/crm-detail";
+import { contactRowToFormValues } from "@/lib/crm/contact-schema";
+import { toClientType } from "@/lib/crm/stage";
 import type { ContactStatus } from "@/lib/crm/status";
 import type { MessageChannel, MessageStatus } from "@/lib/crm/messages";
 import type { Database } from "@/types/database";
@@ -62,6 +64,10 @@ export default async function CrmContactPage({
   if (error || !data) notFound();
 
   const contact = data as unknown as ContactDetail;
+
+  const { data: existingTags, error: tagsError } =
+    await supabase.rpc("list_contact_tags");
+  if (tagsError) console.error("Failed to load tags:", tagsError.message);
   const canEdit = profile.role === "admin" || profile.can_edit_crm;
 
   const detailContact: CrmDetailContact = {
@@ -106,6 +112,9 @@ export default async function CrmContactPage({
       inquiries={detailInquiries}
       messages={detailMessages}
       canEdit={canEdit}
+      clientType={toClientType(contact.client_type)}
+      formValues={contactRowToFormValues(contact)}
+      existingTags={existingTags ?? []}
     />
   );
 }
