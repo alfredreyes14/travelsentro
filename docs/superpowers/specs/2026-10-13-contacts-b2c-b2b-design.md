@@ -128,6 +128,11 @@ constraint contacts_stage_matches_type check (
 many nulls). A new check requires a non-blank email or a non-blank phone.
 Every existing row has an email, so the check passes on current data.
 
+`contacts` has no insert policy today: `record_inquiry()` is `security
+definer` and was the only way a contact was ever created. Manual add
+needs one, so the migration adds an `insert` policy for authenticated
+users with `has_permission(auth.uid(), 'can_edit_crm')`.
+
 Type-specific columns are **not** nulled by the database when the type
 changes. Converting a contact keeps the other type's data and simply hides
 it, so converting back loses nothing.
@@ -284,7 +289,9 @@ New pure modules in `lib/crm/`, each importable by client and server:
   `warning`, `danger` or `expired`. `today > end` is `expired`; `today >=
   end − 1 month` is `danger`; `today >= end − 3 months` is `warning`.
   Calendar months via `date-fns`; `today` is passed in so the function is
-  testable, and callers pass the viewer's local date.
+  testable, and callers pass today's date in `Asia/Manila` (from a
+  `todayInManila()` helper) so the server render and the browser agree
+  and the colour follows the business's calendar day.
 - `tags.ts` — trims, drops blanks, removes case-insensitive duplicates
   and, when a typed tag matches an existing one ignoring case, reuses the
   existing spelling. At most 20 tags of 40 characters each.
