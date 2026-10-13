@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getProfile } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { ContactDocumentsCard } from "@/components/admin/contact-documents-card";
 import { ContactQuotesCard } from "@/components/admin/contact-quotes-card";
 import { CrmDetail, type CrmDetailContact } from "@/components/admin/crm-detail";
 import type {
@@ -164,6 +165,32 @@ export default async function CrmContactPage({
     );
   }
 
+  let documentsSlot: React.ReactNode = null;
+  if (clientType === "b2b") {
+    const { data: documentRows, error: documentsError } = await supabase
+      .from("contact_documents")
+      .select("id, file_name, size_bytes, uploaded_by_name, created_at")
+      .eq("contact_id", id)
+      .order("created_at", { ascending: false });
+    if (documentsError) {
+      console.error("Failed to load documents:", documentsError.message);
+    }
+
+    documentsSlot = (
+      <ContactDocumentsCard
+        contactId={id}
+        canEdit={canEdit}
+        documents={(documentRows ?? []).map((document) => ({
+          id: document.id,
+          fileName: document.file_name,
+          sizeBytes: document.size_bytes,
+          uploadedByName: document.uploaded_by_name,
+          createdAt: document.created_at,
+        }))}
+      />
+    );
+  }
+
   return (
     <CrmDetail
       contact={detailContact}
@@ -173,6 +200,7 @@ export default async function CrmContactPage({
       messages={detailMessages}
       canEdit={canEdit}
       quotesSlot={quotesSlot}
+      documentsSlot={documentsSlot}
     />
   );
 }
