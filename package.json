@@ -33,6 +33,8 @@
     "verify:quote-values": "tsx scripts/verify-quote-values.ts",
     "verify:partner-helpers": "tsx scripts/verify-partner-helpers.ts",
     "verify:partners-rls": "tsx --env-file=.env.local scripts/verify-partners-rls.ts",
+    "verify:contact-helpers": "tsx scripts/verify-contact-helpers.ts",
+    "verify:contacts-rls": "tsx --env-file=.env.local scripts/verify-contacts-rls.ts",
     "verify:quote-pdf": "tsx --env-file=.env.local scripts/verify-quote-pdf.ts"
   },
   "dependencies": {
