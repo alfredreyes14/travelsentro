@@ -41,16 +41,77 @@ export type Database = {
         };
         Relationships: [];
       };
+      contact_documents: {
+        Row: {
+          contact_id: string;
+          content_type: string;
+          created_at: string;
+          file_name: string;
+          id: string;
+          size_bytes: number;
+          storage_key: string;
+          uploaded_by: string | null;
+          uploaded_by_name: string | null;
+        };
+        Insert: {
+          contact_id: string;
+          content_type: string;
+          created_at?: string;
+          file_name: string;
+          id?: string;
+          size_bytes: number;
+          storage_key: string;
+          uploaded_by?: string | null;
+          uploaded_by_name?: string | null;
+        };
+        Update: {
+          contact_id?: string;
+          content_type?: string;
+          created_at?: string;
+          file_name?: string;
+          id?: string;
+          size_bytes?: number;
+          storage_key?: string;
+          uploaded_by?: string | null;
+          uploaded_by_name?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "contact_documents_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contact_documents_uploaded_by_fkey";
+            columns: ["uploaded_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       contacts: {
         Row: {
+          client_type: string;
+          contract_end: string | null;
+          contract_start: string | null;
           created_at: string;
           created_by: string | null;
           created_by_name: string | null;
-          email: string;
+          email: string | null;
           id: string;
           name: string;
           opted_out: boolean;
+          other_emails: Json;
+          other_phones: Json;
           phone: string | null;
+          rep_name: string | null;
+          rep_position: string | null;
+          services_availed: string[];
+          services_other: string | null;
+          stage: string;
           status: string;
           tags: string[];
           updated_at: string;
@@ -58,14 +119,24 @@ export type Database = {
           updated_by_name: string | null;
         };
         Insert: {
+          client_type?: string;
+          contract_end?: string | null;
+          contract_start?: string | null;
           created_at?: string;
           created_by?: string | null;
           created_by_name?: string | null;
-          email: string;
+          email?: string | null;
           id?: string;
           name: string;
           opted_out?: boolean;
+          other_emails?: Json;
+          other_phones?: Json;
           phone?: string | null;
+          rep_name?: string | null;
+          rep_position?: string | null;
+          services_availed?: string[];
+          services_other?: string | null;
+          stage?: string;
           status?: string;
           tags?: string[];
           updated_at?: string;
@@ -73,14 +144,24 @@ export type Database = {
           updated_by_name?: string | null;
         };
         Update: {
+          client_type?: string;
+          contract_end?: string | null;
+          contract_start?: string | null;
           created_at?: string;
           created_by?: string | null;
           created_by_name?: string | null;
-          email?: string;
+          email?: string | null;
           id?: string;
           name?: string;
           opted_out?: boolean;
+          other_emails?: Json;
+          other_phones?: Json;
           phone?: string | null;
+          rep_name?: string | null;
+          rep_position?: string | null;
+          services_availed?: string[];
+          services_other?: string | null;
+          stage?: string;
           status?: string;
           tags?: string[];
           updated_at?: string;
@@ -843,6 +924,7 @@ export type Database = {
         }[];
       };
       has_permission: { Args: { perm: string; uid: string }; Returns: boolean };
+      list_contact_tags: { Args: Record<PropertyKey, never>; Returns: string[] };
       record_inquiry: {
         Args: {
           p_email: string;
