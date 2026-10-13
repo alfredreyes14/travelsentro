@@ -1,15 +1,22 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
-import { MailIcon, MessageSquareIcon, SendIcon } from "lucide-react";
+import { SendIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import { updateStatus } from "@/actions/crm";
+import { updateStage } from "@/actions/crm";
 import { updateOptOut } from "@/actions/messages";
+import {
+  ContactActivity,
+  type CrmDetailInquiry,
+  type CrmDetailMessage,
+} from "./contact-activity";
+import { ContactB2bCard } from "./contact-b2b-card";
+import { ContactConvertDialog } from "./contact-convert-dialog";
 import { ContactEditForm } from "./contact-edit-form";
+import { ContactStageChip } from "./contact-stage-chip";
 import { MessageComposeDialog } from "./message-compose-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,28 +36,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import type { ContactFormValues, LabeledValue } from "@/lib/crm/contact-schema";
+import { SERVICE_LABELS, type ServiceKey } from "@/lib/crm/services";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import type { ContactFormValues } from "@/lib/crm/contact-schema";
-import type { ClientType } from "@/lib/crm/stage";
-import {
-  CONTACT_STATUSES,
-  STATUS_BADGE_CLASSNAME,
-  STATUS_BADGE_VARIANT,
-  STATUS_LABELS,
-  type ContactStatus,
-} from "@/lib/crm/status";
-import {
-  CHANNEL_LABELS,
-  type MessageChannel,
-  type MessageStatus,
-} from "@/lib/crm/messages";
+  CLIENT_TYPE_LABELS,
+  STAGES_BY_TYPE,
+  STAGE_CHIP_CLASSNAME,
+  STAGE_LABELS,
+  type ClientType,
+  type ContactStage,
+} from "@/lib/crm/stage";
+import { cn } from "@/lib/utils";
 
-const STATUS_ERROR_MESSAGE =
-  "Something went wrong updating the status. Please try again.";
+const STAGE_ERROR_MESSAGE =
+  "Something went wrong updating the stage. Please try again.";
 const OPT_OUT_ERROR_MESSAGE =
   "Something went wrong updating this contact's opt-out status. Please try again.";
 
@@ -59,9 +58,18 @@ export type CrmDetailContact = {
   email: string | null;
   name: string;
   phone: string | null;
-  status: ContactStatus;
+  clientType: ClientType;
+  stage: ContactStage;
   tags: string[];
   opted_out: boolean;
+  servicesAvailed: ServiceKey[];
+  servicesOther: string | null;
+  repName: string | null;
+  repPosition: string | null;
+  otherEmails: LabeledValue[];
+  otherPhones: LabeledValue[];
+  contractStart: string | null;
+  contractEnd: string | null;
   created_at: string;
   created_by: string | null;
   created_by_name: string | null;
@@ -70,65 +78,55 @@ export type CrmDetailContact = {
   updated_by_name: string | null;
 };
 
-export type CrmDetailInquiry = {
-  id: string;
-  message: string;
-  created_at: string;
-  package_id: string | null;
-  packages: { id: string; name: string; slug: string } | null;
-};
-
-export type CrmDetailMessage = {
-  id: string;
-  channel: MessageChannel;
-  subject: string | null;
-  body: string;
-  status: MessageStatus;
-  created_at: string;
-  sent_by_name: string | null;
-};
-
-type ActivityItem =
-  | ({ kind: "inquiry" } & CrmDetailInquiry)
-  | ({ kind: "message" } & CrmDetailMessage);
-
+/**
+ * The contact page's layout. Sections that need their own data (linked
+ * quotes, documents) are rendered by the page and passed in as slots, so
+ * this component stays a layout and never grows a section's logic.
+ */
 export function CrmDetail({
   contact,
+  formValues,
+  existingTags,
   inquiries,
   messages,
   canEdit,
-  clientType,
-  formValues,
-  existingTags,
+  quotesSlot,
+  documentsSlot,
 }: {
   contact: CrmDetailContact;
+  formValues: ContactFormValues;
+  existingTags: string[];
   inquiries: CrmDetailInquiry[];
   messages: CrmDetailMessage[];
   canEdit: boolean;
-  clientType: ClientType;
-  formValues: ContactFormValues;
-  existingTags: string[];
+  quotesSlot?: ReactNode;
+  documentsSlot?: ReactNode;
 }) {
   const router = useRouter();
-  const [status, setStatus] = useState<ContactStatus>(contact.status);
+  // Shows the picked stage at once; when the action settles it falls back
+  // to contact.stage, which the action's revalidation has refreshed (or
+  // left alone, on failure).
+  const [stage, setOptimisticStage] = useOptimistic(contact.stage);
   const [optedOut, setOptedOut] = useState(contact.opted_out);
   const [isPending, startTransition] = useTransition();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
+  const [isConvertOpen, setIsConvertOpen] = useState(false);
 
-  function handleStatusChange(newStatus: ContactStatus) {
-    const previous = status;
-    setStatus(newStatus);
+  const isB2b = contact.clientType === "b2b";
+  const otherType: ClientType = isB2b ? "b2c" : "b2b";
+  const stageItems = Object.fromEntries(
+    STAGES_BY_TYPE[contact.clientType].map((s) => [s, STAGE_LABELS[s]])
+  );
+
+  function handleStageChange(next: ContactStage) {
     startTransition(async () => {
+      setOptimisticStage(next);
       try {
-        const result = await updateStatus(contact.id, newStatus);
-        if (!result.ok) {
-          toast.error(result.error);
-          setStatus(previous);
-        }
+        const result = await updateStage(contact.id, next);
+        if (!result.ok) toast.error(result.error);
       } catch {
-        toast.error(STATUS_ERROR_MESSAGE);
-        setStatus(previous);
+        toast.error(STAGE_ERROR_MESSAGE);
       }
     });
   }
@@ -150,13 +148,6 @@ export function CrmDetail({
     });
   }
 
-  const activity: ActivityItem[] = [
-    ...inquiries.map((i) => ({ kind: "inquiry" as const, ...i })),
-    ...messages.map((m) => ({ kind: "message" as const, ...m })),
-  ].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  );
-
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-2">
@@ -164,38 +155,42 @@ export function CrmDetail({
           <h1 className="font-heading text-[20px] leading-[1.2] font-semibold">
             {contact.name}
           </h1>
+          <Badge variant="secondary">
+            {CLIENT_TYPE_LABELS[contact.clientType]}
+          </Badge>
           {canEdit ? (
             <Select
-              items={STATUS_LABELS}
-              value={status}
-              onValueChange={(value) =>
-                handleStatusChange(value as ContactStatus)
-              }
+              items={stageItems}
+              value={stage}
+              onValueChange={(value) => handleStageChange(value as ContactStage)}
               disabled={isPending}
             >
-              <SelectTrigger className="w-40">
+              <SelectTrigger
+                aria-label="Stage"
+                className={cn("w-44", STAGE_CHIP_CLASSNAME[stage])}
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {CONTACT_STATUSES.map((s) => (
+                {STAGES_BY_TYPE[contact.clientType].map((s) => (
                   <SelectItem key={s} value={s}>
-                    {STATUS_LABELS[s]}
+                    {STAGE_LABELS[s]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           ) : (
-            <Badge
-              variant={STATUS_BADGE_VARIANT[status]}
-              className={STATUS_BADGE_CLASSNAME[status]}
-            >
-              {STATUS_LABELS[status]}
-            </Badge>
+            <ContactStageChip stage={stage} />
           )}
           <Button onClick={() => setIsMessageOpen(true)}>
             <SendIcon className="size-4" />
             Message
           </Button>
+          {canEdit ? (
+            <Button variant="outline" onClick={() => setIsConvertOpen(true)}>
+              Convert to {CLIENT_TYPE_LABELS[otherType]}
+            </Button>
+          ) : null}
         </div>
 
         <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
@@ -205,9 +200,7 @@ export function CrmDetail({
               {format(new Date(contact.created_at), "MMM d, yyyy")}
             </p>
           ) : (
-            <p>
-              Added {formatDistanceToNow(new Date(contact.created_at))} ago
-            </p>
+            <p>Added {formatDistanceToNow(new Date(contact.created_at))} ago</p>
           )}
           {contact.updated_by ? (
             <p>
@@ -223,9 +216,7 @@ export function CrmDetail({
           <CardTitle>Contact Info</CardTitle>
           {canEdit ? (
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-              <DialogTrigger
-                render={<Button variant="secondary" size="sm" />}
-              >
+              <DialogTrigger render={<Button variant="secondary" size="sm" />}>
                 Edit Contact
               </DialogTrigger>
               <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
@@ -234,7 +225,7 @@ export function CrmDetail({
                 </DialogHeader>
                 <ContactEditForm
                   contactId={contact.id}
-                  clientType={clientType}
+                  clientType={contact.clientType}
                   defaultValues={formValues}
                   existingTags={existingTags}
                   onSuccess={() => {
@@ -264,6 +255,28 @@ export function CrmDetail({
               ))}
             </div>
           ) : null}
+
+          {!isB2b ? (
+            <div className="flex flex-col gap-1 pt-2">
+              <span className="text-muted-foreground">Services availed</span>
+              {contact.servicesAvailed.length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {contact.servicesAvailed.map((key) => (
+                    <Badge key={key} variant="secondary">
+                      {SERVICE_LABELS[key]}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <span>—</span>
+              )}
+              {contact.servicesAvailed.includes("other") &&
+              contact.servicesOther ? (
+                <p className="whitespace-pre-wrap">{contact.servicesOther}</p>
+              ) : null}
+            </div>
+          ) : null}
+
           {canEdit ? (
             <div className="flex items-center gap-2 pt-2">
               <Switch
@@ -289,91 +302,31 @@ export function CrmDetail({
         </CardContent>
       </Card>
 
-      <div className="flex flex-col gap-4">
-        <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
-          Activity
-        </h2>
+      {isB2b ? (
+        <>
+          <ContactB2bCard
+            repName={contact.repName}
+            repPosition={contact.repPosition}
+            otherEmails={contact.otherEmails}
+            otherPhones={contact.otherPhones}
+            contractStart={contact.contractStart}
+            contractEnd={contact.contractEnd}
+          />
+          {documentsSlot}
+          <Card>
+            <CardHeader>
+              <CardTitle>Transaction History</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Transaction history will appear here.
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        quotesSlot
+      )}
 
-        {activity.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No inquiries or messages yet.
-          </p>
-        ) : (
-          <ol className="flex flex-col gap-6">
-            {activity.map((item) => (
-              <li key={item.id} className="border-l-2 border-border pl-4">
-                <div className="flex flex-col gap-1">
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <span className="w-fit text-sm font-semibold text-muted-foreground" />
-                      }
-                    >
-                      {formatDistanceToNow(new Date(item.created_at), {
-                        addSuffix: true,
-                      })}
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {format(
-                        new Date(item.created_at),
-                        "MMM d, yyyy h:mm a"
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                  {item.kind === "inquiry" ? (
-                    <>
-                      <p className="text-base leading-[1.5]">
-                        {item.message}
-                      </p>
-                      {item.package_id && item.packages ? (
-                        <Link
-                          href={`/admin/packages/${item.packages.id}`}
-                          className="w-fit"
-                        >
-                          <Badge variant="secondary">
-                            {item.packages.name}
-                          </Badge>
-                        </Link>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">
-                          General inquiry
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-2">
-                        {item.channel === "email" ? (
-                          <MailIcon className="size-4 text-muted-foreground" />
-                        ) : (
-                          <MessageSquareIcon className="size-4 text-muted-foreground" />
-                        )}
-                        <span className="text-sm text-muted-foreground">
-                          {CHANNEL_LABELS[item.channel]}
-                        </span>
-                      </div>
-                      {item.channel === "email" && item.subject ? (
-                        <p className="text-base leading-[1.5] font-semibold">
-                          {item.subject}
-                        </p>
-                      ) : null}
-                      <p className="text-base leading-[1.5]">{item.body}</p>
-                      {item.status === "failed" ? (
-                        <Badge variant="destructive" className="w-fit">
-                          Failed to send
-                        </Badge>
-                      ) : null}
-                      <p className="text-sm text-muted-foreground">
-                        Sent by {item.sent_by_name ?? "a staff member"}
-                      </p>
-                    </>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ol>
-        )}
-      </div>
+      <ContactActivity inquiries={inquiries} messages={messages} />
 
       <MessageComposeDialog
         contacts={[
@@ -392,6 +345,14 @@ export function CrmDetail({
           setIsMessageOpen(false);
           router.refresh();
         }}
+      />
+
+      <ContactConvertDialog
+        contactId={contact.id}
+        contactName={contact.name}
+        currentType={contact.clientType}
+        open={isConvertOpen}
+        onOpenChange={setIsConvertOpen}
       />
     </div>
   );

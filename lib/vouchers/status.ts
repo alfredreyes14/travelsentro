@@ -36,9 +36,9 @@ export const VOUCHER_STATUS_BADGE_VARIANT: Record<
   void: "destructive",
 };
 
-// Redeemed's green mirrors lib/crm/status.ts's identical STATUS_BADGE_CLASSNAME
-// override -- a utility-class override on the `secondary` variant, not a new
-// badge.tsx cva variant, for the same single-use-case reason.
+// Redeemed's green is a utility-class override on the `secondary` variant,
+// not a new badge.tsx cva variant: one status doesn't justify growing the
+// shared Badge component.
 export const VOUCHER_STATUS_BADGE_CLASSNAME: Partial<
   Record<VoucherStatus, string>
 > = {

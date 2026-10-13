@@ -3,16 +3,18 @@ import { notFound } from "next/navigation";
 
 import { getProfile } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { CrmDetail, type CrmDetailContact } from "@/components/admin/crm-detail";
+import type {
+  CrmDetailInquiry,
+  CrmDetailMessage,
+} from "@/components/admin/contact-activity";
 import {
-  CrmDetail,
-  type CrmDetailContact,
-  type CrmDetailInquiry,
-  type CrmDetailMessage,
-} from "@/components/admin/crm-detail";
-import { contactRowToFormValues } from "@/lib/crm/contact-schema";
-import { toClientType } from "@/lib/crm/stage";
-import type { ContactStatus } from "@/lib/crm/status";
+  contactRowToFormValues,
+  parseLabeledList,
+} from "@/lib/crm/contact-schema";
 import type { MessageChannel, MessageStatus } from "@/lib/crm/messages";
+import { toServiceKeys } from "@/lib/crm/services";
+import { toClientType, toContactStage } from "@/lib/crm/stage";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -37,9 +39,8 @@ type ContactDetail = ContactRow & {
 /**
  * CRM-03: universal-read guard (getProfile() session validation only, no
  * redirect-based permission gate) — every authenticated Staff/Admin can view
- * a contact's detail page regardless of can_edit_crm; only the edit
- * affordances (status Select, "Edit Contact" button) are permission-gated
- * inside CrmDetail below.
+ * a contact's page regardless of can_edit_crm; only the edit affordances
+ * are permission-gated inside CrmDetail.
  */
 export default async function CrmContactPage({
   params,
@@ -51,33 +52,45 @@ export default async function CrmContactPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from("contacts")
-    .select(
-      "*, inquiries(id, contact_id, request_id, message, created_at, package_id, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name)"
-    )
-    .eq("id", id)
-    .order("created_at", { referencedTable: "inquiries", ascending: false })
-    .order("created_at", { referencedTable: "messages", ascending: false })
-    .single();
+  const [contactResult, tagsResult] = await Promise.all([
+    supabase
+      .from("contacts")
+      .select(
+        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name)"
+      )
+      .eq("id", id)
+      .order("created_at", { referencedTable: "inquiries", ascending: false })
+      .order("created_at", { referencedTable: "messages", ascending: false })
+      .single(),
+    supabase.rpc("list_contact_tags"),
+  ]);
 
-  if (error || !data) notFound();
+  if (contactResult.error || !contactResult.data) notFound();
+  if (tagsResult.error) {
+    console.error("Failed to load tags:", tagsResult.error.message);
+  }
 
-  const contact = data as unknown as ContactDetail;
-
-  const { data: existingTags, error: tagsError } =
-    await supabase.rpc("list_contact_tags");
-  if (tagsError) console.error("Failed to load tags:", tagsError.message);
+  const contact = contactResult.data as unknown as ContactDetail;
   const canEdit = profile.role === "admin" || profile.can_edit_crm;
+  const clientType = toClientType(contact.client_type);
 
   const detailContact: CrmDetailContact = {
     id: contact.id,
     email: contact.email,
     name: contact.name,
     phone: contact.phone,
-    status: contact.status as ContactStatus,
+    clientType,
+    stage: toContactStage(clientType, contact.stage),
     tags: contact.tags,
     opted_out: contact.opted_out,
+    servicesAvailed: toServiceKeys(contact.services_availed),
+    servicesOther: contact.services_other,
+    repName: contact.rep_name,
+    repPosition: contact.rep_position,
+    otherEmails: parseLabeledList(contact.other_emails),
+    otherPhones: parseLabeledList(contact.other_phones),
+    contractStart: contact.contract_start,
+    contractEnd: contact.contract_end,
     created_at: contact.created_at,
     created_by: contact.created_by,
     created_by_name: contact.created_by_name,
@@ -109,12 +122,11 @@ export default async function CrmContactPage({
   return (
     <CrmDetail
       contact={detailContact}
+      formValues={contactRowToFormValues(contact)}
+      existingTags={tagsResult.data ?? []}
       inquiries={detailInquiries}
       messages={detailMessages}
       canEdit={canEdit}
-      clientType={toClientType(contact.client_type)}
-      formValues={contactRowToFormValues(contact)}
-      existingTags={existingTags ?? []}
     />
   );
 }

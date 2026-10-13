@@ -17,10 +17,7 @@ import {
   type ClientType,
   type ContactStage,
 } from "@/lib/crm/stage";
-import type { ContactStatus } from "@/lib/crm/status";
 
-const STATUS_ERROR_MESSAGE =
-  "Something went wrong updating the status. Please try again.";
 const STAGE_ERROR_MESSAGE =
   "Something went wrong updating the stage. Please try again.";
 const STAGE_MISMATCH_MESSAGE =
@@ -208,28 +205,6 @@ export async function convertContactType(
     return { ok: false, error: CONTACT_ERROR_MESSAGE };
   }
   if (!data || data.length === 0) return { ok: false, error: GONE_MESSAGE };
-
-  revalidatePath("/admin/crm");
-  revalidatePath(`/admin/crm/${id}`);
-  return { ok: true };
-}
-
-/** Removed in Task 6 of the contacts B2C/B2B plan, with lib/crm/status.ts. */
-export async function updateStatus(
-  id: string,
-  status: ContactStatus
-): Promise<ActionResult> {
-  await requirePermission("can_edit_crm");
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("contacts")
-    .update({ status })
-    .eq("id", id);
-
-  if (error) {
-    return { ok: false, error: STATUS_ERROR_MESSAGE };
-  }
 
   revalidatePath("/admin/crm");
   revalidatePath(`/admin/crm/${id}`);

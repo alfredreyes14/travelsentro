@@ -373,7 +373,7 @@ export async function sendBulkSms(
  * app/unsubscribe/page.tsx). Gated on can_edit_crm (NOT
  * can_message_customers) since this is a contact-record edit, not a message
  * send, per 04-CONTEXT.md's explicit Claude's-Discretion note -- mirrors
- * updateStatus/updateContact in actions/crm.ts. Reuses the existing
+ * updateStage/updateContact in actions/crm.ts. Reuses the existing
  * "can_edit_crm can update contacts" RLS policy from 03-01; opted_out is
  * just another column on contacts, no new policy needed.
  */
