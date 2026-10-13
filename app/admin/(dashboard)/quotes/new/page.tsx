@@ -23,7 +23,7 @@ export default async function NewQuotePage() {
 
   const supabase = await createClient();
   const [contactsResult, packagesResult] = await Promise.all([
-    supabase.from("contacts").select("id, name, email").order("name"),
+    supabase.from("contacts").select("id, name, email, phone").order("name"),
     supabase
       .from("packages")
       .select("id, name, slug")

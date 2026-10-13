@@ -29,7 +29,7 @@ export function ContactEditForm({
   contact,
   onSuccess,
 }: {
-  contact: { id: string; email: string; name: string; phone: string | null; tags: string[] };
+  contact: { id: string; email: string | null; name: string; phone: string | null; tags: string[] };
   onSuccess: () => void;
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,7 +104,7 @@ export function ContactEditForm({
               NOT used since both require a <FormField> ancestor. */}
           <Input
             id="edit-contact-email"
-            value={contact.email}
+            value={contact.email ?? ""}
             type="email"
             disabled
             readOnly

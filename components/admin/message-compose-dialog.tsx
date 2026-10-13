@@ -40,11 +40,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { withEmail } from "@/lib/crm/contact-label";
 
 type ComposeContact = {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   opted_out: boolean;
 };
@@ -73,7 +74,8 @@ export function MessageComposeDialog({
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("email");
+  // null = staff haven't picked a tab yet, so the default below applies.
+  const [tabChoice, setTabChoice] = useState<ActiveTab | null>(null);
   const [subject, setSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
   const [smsBody, setSmsBody] = useState("");
@@ -87,7 +89,12 @@ export function MessageComposeDialog({
       ? `Message ${primaryContact?.name ?? ""}`
       : `Message ${contacts.length} contacts`;
 
+  const emailDisabled = mode === "individual" && !primaryContact?.email?.trim();
   const smsDisabled = mode === "individual" && !primaryContact?.phone;
+  // A phone-only contact opens straight on SMS.
+  const activeTab: ActiveTab = tabChoice ?? (emailDisabled ? "sms" : "email");
+  const emailRecipientCount = withEmail(contacts).length;
+  const noEmailCount = contacts.length - emailRecipientCount;
   const noPhoneCount = contacts.filter((c) => !c.phone).length;
   const smsSegments = Math.max(1, Math.ceil(smsBody.length / 160));
 
@@ -97,7 +104,7 @@ export function MessageComposeDialog({
     setSmsBody("");
     setQuotaBanner(null);
     setIsConfirmOpen(false);
-    setActiveTab("email");
+    setTabChoice(null);
   }
 
   function handleDialogOpenChange(next: boolean) {
@@ -137,12 +144,16 @@ export function MessageComposeDialog({
 
   async function handleBulkSubmitAttempt() {
     if (activeTab === "email") {
+      if (emailRecipientCount === 0) {
+        setQuotaBanner("None of the selected contacts have an email address.");
+        return;
+      }
       setIsSubmitting(true);
       try {
         const remaining = await getRemainingEmailQuota();
-        if (contacts.length > remaining) {
+        if (emailRecipientCount > remaining) {
           setQuotaBanner(
-            `Sending to ${contacts.length} contacts would exceed today's email limit (${remaining} left). Try again tomorrow or select fewer contacts.`
+            `Sending to ${emailRecipientCount} contacts would exceed today's email limit (${remaining} left). Try again tomorrow or select fewer contacts.`
           );
           return;
         }
@@ -204,10 +215,23 @@ export function MessageComposeDialog({
 
         <Tabs
           value={activeTab}
-          onValueChange={(value) => setActiveTab(value as ActiveTab)}
+          onValueChange={(value) => setTabChoice(value as ActiveTab)}
         >
           <TabsList>
-            <TabsTrigger value="email">Email</TabsTrigger>
+            {emailDisabled ? (
+              <Tooltip>
+                <TooltipTrigger render={<span className="inline-flex" />}>
+                  <TabsTrigger value="email" disabled>
+                    Email
+                  </TabsTrigger>
+                </TooltipTrigger>
+                <TooltipContent>
+                  This contact has no email address on file
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <TabsTrigger value="email">Email</TabsTrigger>
+            )}
             {smsDisabled ? (
               <Tooltip>
                 <TooltipTrigger render={<span className="inline-flex" />}>
@@ -225,6 +249,12 @@ export function MessageComposeDialog({
           </TabsList>
 
           <TabsContent value="email" className="flex flex-col gap-3 pt-2">
+            {mode === "bulk" && noEmailCount > 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {noEmailCount} selected contact(s) have no email address and
+                will be skipped.
+              </p>
+            ) : null}
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="message-subject"
@@ -317,11 +347,13 @@ export function MessageComposeDialog({
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>
-                Send to {contacts.length} contacts?
+                Send to{" "}
+                {activeTab === "email" ? emailRecipientCount : contacts.length}{" "}
+                contacts?
               </AlertDialogTitle>
               <AlertDialogDescription>
                 {activeTab === "email"
-                  ? `This will send ${contacts.length} separate emails. This can't be undone.`
+                  ? `This will send ${emailRecipientCount} separate emails. This can't be undone.`
                   : `This will send ${contacts.length} text messages via SMS, charged per message. This can't be undone.`}
               </AlertDialogDescription>
             </AlertDialogHeader>

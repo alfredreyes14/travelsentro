@@ -13,6 +13,7 @@ import {
   type QuoteFormValues,
 } from "./quote-form-schema";
 import type { QuoteSource } from "@/lib/quotes/quote-row";
+import { contactLabel } from "@/lib/crm/contact-label";
 import { useFormImport } from "./use-form-import";
 import { useRemoveConfirmation } from "./itinerary-fields/remove-confirmation";
 import { PricingFields } from "./itinerary-fields/pricing-fields";
@@ -50,7 +51,7 @@ import { FormActionBar } from "@/components/admin/form-action-bar";
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
 
-export type QuoteContactOption = { id: string; name: string; email: string };
+export type QuoteContactOption = { id: string; name: string; email: string | null; phone: string | null };
 
 /** Same first-errored-tab search as PackageForm's TAB_FIELD_MAP. */
 const TAB_FIELD_MAP: Array<{ tab: string; fields: Array<keyof QuoteFormValues> }> = [
@@ -226,9 +227,7 @@ export function QuoteForm({
                             });
                           }
                         }}
-                        itemToStringLabel={(contact: QuoteContactOption) =>
-                          `${contact.name} (${contact.email})`
-                        }
+                        itemToStringLabel={(contact: QuoteContactOption) => contactLabel(contact)}
                       >
                         <ComboboxInputGroup>
                           <ComboboxInput placeholder="Not linked..." />
@@ -241,7 +240,7 @@ export function QuoteForm({
                               <ComboboxList>
                                 {(contact: QuoteContactOption) => (
                                   <ComboboxItem key={contact.id} value={contact}>
-                                    {contact.name} ({contact.email})
+                                    {contactLabel(contact)}
                                   </ComboboxItem>
                                 )}
                               </ComboboxList>

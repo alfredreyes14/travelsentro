@@ -24,7 +24,7 @@ export default async function EditQuotePage({
 
   const [quoteResult, contactsResult] = await Promise.all([
     supabase.from("quotes").select("*").eq("id", id).maybeSingle(),
-    supabase.from("contacts").select("id, name, email").order("name"),
+    supabase.from("contacts").select("id, name, email, phone").order("name"),
   ]);
 
   if (quoteResult.error) console.error("Failed to load quote:", quoteResult.error.message);

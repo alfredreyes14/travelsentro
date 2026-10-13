@@ -8,6 +8,7 @@ import {
   type VoucherListItem,
 } from "@/components/admin/vouchers/voucher-table";
 import type { VoucherStatus, VoucherType } from "@/lib/vouchers/status";
+import { contactLabel } from "@/lib/crm/contact-label";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -16,7 +17,7 @@ export const metadata: Metadata = {
 
 type VoucherRow = Database["public"]["Tables"]["vouchers"]["Row"] & {
   voucher_partners: { name: string } | null;
-  contacts: { name: string; email: string } | null;
+  contacts: { name: string; email: string | null; phone: string | null } | null;
 };
 
 export default async function AdminVouchersPage() {
@@ -29,10 +30,10 @@ export default async function AdminVouchersPage() {
   const [vouchersResult, partnersResult, contactsResult] = await Promise.all([
     supabase
       .from("vouchers")
-      .select("*, voucher_partners(name), contacts(name, email)")
+      .select("*, voucher_partners(name), contacts(name, email, phone)")
       .order("created_at", { ascending: false }),
     supabase.from("voucher_partners").select("id, name").order("name"),
-    supabase.from("contacts").select("id, name, email").order("name"),
+    supabase.from("contacts").select("id, name, email, phone").order("name"),
   ]);
 
   if (vouchersResult.error) {
@@ -59,9 +60,7 @@ export default async function AdminVouchersPage() {
     valueLabel: row.value_label,
     code: row.code,
     contactId: row.contact_id,
-    contactLabel: row.contacts
-      ? `${row.contacts.name} (${row.contacts.email})`
-      : null,
+    contactLabel: row.contacts ? contactLabel(row.contacts) : null,
     status: row.status as VoucherStatus,
     expiresAt: row.expires_at ? row.expires_at.slice(0, 10) : "",
     createdAt: row.created_at,

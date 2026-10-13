@@ -17,6 +17,7 @@ import {
   sendBulkSms as sendBulkSmsProvider,
 } from "@/lib/sms/semaphore";
 import { applyNameTemplate } from "@/lib/crm/messages";
+import { withEmail } from "@/lib/crm/contact-label";
 import { signContactId } from "@/lib/unsubscribe-token";
 import { CustomerMessageEmail } from "@/components/email/customer-message-email";
 import {
@@ -65,6 +66,10 @@ export async function sendIndividualEmail(
 
   if (contactError || !contact) {
     return { ok: false, error: SEND_ERROR_MESSAGE };
+  }
+
+  if (!contact.email?.trim()) {
+    return { ok: false, error: "This contact has no email address on file." };
   }
 
   const result = await resend.emails.send({
@@ -206,13 +211,18 @@ export async function sendBulkEmail(
 
   const supabase = await createClient();
 
-  const { data: contacts, error: contactsError } = await supabase
+  // Contacts with no email are skipped, the same way sendBulkSms skips
+  // contacts with no phone (the compose dialog says how many).
+  const { data: contactRows, error: contactsError } = await supabase
     .from("contacts")
     .select("id, name, email")
     .in("id", parsedIds.data)
-    .eq("opted_out", false);
+    .eq("opted_out", false)
+    .not("email", "is", null);
 
-  if (contactsError || !contacts || contacts.length === 0) {
+  const contacts = withEmail(contactRows ?? []);
+
+  if (contactsError || contacts.length === 0) {
     return { ok: false, error: NO_ELIGIBLE_RECIPIENTS_MESSAGE };
   }
 

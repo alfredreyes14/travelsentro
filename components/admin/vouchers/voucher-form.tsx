@@ -18,6 +18,7 @@ import {
   type VoucherStatus,
   type VoucherType,
 } from "@/lib/vouchers/status";
+import { contactLabel } from "@/lib/crm/contact-label";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -65,7 +66,7 @@ const STATUS_ITEMS = VOUCHER_STATUSES.map((value) => ({
 const IN_HOUSE_VALUE = "";
 
 export type VoucherPartnerOption = { id: string; name: string };
-export type VoucherContactOption = { id: string; name: string; email: string };
+export type VoucherContactOption = { id: string; name: string; email: string | null; phone: string | null };
 
 // A DB-shaped record (nullable relation/optional fields as `null`, matching
 // the vouchers table), distinct from VoucherFormValues (RHF's internal
@@ -381,7 +382,7 @@ function VoucherFormBody({
                       field.onChange(contact?.id ?? "")
                     }
                     itemToStringLabel={(contact: VoucherContactOption) =>
-                      `${contact.name} (${contact.email})`
+                      contactLabel(contact)
                     }
                   >
                     <ComboboxInputGroup>
@@ -399,7 +400,7 @@ function VoucherFormBody({
                           <ComboboxList>
                             {(contact: VoucherContactOption) => (
                               <ComboboxItem key={contact.id} value={contact}>
-                                {contact.name} ({contact.email})
+                                {contactLabel(contact)}
                               </ComboboxItem>
                             )}
                           </ComboboxList>

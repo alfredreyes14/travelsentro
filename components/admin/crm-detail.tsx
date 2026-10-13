@@ -54,7 +54,7 @@ const OPT_OUT_ERROR_MESSAGE =
 
 export type CrmDetailContact = {
   id: string;
-  email: string;
+  email: string | null;
   name: string;
   phone: string | null;
   status: ContactStatus;
@@ -238,7 +238,7 @@ export function CrmDetail({
         <CardContent className="flex flex-col gap-2 text-sm">
           <p>
             <span className="text-muted-foreground">Email: </span>
-            {contact.email}
+            {contact.email ?? "—"}
           </p>
           <p>
             <span className="text-muted-foreground">Phone: </span>

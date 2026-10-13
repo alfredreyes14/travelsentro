@@ -55,7 +55,7 @@ import {
 export type AdminContactListItem = {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   phone: string | null;
   status: ContactStatus;
   tags: string[];
@@ -141,7 +141,7 @@ const columns: ColumnDef<AdminContactListItem>[] = [
   {
     accessorKey: "email",
     header: "Email",
-    cell: ({ row }) => row.original.email,
+    cell: ({ row }) => row.original.email ?? "—",
   },
   {
     accessorKey: "status",
@@ -362,7 +362,7 @@ export function CrmTable({ contacts }: { contacts: AdminContactListItem[] }) {
                     <div className="flex-1">
                       <p className="font-medium">{row.original.name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {row.original.email}
+                        {row.original.email ?? row.original.phone ?? "—"}
                       </p>
                     </div>
                     <Badge
