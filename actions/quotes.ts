@@ -137,3 +137,64 @@ export async function getPackageQuoteValues(
     values: { title: data.name, ...packageRowToContentValues(data) },
   };
 }
+
+/**
+ * Links a quote to a contact from the contact's page. Only a quote that is
+ * not linked to anyone is changed, so a stale "Link existing" list can
+ * never take a quote away from another contact.
+ */
+export async function linkQuoteToContact(
+  quoteId: string,
+  contactId: string
+): Promise<ActionResult> {
+  await requirePermission("can_manage_quotes");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("quotes")
+    .update({ contact_id: contactId })
+    .eq("id", quoteId)
+    .is("contact_id", null)
+    .select("id");
+
+  if (error) {
+    console.error("linkQuoteToContact failed:", error.message);
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+  if (!data || data.length === 0) {
+    return {
+      ok: false,
+      error: "That quote is already linked to a contact. Refresh and try again.",
+    };
+  }
+
+  revalidatePath(`/admin/crm/${contactId}`);
+  revalidatePath("/admin/quotes");
+  revalidatePath(`/admin/quotes/${quoteId}`);
+  return { ok: true };
+}
+
+/** Removes a quote's link to this contact. The quote itself is untouched. */
+export async function unlinkQuoteFromContact(
+  quoteId: string,
+  contactId: string
+): Promise<ActionResult> {
+  await requirePermission("can_manage_quotes");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("quotes")
+    .update({ contact_id: null })
+    .eq("id", quoteId)
+    .eq("contact_id", contactId);
+
+  if (error) {
+    console.error("unlinkQuoteFromContact failed:", error.message);
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+
+  revalidatePath(`/admin/crm/${contactId}`);
+  revalidatePath("/admin/quotes");
+  revalidatePath(`/admin/quotes/${quoteId}`);
+  return { ok: true };
+}

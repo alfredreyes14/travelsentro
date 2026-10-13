@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { getProfile } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
+import { ContactQuotesCard } from "@/components/admin/contact-quotes-card";
 import { CrmDetail, type CrmDetailContact } from "@/components/admin/crm-detail";
 import type {
   CrmDetailInquiry,
@@ -119,6 +120,50 @@ export default async function CrmContactPage({
     sent_by_name: m.sent_by_name,
   }));
 
+  // Quotes are readable only with can_manage_quotes (RLS), so the card is
+  // not rendered at all for anyone else. B2C only, per the spec.
+  const canManageQuotes = profile.role === "admin" || profile.can_manage_quotes;
+  let quotesSlot: React.ReactNode = null;
+  if (clientType === "b2c" && canManageQuotes) {
+    const [linkedResult, unlinkedResult] = await Promise.all([
+      supabase
+        .from("quotes")
+        .select("id, quote_no, title, price_per_pax, updated_at")
+        .eq("contact_id", id)
+        .order("updated_at", { ascending: false }),
+      supabase
+        .from("quotes")
+        .select("id, quote_no, title, customer_name")
+        .is("contact_id", null)
+        .order("updated_at", { ascending: false }),
+    ]);
+    if (linkedResult.error) {
+      console.error("Failed to load linked quotes:", linkedResult.error.message);
+    }
+    if (unlinkedResult.error) {
+      console.error("Failed to load unlinked quotes:", unlinkedResult.error.message);
+    }
+
+    quotesSlot = (
+      <ContactQuotesCard
+        contactId={id}
+        quotes={(linkedResult.data ?? []).map((quote) => ({
+          id: quote.id,
+          quoteNo: quote.quote_no,
+          title: quote.title,
+          pricePerPax: quote.price_per_pax,
+          updatedAt: quote.updated_at,
+        }))}
+        unlinkedQuotes={(unlinkedResult.data ?? []).map((quote) => ({
+          id: quote.id,
+          quoteNo: quote.quote_no,
+          title: quote.title,
+          customerName: quote.customer_name,
+        }))}
+      />
+    );
+  }
+
   return (
     <CrmDetail
       contact={detailContact}
@@ -127,6 +172,7 @@ export default async function CrmContactPage({
       inquiries={detailInquiries}
       messages={detailMessages}
       canEdit={canEdit}
+      quotesSlot={quotesSlot}
     />
   );
 }

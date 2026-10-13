@@ -8,6 +8,7 @@ import { PosterImportProvider } from "@/components/admin/poster-import-context";
 import { PosterImportButton } from "@/components/admin/poster-import-button";
 import { PosterImportBanner } from "@/components/admin/poster-import-banner";
 import { QuoteForm } from "@/components/admin/quote-form";
+import { EMPTY_QUOTE_VALUES } from "@/components/admin/quote-form-schema";
 import { QuotePackagePicker } from "@/components/admin/quote-package-picker";
 
 export const metadata: Metadata = {
@@ -18,8 +19,13 @@ export const metadata: Metadata = {
 // cap as the package edit page (60s client timeout + 1 retry).
 export const maxDuration = 120;
 
-export default async function NewQuotePage() {
+export default async function NewQuotePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ contactId?: string }>;
+}) {
   await requirePermissionOrRedirect("can_manage_quotes");
+  const { contactId } = await searchParams;
 
   const supabase = await createClient();
   const [contactsResult, packagesResult] = await Promise.all([
@@ -34,6 +40,13 @@ export default async function NewQuotePage() {
 
   if (contactsResult.error) console.error("Failed to load contacts:", contactsResult.error.message);
   if (packagesResult.error) console.error("Failed to load packages:", packagesResult.error.message);
+
+  const contacts = contactsResult.data ?? [];
+  // Only a contact that really exists is preset; an unknown or tampered id
+  // just opens the blank form.
+  const presetContact = contactId
+    ? contacts.find((contact) => contact.id === contactId)
+    : undefined;
 
   return (
     <PosterImportProvider>
@@ -54,7 +67,18 @@ export default async function NewQuotePage() {
 
         <PosterImportBanner />
 
-        <QuoteForm contacts={contactsResult.data ?? []} />
+        <QuoteForm
+          contacts={contacts}
+          defaultValues={
+            presetContact
+              ? {
+                  ...EMPTY_QUOTE_VALUES,
+                  contactId: presetContact.id,
+                  customerName: presetContact.name,
+                }
+              : undefined
+          }
+        />
       </div>
     </PosterImportProvider>
   );
