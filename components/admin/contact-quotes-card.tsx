@@ -92,6 +92,7 @@ export function ContactQuotesCard({
           </Button>
           <Button
             size="sm"
+            nativeButton={false}
             render={<Link href={`/admin/quotes/new?contactId=${contactId}`} />}
           >
             New quote
