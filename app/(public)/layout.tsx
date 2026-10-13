@@ -127,7 +127,7 @@ export default async function PublicLayout({
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-3 lg:grid-cols-[3fr_2fr_2fr]">
             <div className="flex flex-col gap-2">
               <p className="font-heading text-lg font-semibold">
-                TravelSentro
+                TravelSentro Travel and Tours
               </p>
               <p className="text-sm text-primary-foreground/80">
                 Built for Business. Ready for Travelers.
