@@ -24,6 +24,21 @@ try {
 
 const nextConfig: NextConfig = {
   images: {
+    // Keep Vercel Image Optimization cache writes inside the Hobby quota.
+    // Every (image, width, format) combo is one cache write, and it is
+    // rewritten each time the TTL expires.
+    //
+    // 31 days instead of the 4-hour default. Safe because every upload gets
+    // a unique key (timestamp + random suffix), so the image at a given URL
+    // never changes -- replacing a photo creates a new URL.
+    minimumCacheTTL: 2678400,
+    // Default list minus 2048 and 3840. Those widths only serve 2x/3x
+    // screens at full width and are the most expensive variants; 1920 is
+    // plenty for the hero carousel and gallery.
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    // Default list minus 32 and 64, which nothing in the app needs (the
+    // smallest `sizes` value used is 48px, which maps to 48 and 96).
+    imageSizes: [48, 96, 128, 256, 384],
     remotePatterns: [
       {
         protocol: "https",
