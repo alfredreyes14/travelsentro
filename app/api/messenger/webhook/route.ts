@@ -1,8 +1,14 @@
 import { after } from "next/server";
 
+import { FACEBOOK_PAGE_ID } from "@/lib/constants";
+import { sendInternalNotificationEmails } from "@/lib/crm/notify-staff";
+import { fetchFormName, fetchLead, getLeadsAccessToken } from "@/lib/meta-leads/graph";
+import { extractLeadgenChanges, parseMetaLead, type LeadgenChange } from "@/lib/meta-leads/lead";
+import { recordMetaLead } from "@/lib/meta-leads/record";
 import { GENERAL_MESSENGER_REF } from "@/lib/messenger/link";
 import { buildGreeting, sendMessengerText, verifySignature } from "@/lib/messenger/webhook";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 /**
  * Meta's one-time webhook verification handshake (Messenger Platform docs):
@@ -40,7 +46,40 @@ async function lookupPackageName(slug: string): Promise<string | null> {
 }
 
 /**
- * Handles Messenger click/message events. Only ever reacts to the
+ * A lead ad submission: Meta's webhook only carries the leadgen ID, so the
+ * answers are fetched from the Graph API, saved via record_meta_lead()
+ * (idempotent, so a redelivery is harmless) and, for a lead not seen
+ * before, staff are emailed like for a website inquiry. A failure here is
+ * only logged -- `npm run import:meta-leads` re-pulls anything missed.
+ */
+async function syncLead(change: LeadgenChange, origin: string): Promise<void> {
+  const token = getLeadsAccessToken();
+  const lead = await fetchLead(change.leadgen_id, token);
+  const formId = lead.form_id ?? change.form_id;
+  const formName = formId ? await fetchFormName(formId, token) : null;
+  const parsed = parseMetaLead(lead, formName);
+
+  const result = await recordMetaLead(createServiceClient(), parsed);
+  console.log("Meta lead synced:", {
+    leadgenId: parsed.leadgenId,
+    isNew: result.isNew,
+  });
+
+  if (result.isNew) {
+    const source = `Meta lead ad${formName ? ` (${formName})` : ""}`;
+    await sendInternalNotificationEmails({
+      name: parsed.name ?? "Facebook lead",
+      email: parsed.email ?? "",
+      phone: parsed.phone ?? "",
+      message: parsed.message ? `${source}\n\n${parsed.message}` : source,
+      crmUrl: `${origin}/admin/crm/${result.contactId}`,
+    });
+  }
+}
+
+/**
+ * Handles lead ad submissions (see syncLead) and Messenger click/message
+ * events. For Messenger it only ever reacts to the
  * referral itself -- the m.me click on a brand-new thread (delivered as a
  * bare `referral` event), the "Get Started" postback for a visitor's
  * very first-ever interaction (`postback.referral`), or, confirmed via
@@ -82,6 +121,24 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("Messenger webhook: malformed JSON body", err);
     return Response.json({ ok: true });
+  }
+
+  // Lead ad submissions arrive on this same endpoint: Meta allows one
+  // callback URL per app for all Page webhook fields, so `leadgen` shares it
+  // with the Messenger fields.
+  const origin = new URL(request.url).origin;
+  for (const change of extractLeadgenChanges(payload)) {
+    if (change.page_id && change.page_id !== FACEBOOK_PAGE_ID) {
+      console.warn("Meta leadgen event for an unknown page ignored:", change.page_id);
+      continue;
+    }
+    after(async () => {
+      try {
+        await syncLead(change, origin);
+      } catch (err) {
+        console.error("Meta lead sync failed", { leadgenId: change.leadgen_id, err });
+      }
+    });
   }
 
   for (const entry of payload.entry ?? []) {

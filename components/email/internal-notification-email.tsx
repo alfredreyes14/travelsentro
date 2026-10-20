@@ -35,13 +35,13 @@ export function InternalNotificationEmail({
             New inquiry from {name}
           </Heading>
           <Text style={{ color: "#021F4A", fontSize: "16px" }}>
-            Email: {email}
+            Email: {email || "Not given"}
             <br />
-            Phone: {phone}
+            Phone: {phone || "Not given"}
             <br />
             Package: {packageName ?? "General inquiry"}
           </Text>
-          <Text style={{ color: "#021F4A", fontSize: "16px" }}>
+          <Text style={{ color: "#021F4A", fontSize: "16px", whiteSpace: "pre-line" }}>
             {message}
           </Text>
           <Button

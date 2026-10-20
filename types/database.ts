@@ -271,25 +271,34 @@ export type Database = {
           contact_id: string;
           created_at: string;
           id: string;
+          external_id: string | null;
           message: string;
           package_id: string | null;
           request_id: string;
+          source: string;
+          source_details: Json;
         };
         Insert: {
           contact_id: string;
           created_at?: string;
+          external_id?: string | null;
           id?: string;
           message: string;
           package_id?: string | null;
           request_id: string;
+          source?: string;
+          source_details?: Json;
         };
         Update: {
           contact_id?: string;
           created_at?: string;
+          external_id?: string | null;
           id?: string;
           message?: string;
           package_id?: string | null;
           request_id?: string;
+          source?: string;
+          source_details?: Json;
         };
         Relationships: [
           {
@@ -933,6 +942,22 @@ export type Database = {
           p_package_id?: string;
           p_phone: string;
           p_request_id: string;
+        };
+        Returns: {
+          contact_id: string;
+          inquiry_id: string;
+          is_new: boolean;
+        }[];
+      };
+      record_meta_lead: {
+        Args: {
+          p_created_at?: string | null;
+          p_details?: Json;
+          p_email: string | null;
+          p_leadgen_id: string;
+          p_message: string | null;
+          p_name: string | null;
+          p_phone: string | null;
         };
         Returns: {
           contact_id: string;
