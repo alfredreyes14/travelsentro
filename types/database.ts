@@ -218,6 +218,89 @@ export type Database = {
         };
         Relationships: [];
       };
+      event_photos: {
+        Row: {
+          created_at: string;
+          display_order: number;
+          event_id: string;
+          id: string;
+          storage_path: string;
+        };
+        Insert: {
+          created_at?: string;
+          display_order?: number;
+          event_id: string;
+          id?: string;
+          storage_path: string;
+        };
+        Update: {
+          created_at?: string;
+          display_order?: number;
+          event_id?: string;
+          id?: string;
+          storage_path?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_photos_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      events: {
+        Row: {
+          cover_storage_path: string | null;
+          created_at: string;
+          description: string | null;
+          end_date: string | null;
+          event_type: string;
+          id: string;
+          is_featured: boolean;
+          is_published: boolean;
+          link_url: string | null;
+          name: string;
+          slug: string;
+          start_date: string;
+          summary: string | null;
+          venue: string;
+        };
+        Insert: {
+          cover_storage_path?: string | null;
+          created_at?: string;
+          description?: string | null;
+          end_date?: string | null;
+          event_type: string;
+          id?: string;
+          is_featured?: boolean;
+          is_published?: boolean;
+          link_url?: string | null;
+          name: string;
+          slug: string;
+          start_date: string;
+          summary?: string | null;
+          venue: string;
+        };
+        Update: {
+          cover_storage_path?: string | null;
+          created_at?: string;
+          description?: string | null;
+          end_date?: string | null;
+          event_type?: string;
+          id?: string;
+          is_featured?: boolean;
+          is_published?: boolean;
+          link_url?: string | null;
+          name?: string;
+          slug?: string;
+          start_date?: string;
+          summary?: string | null;
+          venue?: string;
+        };
+        Relationships: [];
+      };
       faqs: {
         Row: {
           answer: string;
