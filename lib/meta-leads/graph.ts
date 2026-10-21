@@ -9,11 +9,12 @@ import type { MetaLead } from "./lead";
 const GRAPH_API_VERSION = "v25.0";
 const GRAPH = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 
-const CORE_LEAD_FIELDS = "id,created_time,form_id,field_data,platform,is_organic";
-// Ad / campaign names need ads permissions on top of leads_retrieval. If the
-// token lacks them the request fails as a whole, so fetchLead retries
-// without them rather than losing the lead.
-const AD_LEAD_FIELDS = "ad_id,ad_name,adset_name,campaign_id,campaign_name";
+// The minimum needed to save a lead (leads_retrieval).
+const CORE_LEAD_FIELDS = "id,created_time,form_id,field_data";
+// Ad / campaign fields need ads_management on top of leads_retrieval. If
+// the token lacks it (or Meta rejects any of these), the request fails as a
+// whole, so fetchLead retries with the core fields rather than losing the lead.
+const AD_LEAD_FIELDS = "ad_id,ad_name,adset_name,campaign_id,campaign_name,platform,is_organic";
 const ALL_LEAD_FIELDS = `${CORE_LEAD_FIELDS},${AD_LEAD_FIELDS}`;
 
 /**
