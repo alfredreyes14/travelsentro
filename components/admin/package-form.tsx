@@ -7,12 +7,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
 import { discardDraftPackage, updatePackage } from "@/actions/packages";
+import { deletePhoto, reorderPhotos, uploadPhotos } from "@/actions/package-photos";
 import {
   packageFormSchema,
   EMPTY_DEFAULTS,
   type PackageFormValues,
 } from "./package-form-schema";
-import { PhotoManager, type PhotoManagerPhoto } from "./photo-manager";
+import {
+  PhotoManager,
+  type PhotoManagerActions,
+  type PhotoManagerPhoto,
+} from "./photo-manager";
 import { useFormImport } from "./use-form-import";
 import { useRemoveConfirmation } from "./itinerary-fields/remove-confirmation";
 import { PricingFields } from "./itinerary-fields/pricing-fields";
@@ -59,6 +64,12 @@ import { FormActionBar } from "@/components/admin/form-action-bar";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
+
+const PACKAGE_PHOTO_ACTIONS: PhotoManagerActions = {
+  upload: uploadPhotos,
+  remove: deletePhoto,
+  reorder: reorderPhotos,
+};
 
 export type PackageDestinationOption = { id: string; name: string };
 
@@ -301,7 +312,12 @@ export function PackageForm({
             keepMounted
             className="flex flex-col gap-4 pt-4"
           >
-            <PhotoManager packageId={packageId} initialPhotos={initialPhotos} />
+            <PhotoManager
+              ownerId={packageId}
+              initialPhotos={initialPhotos}
+              actions={PACKAGE_PHOTO_ACTIONS}
+              checkWatermark
+            />
           </TabsContent>
 
           <TabsContent

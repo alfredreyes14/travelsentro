@@ -22,11 +22,8 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVerticalIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  deletePhoto,
-  reorderPhotos,
-  uploadPhotos,
-} from "@/actions/package-photos";
+import type { UploadedPhoto } from "@/actions/package-photos";
+import type { ActionResult } from "@/lib/action-result";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { prepareWatermarkCheckImage } from "@/lib/images/prepare-watermark-check-image";
@@ -39,6 +36,30 @@ export type PhotoManagerPhoto = {
   storagePath: string;
   displayOrder: number;
   altText: string | null;
+};
+
+export type PhotoUploadFile = {
+  name: string;
+  type: string;
+  base64: string;
+  /** Downscaled copy for the watermark check; only sent when checkWatermark is on. */
+  checkImage?: { type: string; base64: string };
+};
+
+/**
+ * The Server Actions behind one gallery (a package's or an event's). The
+ * owner is the package or event the photos belong to.
+ */
+export type PhotoManagerActions = {
+  upload: (
+    ownerId: string,
+    files: PhotoUploadFile[]
+  ) => Promise<ActionResult & { photos?: UploadedPhoto[]; watermarked?: boolean }>;
+  remove: (photoId: string) => Promise<ActionResult>;
+  reorder: (
+    ownerId: string,
+    order: { id: string; displayOrder: number }[]
+  ) => Promise<ActionResult>;
 };
 
 function readFileAsBase64(file: File): Promise<string> {
@@ -137,18 +158,29 @@ function PhotoThumbnail({
 
 /**
  * Multi-upload + drag-reorder + per-photo delete UI (D-11), mounted in
- * package-form.tsx's Photos tab once a real packageId exists. Drag order is
+ * package-form.tsx's Photos tab and on the event edit page once a real
+ * owner id exists. The caller passes the owner's actions; `checkWatermark`
+ * (packages only) also sends a downscaled copy for the watermark check, and
+ * `validateFile` rejects a file before upload with a message. Drag order is
  * computed optimistically in local useState (Pattern 6 / CLAUDE.md's
  * "local useState for isolated client interactivity" rule), persisted via
  * reorderPhotos; upload/delete call their own Server Actions directly and
  * update local state from the action's response rather than refetching.
  */
 export function PhotoManager({
-  packageId,
+  ownerId,
   initialPhotos,
+  actions,
+  checkWatermark = false,
+  accept = "image/*",
+  validateFile,
 }: {
-  packageId: string;
+  ownerId: string;
   initialPhotos: PhotoManagerPhoto[];
+  actions: PhotoManagerActions;
+  checkWatermark?: boolean;
+  accept?: string;
+  validateFile?: (file: File) => string | null;
 }) {
   const [photos, setPhotos] = useState<PhotoManagerPhoto[]>(
     [...initialPhotos].sort((a, b) => a.displayOrder - b.displayOrder)
@@ -167,14 +199,26 @@ export function PhotoManager({
     const fileList = event.target.files;
     if (!fileList || fileList.length === 0) return;
 
+    const selected = Array.from(fileList);
+    const problem = validateFile
+      ? selected.map(validateFile).find((message) => message !== null)
+      : undefined;
+    if (problem) {
+      toast.error(problem);
+      event.target.value = "";
+      return;
+    }
+
     setIsUploading(true);
     try {
-      const files = await Promise.all(
-        Array.from(fileList).map(async (file) => ({
+      const files: PhotoUploadFile[] = await Promise.all(
+        selected.map(async (file) => ({
           name: file.name,
           type: file.type,
           base64: await readFileAsBase64(file),
-          checkImage: await prepareWatermarkCheckImage(file),
+          ...(checkWatermark
+            ? { checkImage: await prepareWatermarkCheckImage(file) }
+            : {}),
         }))
       );
 
@@ -187,7 +231,7 @@ export function PhotoManager({
       let succeededCount = 0;
       const failedNames: string[] = [];
       for (const file of files) {
-        const result = await uploadPhotos(packageId, [file]);
+        const result = await actions.upload(ownerId, [file]);
         if (result.ok) {
           setPhotos((current) => [...current, ...(result.photos ?? [])]);
           succeededCount += 1;
@@ -228,7 +272,7 @@ export function PhotoManager({
     const previousPhotos = photos;
     setPhotos((current) => current.filter((photo) => photo.id !== photoId));
 
-    const result = await deletePhoto(photoId);
+    const result = await actions.remove(photoId);
     if (!result.ok) {
       toast.error(result.error);
       setPhotos(previousPhotos);
@@ -248,8 +292,8 @@ export function PhotoManager({
     const previousPhotos = photos;
     setPhotos(reordered);
 
-    void reorderPhotos(
-      packageId,
+    void actions.reorder(
+      ownerId,
       reordered.map((photo, index) => ({ id: photo.id, displayOrder: index }))
     )
       .then((result) => {
@@ -276,7 +320,7 @@ export function PhotoManager({
         <input
           id="photo-upload-input"
           type="file"
-          accept="image/*"
+          accept={accept}
           multiple
           disabled={isUploading}
           onChange={handleFilesSelected}
@@ -284,7 +328,7 @@ export function PhotoManager({
         />
         {isUploading ? (
           <p className="text-sm text-muted-foreground">
-            Checking and uploading...
+            {checkWatermark ? "Checking and uploading..." : "Uploading..."}
           </p>
         ) : null}
       </div>

@@ -11,6 +11,7 @@ import {
   TicketIcon,
   FileTextIcon,
   HandshakeIcon,
+  CalendarDaysIcon,
 } from "lucide-react";
 
 import { useNavigationGuard } from "./navigation-guard";
@@ -75,6 +76,14 @@ export function AdminNav({
       href: "/admin/partners",
       label: "Partners",
       icon: HandshakeIcon,
+      show: canManagePackages,
+    },
+    // Events pages and homepage section. Reuses canManagePackages like
+    // Partners above -- no new permission toggle.
+    {
+      href: "/admin/events",
+      label: "Events",
+      icon: CalendarDaysIcon,
       show: canManagePackages,
     },
     // CRM-03: universal read -- every authenticated Admin/Staff sees
