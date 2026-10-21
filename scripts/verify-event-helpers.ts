@@ -16,6 +16,11 @@ import {
   type EventDateRange,
 } from "../lib/events/event-dates";
 import { slugifyEventName, uniqueSlug } from "../lib/events/slug";
+import { isAcceptedEventImage } from "../lib/events/image-limits";
+import {
+  eventFormSchema,
+  type EventFormValues,
+} from "../components/admin/events/event-form-schema";
 
 type CheckResult = { name: string; pass: boolean; detail: string };
 
@@ -100,8 +105,67 @@ function helperChecks() {
   });
 }
 
+const VALID_EVENT: EventFormValues = {
+  name: "PTAA Travel Fair 2026",
+  eventType: "booth",
+  startDate: "2026-11-12",
+  endDate: "2026-11-14",
+  venue: "SMX Convention Center, Pasay — Booth 112",
+  summary: "Visit our booth.",
+  description: "Line one\nLine two",
+  coverStoragePath: "events/cover.jpg",
+  linkUrl: "",
+  isPublished: true,
+  isFeatured: false,
+};
+
+/** Parses VALID_EVENT with overrides; returns "ok" or the failing field paths. */
+function parseWith(overrides: Partial<Record<keyof EventFormValues, unknown>>) {
+  const result = eventFormSchema.safeParse({ ...VALID_EVENT, ...overrides });
+  if (result.success) return "ok";
+  return result.error.issues.map((i) => i.path.join("."));
+}
+
+function schemaChecks() {
+  eq("schema valid base parses", parseWith({}), "ok");
+  eq("schema draft without cover parses", parseWith({ isPublished: false, coverStoragePath: "" }), "ok");
+  eq("schema blank end date parses", parseWith({ endDate: "" }), "ok");
+  eq("schema end before start", parseWith({ endDate: "2026-11-11" }), ["endDate"]);
+  {
+    const result = eventFormSchema.safeParse({ ...VALID_EVENT, coverStoragePath: "" });
+    const issue = result.success ? null : result.error.issues[0];
+    eq("schema published without cover", issue && [issue.path.join("."), issue.message], [
+      "coverStoragePath",
+      "Add a cover photo before publishing.",
+    ]);
+  }
+  eq("schema javascript: link", parseWith({ linkUrl: "javascript:alert(1)" }), ["linkUrl"]);
+  eq("schema scheme-less link parses", parseWith({ linkUrl: "facebook.com/travelsentroph" }), "ok");
+  eq("schema blank name", parseWith({ name: "   " }), ["name"]);
+  eq("schema blank venue", parseWith({ venue: "   " }), ["venue"]);
+  eq("schema unknown type", parseWith({ eventType: "concert" }), ["eventType"]);
+  eq("schema summary 300 chars parses", parseWith({ summary: "a".repeat(300) }), "ok");
+  eq("schema summary 301 chars", parseWith({ summary: "a".repeat(301) }), ["summary"]);
+  eq("schema description 10001 chars", parseWith({ description: "a".repeat(10001) }), ["description"]);
+  eq("schema impossible start date", parseWith({ startDate: "2026-13-40" }), ["startDate"]);
+  eq("schema Feb 30 start date", parseWith({ startDate: "2026-02-30" }), ["startDate"]);
+  eq("schema impossible end date", parseWith({ endDate: "2026-11-31" }), ["endDate"]);
+}
+
+function imageLimitChecks() {
+  const MB = 1024 * 1024;
+  eq("image jpeg 6 MB accepted", isAcceptedEventImage("image/jpeg", 6 * MB), true);
+  eq("image png accepted", isAcceptedEventImage("image/png", 1000), true);
+  eq("image webp accepted", isAcceptedEventImage("image/webp", 1000), true);
+  eq("image over 6 MB rejected", isAcceptedEventImage("image/jpeg", 6 * MB + 1), false);
+  eq("image gif rejected", isAcceptedEventImage("image/gif", 1000), false);
+  eq("image svg rejected", isAcceptedEventImage("image/svg+xml", 1000), false);
+}
+
 function main() {
   helperChecks();
+  schemaChecks();
+  imageLimitChecks();
 
   console.log(`\nverify-event-helpers\n`);
   let allPass = true;
