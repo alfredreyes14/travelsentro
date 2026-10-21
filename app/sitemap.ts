@@ -22,9 +22,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
   );
 
+  // RLS limits anonymous reads to published events too; the filter keeps
+  // drafts out even for a session-aware client.
+  const { data: events } = await supabase
+    .from("events")
+    .select("slug, created_at")
+    .eq("is_published", true);
+
+  const eventEntries: MetadataRoute.Sitemap = (events ?? []).map((event) => ({
+    url: `${SITE_URL}/events/${event.slug}`,
+    lastModified: event.created_at,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
   return [
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE_URL}/packages`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${SITE_URL}/events`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/contact`, changeFrequency: "yearly", priority: 0.5 },
     {
@@ -38,5 +53,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     },
     ...packageEntries,
+    ...eventEntries,
   ];
 }

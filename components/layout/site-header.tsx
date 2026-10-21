@@ -19,9 +19,16 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS = [
   { href: "/", label: "Home" },
   { href: "/packages", label: "Packages" },
+  { href: "/events", label: "Events" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact Us" },
 ];
+
+/** A link is active on its own page and, except Home, on pages below it. */
+function isActive(pathname: string, href: string): boolean {
+  if (pathname === href) return true;
+  return href !== "/" && pathname.startsWith(`${href}/`);
+}
 
 /**
  * Sticky, solid-white public site header. Desktop shows an inline nav;
@@ -49,7 +56,7 @@ export function SiteHeader() {
         <nav aria-label="Main navigation" className="hidden md:block">
           <ul className="flex items-center gap-8 text-sm font-medium">
             {NAV_LINKS.map((link) => {
-              const active = pathname === link.href;
+              const active = isActive(pathname, link.href);
               return (
                 <li key={link.href}>
                   <Link
@@ -100,7 +107,7 @@ export function SiteHeader() {
             </SheetHeader>
             <nav aria-label="Mobile navigation" className="flex flex-col gap-1 px-4">
               {NAV_LINKS.map((link) => {
-                const active = pathname === link.href;
+                const active = isActive(pathname, link.href);
                 return (
                   <SheetClose
                     key={link.href}

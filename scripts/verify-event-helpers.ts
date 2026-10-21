@@ -17,6 +17,7 @@ import {
 } from "../lib/events/event-dates";
 import { slugifyEventName, uniqueSlug } from "../lib/events/slug";
 import { isAcceptedEventImage } from "../lib/events/image-limits";
+import { toPublicEvent } from "../lib/events/public-event";
 import {
   eventFormSchema,
   type EventFormValues,
@@ -162,10 +163,43 @@ function imageLimitChecks() {
   eq("image svg rejected", isAcceptedEventImage("image/svg+xml", 1000), false);
 }
 
+function publicEventChecks() {
+  process.env.NEXT_PUBLIC_R2_PUBLIC_URL = "https://cdn.example.com/";
+  const row = {
+    id: "id-1",
+    slug: "ptaa-fair",
+    name: "PTAA Fair",
+    event_type: "exhibit",
+    start_date: "2026-11-12",
+    end_date: null,
+    venue: "SMX",
+    summary: null,
+    description: "Long text",
+    cover_storage_path: "events/cover.jpg",
+    link_url: null,
+    is_published: true,
+    is_featured: false,
+    created_at: "2026-10-21T00:00:00Z",
+  };
+  eq("toPublicEvent maps a row", toPublicEvent(row), {
+    id: "id-1",
+    slug: "ptaa-fair",
+    name: "PTAA Fair",
+    eventType: "exhibit",
+    startDate: "2026-11-12",
+    endDate: null,
+    venue: "SMX",
+    summary: null,
+    coverUrl: "https://cdn.example.com/events/cover.jpg",
+  });
+  eq("toPublicEvent unknown type falls back to other", toPublicEvent({ ...row, event_type: "x" }).eventType, "other");
+}
+
 function main() {
   helperChecks();
   schemaChecks();
   imageLimitChecks();
+  publicEventChecks();
 
   console.log(`\nverify-event-helpers\n`);
   let allPass = true;
