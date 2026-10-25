@@ -3,6 +3,7 @@ import { ViewTransition } from "react";
 
 import { createPublicClient } from "@/lib/supabase/public";
 import { buildPageMetadata } from "@/lib/seo/page-metadata";
+import { BackToHomeLink } from "@/components/layout/back-to-home-link";
 import {
   Accordion,
   AccordionContent,
@@ -66,6 +67,8 @@ export default async function FaqPage() {
               }}
             />
           )}
+
+          <BackToHomeLink />
 
           <div className="flex flex-col gap-2">
             <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">

@@ -6,6 +6,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { manilaToday, splitEvents } from "@/lib/events/event-dates";
 import { toPublicEvent } from "@/lib/events/public-event";
 import { buildPageMetadata } from "@/lib/seo/page-metadata";
+import { BackToHomeLink } from "@/components/layout/back-to-home-link";
 import { EventCard } from "@/components/events/event-card";
 import { SectionHeading } from "@/components/ui/section-heading";
 import type { Tables } from "@/types/database";
@@ -37,6 +38,8 @@ export default async function EventsPage() {
   return (
     <ViewTransition enter="slide-up" default="none">
       <div className="mx-auto flex max-w-6xl flex-col gap-10 px-6 py-12 sm:px-8 lg:py-16">
+        <BackToHomeLink />
+
         <div className="flex flex-col gap-2">
           <h1 className="font-heading text-[30px] leading-[1.15] font-semibold sm:text-[36px]">
             Events
