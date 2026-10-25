@@ -32,7 +32,7 @@ export async function updateBookingTerms(
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
   }
 
-  revalidatePath("/booking-terms");
+  revalidatePath("/booking-terms-and-conditions");
   revalidatePath("/admin/content");
   return { ok: true, updatedAt: updated.updated_at };
 }

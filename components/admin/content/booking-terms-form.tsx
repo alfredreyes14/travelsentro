@@ -32,7 +32,7 @@ export type BookingTermsRecord = {
 };
 
 /**
- * Single-document editor for the public /booking-terms page. Paragraphs are
+ * Single-document editor for the public /booking-terms-and-conditions page. Paragraphs are
  * plain text separated by blank lines (split by lib/text/split-paragraphs.ts
  * at render time).
  */
@@ -90,7 +90,7 @@ export function BookingTermsForm({
               <p className="text-sm text-muted-foreground">
                 Leave a blank line between paragraphs. Shown on the public{" "}
                 <Link
-                  href="/booking-terms"
+                  href="/booking-terms-and-conditions"
                   target="_blank"
                   className="underline underline-offset-4 hover:text-foreground"
                 >

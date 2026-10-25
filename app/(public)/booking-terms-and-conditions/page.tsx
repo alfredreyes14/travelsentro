@@ -9,12 +9,12 @@ export const metadata: Metadata = buildPageMetadata({
   title: "Booking Terms and Conditions",
   description:
     "The terms and conditions that apply when you book a TravelSentro tour package.",
-  path: "/booking-terms",
+  path: "/booking-terms-and-conditions",
 });
 
 // Admin-managed and identical for every visitor -- same ISR + cookie-free
 // public client pairing as /faq. Admin saves also call
-// revalidatePath("/booking-terms") (actions/booking-terms.ts).
+// revalidatePath("/booking-terms-and-conditions") (actions/booking-terms.ts).
 export const revalidate = 60;
 
 export default async function BookingTermsPage() {
