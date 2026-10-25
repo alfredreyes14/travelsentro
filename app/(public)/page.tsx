@@ -245,9 +245,10 @@ export default async function HomePage() {
     console.error("Failed to load events:", eventsError.message);
   }
 
+  const today = manilaToday();
   const homepageEvents = pickHomepageEvents(
     ((eventsData ?? []) as Database["public"]["Tables"]["events"]["Row"][]).map(toPublicEvent),
-    manilaToday()
+    today
   );
 
   const brandPartnerLogos = partnerLogosOf("brand_partner");
@@ -299,7 +300,7 @@ export default async function HomePage() {
         </Reveal>
         {homepageEvents.length > 0 && (
           <Reveal>
-            <EventsSection events={homepageEvents} />
+            <EventsSection events={homepageEvents} today={today} />
           </Reveal>
         )}
 
