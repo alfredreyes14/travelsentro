@@ -1,21 +1,23 @@
-import { ChevronDown, Clock, Stamp } from "lucide-react";
+import Link from "next/link";
+import { ArrowRight, Clock, FileCheck, Stamp } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { FadeImage } from "@/components/motion/fade-image";
-import { Checklist } from "@/components/packages/checklist";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
+import {
+  type PublicVisaService,
+  visaServicePath,
+} from "@/lib/visa/public-visa";
 
-export type VisaServiceCardData = {
-  id: string;
-  country: string;
-  description: string | null;
-  processingTime: string | null;
-  price: number | null;
-  requirements: string[];
-  photoUrl: string | null;
-};
+export type VisaServiceCardData = PublicVisaService;
 
+/**
+ * The whole card links to the visa details page through a stretched link on
+ * the title. The WhatsApp/Messenger buttons sit above it (relative z-10), so
+ * they still open the chat instead of the details page. The full requirement
+ * list lives on the details page, which keeps every card the same height.
+ */
 function VisaServiceCard({ service }: { service: VisaServiceCardData }) {
   // Rides along in the WhatsApp prefill ("Hi! I'm interested in Japan visa
   // assistance") and the Messenger CTA's aria-label. Messenger gets no slug,
@@ -23,15 +25,15 @@ function VisaServiceCard({ service }: { service: VisaServiceCardData }) {
   const inquiryLabel = `${service.country} visa assistance`;
 
   return (
-    <Card className="gap-0 p-0">
+    <Card className="group/card relative gap-0 overflow-hidden p-0 transform-gpu transition-[transform,box-shadow] duration-500 ease-[cubic-bezier(0.33,1,0.68,1)] hover:-translate-y-1 hover:shadow-xl motion-reduce:transition-none motion-reduce:hover:translate-y-0 has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-ring/50">
       <div className="relative aspect-[16/9] w-full overflow-hidden bg-secondary/10">
         {service.photoUrl ? (
           <FadeImage
             src={service.photoUrl}
-            alt={service.country}
+            alt=""
             fill
             sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
-            className="object-cover"
+            className="transform-gpu object-cover duration-700 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover/card:scale-[1.04] motion-reduce:group-hover/card:scale-100"
           />
         ) : (
           <div className="flex size-full items-center justify-center">
@@ -47,10 +49,15 @@ function VisaServiceCard({ service }: { service: VisaServiceCardData }) {
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex flex-col gap-1">
           <h3 className="font-heading text-[20px] leading-[1.2] font-semibold">
-            {service.country}
+            <Link
+              href={visaServicePath(service)}
+              className="transition-colors duration-300 ease-[cubic-bezier(0.33,1,0.68,1)] group-hover/card:text-primary after:absolute after:inset-0 focus-visible:outline-none"
+            >
+              {service.country}
+            </Link>
           </h3>
           {service.description && (
-            <p className="text-sm leading-[1.5] whitespace-pre-line text-muted-foreground">
+            <p className="line-clamp-3 text-sm leading-[1.5] whitespace-pre-line text-muted-foreground">
               {service.description}
             </p>
           )}
@@ -75,25 +82,23 @@ function VisaServiceCard({ service }: { service: VisaServiceCardData }) {
           </div>
         )}
 
-        {service.requirements.length > 0 && (
-          // Native <details> keeps this a Server Component -- no client JS
-          // just to expand a list.
-          <details className="group rounded-lg border border-border">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 px-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
-              Requirements ({service.requirements.length})
-              <ChevronDown
-                className="size-4 text-muted-foreground transition-transform group-open:rotate-180"
-                aria-hidden="true"
-              />
-            </summary>
-            <div className="px-3 pb-3">
-              <Checklist
-                kind="included"
-                items={service.requirements.map((label) => ({ label }))}
-              />
-            </div>
-          </details>
-        )}
+        <div className="flex items-center justify-between gap-2 text-sm">
+          {service.requirements.length > 0 ? (
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <FileCheck className="size-4" aria-hidden="true" />
+              {service.requirements.length} requirements
+            </span>
+          ) : (
+            <span />
+          )}
+          <span className="flex items-center gap-1 font-medium text-primary">
+            View details
+            <ArrowRight
+              className="size-4 transition-transform duration-300 group-hover/card:translate-x-0.5"
+              aria-hidden="true"
+            />
+          </span>
+        </div>
 
         <div className="mt-auto flex items-center gap-2 pt-1">
           <WhatsAppCta
@@ -123,7 +128,10 @@ export function VisaServicesSection({
   if (services.length === 0) return null;
 
   return (
-    <section className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8">
+    <section
+      id="visa-assistance"
+      className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8"
+    >
       <div className="flex flex-col gap-2 sm:max-w-2xl">
         <span className="font-heading text-sm font-semibold tracking-wide text-primary uppercase">
           Travel Documents

@@ -7,6 +7,7 @@ import { HeroCarousel, type HeroSlideDisplay } from "@/components/homepage/hero-
 import { HeroSearchBar } from "@/components/homepage/hero-search-bar";import { WhyChooseUs } from "@/components/homepage/why-choose-us";
 import { FeaturedPackagesGrid } from "@/components/homepage/featured-packages-grid";
 import { VisaServicesSection } from "@/components/homepage/visa-services-section";
+import { toPublicVisaService } from "@/lib/visa/public-visa";
 import { DestinationsSection } from "@/components/homepage/destinations-section";
 import { TestimonialsSection } from "@/components/homepage/testimonials-section";
 import { EventsSection } from "@/components/homepage/events-section";
@@ -187,20 +188,8 @@ export default async function HomePage() {
   }
 
   const visaServices = (visaServicesData ?? []).map(
-    (v: Database["public"]["Tables"]["visa_services"]["Row"]) => ({
-      id: v.id,
-      country: v.country,
-      description: v.description,
-      processingTime: v.processing_time,
-      price: v.price,
-      requirements: (v.requirements ?? "")
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0),
-      photoUrl: v.photo_storage_path
-        ? getPublicImageUrl(v.photo_storage_path)
-        : null,
-    })
+    (v: Database["public"]["Tables"]["visa_services"]["Row"]) =>
+      toPublicVisaService(v)
   );
 
   const localDestinations = destinationTiles.filter(

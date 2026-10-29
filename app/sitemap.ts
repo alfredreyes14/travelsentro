@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/constants";
 import { packagePath } from "@/lib/packages/package-url";
+import { visaServicePath } from "@/lib/visa/public-visa";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
@@ -36,6 +37,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
+  // Same published-only filter for visa services.
+  const { data: visaServices } = await supabase
+    .from("visa_services")
+    .select("id, created_at")
+    .eq("is_published", true);
+
+  const visaEntries: MetadataRoute.Sitemap = (visaServices ?? []).map(
+    (service) => ({
+      url: `${SITE_URL}${visaServicePath(service)}`,
+      lastModified: service.created_at,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    })
+  );
+
   return [
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE_URL}/packages`, changeFrequency: "weekly", priority: 0.9 },
@@ -54,5 +70,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     ...packageEntries,
     ...eventEntries,
+    ...visaEntries,
   ];
 }
