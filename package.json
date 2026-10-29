@@ -38,7 +38,9 @@
     "verify:events-rls": "tsx --env-file=.env.local scripts/verify-events-rls.ts",
     "verify:contact-helpers": "tsx scripts/verify-contact-helpers.ts",
     "verify:contacts-rls": "tsx --env-file=.env.local scripts/verify-contacts-rls.ts",
-    "verify:quote-pdf": "tsx --env-file=.env.local scripts/verify-quote-pdf.ts"
+    "verify:quote-pdf": "tsx --env-file=.env.local scripts/verify-quote-pdf.ts",
+    "import:meta-leads": "tsx --env-file=.env.local scripts/import-meta-leads.ts",
+    "verify:meta-leads": "tsx scripts/verify-meta-leads.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
