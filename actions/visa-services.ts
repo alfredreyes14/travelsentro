@@ -12,7 +12,7 @@ const GENERIC_ERROR_MESSAGE =
 
 function revalidateVisaServicePaths() {
   revalidatePath("/");
-  revalidatePath("/visa/[id]", "page");
+  revalidatePath("/visa/[slug]", "page");
   revalidatePath("/admin/content");
 }
 

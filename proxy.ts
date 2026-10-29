@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/proxy";
 import { createPublicClient } from "@/lib/supabase/public";
 import { isBarePackageCode, packagePath } from "@/lib/packages/package-url";
+import { visaServicePath } from "@/lib/visa/public-visa";
 
 // Global "coming soon" gate (COMING_SOON_MODE=true on Vercel). Admin and API
 // routes stay reachable so staff can keep working and webhooks (e.g. the
@@ -44,6 +45,9 @@ export async function proxy(request: NextRequest) {
   const legacyPackageRedirect = await redirectBarePackageCode(request);
   if (legacyPackageRedirect) return legacyPackageRedirect;
 
+  const legacyVisaRedirect = await redirectVisaServiceId(request);
+  if (legacyVisaRedirect) return legacyVisaRedirect;
+
   // updateSession() calls supabase.auth.getUser() -- a network round-trip
   // to Supabase's Auth servers. Only /admin/* needs the session-refresh +
   // unauthenticated-redirect behavior it provides, but the matcher below
@@ -85,6 +89,33 @@ async function redirectBarePackageCode(
 
   const url = request.nextUrl.clone();
   url.pathname = packagePath(pkg);
+  return NextResponse.redirect(url, 308);
+}
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * 308s /visa/<uuid> (the URL format before visa slugs existed) to
+ * /visa/<slug>. Done here for the same reason as redirectBarePackageCode():
+ * the page streams under loading.tsx, so it can only meta-refresh. Unknown
+ * or unpublished ids fall through to the page's notFound().
+ */
+async function redirectVisaServiceId(
+  request: NextRequest
+): Promise<NextResponse | null> {
+  const match = request.nextUrl.pathname.match(/^\/visa\/([^/]+)$/);
+  if (!match || !UUID.test(match[1])) return null;
+
+  const { data: service } = await createPublicClient()
+    .from("visa_services")
+    .select("slug")
+    .eq("id", match[1])
+    .eq("is_published", true)
+    .maybeSingle();
+  if (!service) return null;
+
+  const url = request.nextUrl.clone();
+  url.pathname = visaServicePath(service);
   return NextResponse.redirect(url, 308);
 }
 

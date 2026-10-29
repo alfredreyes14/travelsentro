@@ -904,7 +904,9 @@ export type Database = {
           price: number | null;
           processing_time: string | null;
           requirements: string | null;
+          slug: string;
           sort_order: number;
+          updated_at: string;
         };
         Insert: {
           country: string;
@@ -916,7 +918,9 @@ export type Database = {
           price?: number | null;
           processing_time?: string | null;
           requirements?: string | null;
+          slug?: string;
           sort_order?: number;
+          updated_at?: string;
         };
         Update: {
           country?: string;
@@ -928,7 +932,9 @@ export type Database = {
           price?: number | null;
           processing_time?: string | null;
           requirements?: string | null;
+          slug?: string;
           sort_order?: number;
+          updated_at?: string;
         };
         Relationships: [];
       };

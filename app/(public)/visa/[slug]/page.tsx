@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { ViewTransition, cache } from "react";
@@ -37,14 +37,13 @@ const SECTION_CARD =
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Shared by generateMetadata and the page; cache() runs the query once per request.
-const getPublishedVisaService = cache(async (id: string) => {
-  // A non-UUID id would make Postgres throw; treat it as not found.
-  if (!UUID.test(id)) return null;
+// Accepts a slug, or a UUID from the old /visa/<id> URLs (the page redirects those).
+const getPublishedVisaService = cache(async (segment: string) => {
   const supabase = createPublicClient();
   const { data, error } = await supabase
     .from("visa_services")
     .select("*")
-    .eq("id", id)
+    .eq(UUID.test(segment) ? "id" : "slug", segment)
     .eq("is_published", true)
     .maybeSingle();
   if (error || !data) return null;
@@ -54,10 +53,10 @@ const getPublishedVisaService = cache(async (id: string) => {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const service = await getPublishedVisaService(id);
+  const { slug } = await params;
+  const service = await getPublishedVisaService(slug);
   if (!service) return {};
 
   const metadata = buildPageMetadata({
@@ -78,15 +77,17 @@ export async function generateMetadata({
   };
 }
 
-/** Published visa services only: an unpublished or unknown id is a plain 404. */
+/** Published visa services only: an unpublished or unknown slug is a plain 404. */
 export default async function VisaServicePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = await params;
-  const service = await getPublishedVisaService(id);
+  const { slug } = await params;
+  const service = await getPublishedVisaService(slug);
   if (!service) notFound();
+  // Old /visa/<uuid> links (shared before slugs existed) move to the slug URL.
+  if (slug !== service.slug) permanentRedirect(visaServicePath(service));
 
   const inquiryLabel = `${service.country} visa assistance`;
   const requirements = groupRequirements(service.requirements);
@@ -100,12 +101,6 @@ export default async function VisaServicePage({
       {
         "@type": "ListItem",
         position: 2,
-        name: "Visa Assistance",
-        item: `${SITE_URL}/#visa-assistance`,
-      },
-      {
-        "@type": "ListItem",
-        position: 3,
         name: service.country,
         item: pageUrl,
       },

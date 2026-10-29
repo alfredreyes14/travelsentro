@@ -40,13 +40,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Same published-only filter for visa services.
   const { data: visaServices } = await supabase
     .from("visa_services")
-    .select("id, created_at")
+    .select("slug, updated_at")
     .eq("is_published", true);
 
   const visaEntries: MetadataRoute.Sitemap = (visaServices ?? []).map(
     (service) => ({
       url: `${SITE_URL}${visaServicePath(service)}`,
-      lastModified: service.created_at,
+      lastModified: service.updated_at,
       changeFrequency: "monthly",
       priority: 0.6,
     })

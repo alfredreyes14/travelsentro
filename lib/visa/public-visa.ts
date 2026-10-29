@@ -3,6 +3,7 @@ import type { Tables } from "@/types/database";
 
 export type PublicVisaService = {
   id: string;
+  slug: string;
   country: string;
   description: string | null;
   processingTime: string | null;
@@ -11,8 +12,8 @@ export type PublicVisaService = {
   photoUrl: string | null;
 };
 
-export function visaServicePath(service: { id: string }) {
-  return `/visa/${service.id}`;
+export function visaServicePath(service: { slug: string }) {
+  return `/visa/${service.slug}`;
 }
 
 /** Maps a visa_services row to the shape the homepage card and detail page use. */
@@ -21,6 +22,7 @@ export function toPublicVisaService(
 ): PublicVisaService {
   return {
     id: row.id,
+    slug: row.slug,
     country: row.country,
     description: row.description,
     processingTime: row.processing_time,
