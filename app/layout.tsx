@@ -53,10 +53,32 @@ export const metadata: Metadata = {
 // address/telephone fields are what make it eligible for local search
 // signals; addressLocality/Region are split out of CONTACT_ADDRESS by hand
 // since that constant is a single display string.
+// "TravelSentro" (SITE_NAME) is the default name Google should show. It is
+// repeated first here, followed by the spaced form search engines tend to
+// split it into and the full trading name, so all of those searches lead
+// back to this site.
+const ALTERNATE_NAMES = [
+  SITE_NAME,
+  "Travel Sentro",
+  "TravelSentro Travel and Tours",
+];
+
+// WebSite structured data is what Google reads to pick the site name shown
+// in results (https://developers.google.com/search/docs/appearance/site-names).
+// Only valid on the homepage URL, but rendering it site-wide is harmless.
+const websiteJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  alternateName: ALTERNATE_NAMES,
+  url: `${SITE_URL}/`,
+};
+
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "TravelAgency",
   name: SITE_NAME,
+  alternateName: ALTERNATE_NAMES,
   url: SITE_URL,
   logo: `${SITE_URL}/logo.png`,
   image: `${SITE_URL}/logo.png`,
@@ -86,6 +108,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
         />
         <TooltipProvider>{children}</TooltipProvider>
         <Toaster />
