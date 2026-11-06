@@ -102,3 +102,12 @@ export async function deletePrivateObject(key: string): Promise<void> {
     new DeleteObjectCommand({ Bucket: privateBucket(), Key: key })
   );
 }
+
+/** A stored file's bytes, for attaching it to an email. */
+export async function getPrivateObjectBytes(key: string): Promise<Uint8Array> {
+  const result = await getClient().send(
+    new GetObjectCommand({ Bucket: privateBucket(), Key: key })
+  );
+  if (!result.Body) throw new Error(`Private object ${key} has no body`);
+  return result.Body.transformToByteArray();
+}

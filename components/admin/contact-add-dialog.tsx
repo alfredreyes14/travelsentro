@@ -40,12 +40,22 @@ const TYPE_DESCRIPTIONS: Record<ClientType, string> = {
   b2b: "A company or partner",
 };
 
+export type CreatedContact = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  clientType: ClientType;
+};
+
 function AddContactForm({
   defaultType,
   existingTags,
+  onCreated,
 }: {
   defaultType: ClientType;
   existingTags: string[];
+  onCreated?: (contact: CreatedContact) => void;
 }) {
   const router = useRouter();
   const [clientType, setClientType] = useState<ClientType>(defaultType);
@@ -66,6 +76,16 @@ function AddContactForm({
       const result = await createContact(clientType, values);
       if (result.ok) {
         toast.success("Contact added.");
+        if (onCreated) {
+          onCreated({
+            id: result.id,
+            name: values.name.trim(),
+            email: values.email.trim() || null,
+            phone: values.phone.trim() || null,
+            clientType,
+          });
+          return;
+        }
         // The rest of the fields are filled in on the contact's own page.
         router.push(`/admin/crm/${result.id}`);
       } else if (result.existingContactId) {
@@ -146,18 +166,21 @@ function AddContactForm({
 /**
  * Adds a B2C or B2B contact by hand. The form is a child component so it
  * mounts fresh (empty fields, the current tab's type) every time the
- * dialog opens.
+ * dialog opens. With onCreated the caller gets the new contact instead of
+ * being taken to its page (the SOA form uses this).
  */
 export function ContactAddDialog({
   open,
   onOpenChange,
   defaultType,
   existingTags,
+  onCreated,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultType: ClientType;
   existingTags: string[];
+  onCreated?: (contact: CreatedContact) => void;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -169,7 +192,11 @@ export function ContactAddDialog({
           </DialogDescription>
         </DialogHeader>
         {open ? (
-          <AddContactForm defaultType={defaultType} existingTags={existingTags} />
+          <AddContactForm
+            defaultType={defaultType}
+            existingTags={existingTags}
+            onCreated={onCreated}
+          />
         ) : null}
       </DialogContent>
     </Dialog>
