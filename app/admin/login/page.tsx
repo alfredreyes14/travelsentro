@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import Image from "next/image";
+
 import { LoginForm } from "@/components/admin/login-form";
 
 export const metadata: Metadata = {
@@ -13,9 +15,15 @@ export default function AdminLoginPage() {
   return (
     <main className="flex min-h-svh items-center justify-center bg-background px-6 py-12">
       <div className="w-full max-w-sm">
-        <h1 className="font-heading text-[28px] leading-[1.2] font-semibold mb-6">
-          Log In
-        </h1>
+        <h1 className="sr-only">Log In</h1>
+        <Image
+          src="/logo.png"
+          alt="TravelSentro — Built for Business. Ready for Travelers."
+          width={1600}
+          height={386}
+          className="mb-8 h-14 w-auto"
+          priority
+        />
         <LoginForm />
       </div>
     </main>
