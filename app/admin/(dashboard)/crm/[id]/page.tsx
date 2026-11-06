@@ -5,6 +5,7 @@ import { getProfile } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { ContactDocumentsCard } from "@/components/admin/contact-documents-card";
 import { ContactQuotesCard } from "@/components/admin/contact-quotes-card";
+import { ContactSoaCard } from "@/components/admin/contact-soa-card";
 import { CrmDetail, type CrmDetailContact } from "@/components/admin/crm-detail";
 import type {
   CrmDetailInquiry,
@@ -165,6 +166,51 @@ export default async function CrmContactPage({
     );
   }
 
+  // Statements of Account, for B2C and B2B alike. Same permission as quotes.
+  let soaSlot: React.ReactNode = null;
+  if (canManageQuotes) {
+    const [linkedResult, unlinkedResult] = await Promise.all([
+      supabase
+        .from("statements")
+        .select("id, soa_no, kind, original_no, issue_date, total_amount, balance")
+        .eq("contact_id", id)
+        .order("issue_date", { ascending: false }),
+      supabase
+        .from("statements")
+        .select("id, soa_no, original_no, bill_to_name, total_amount")
+        .is("contact_id", null)
+        .order("issue_date", { ascending: false }),
+    ]);
+    if (linkedResult.error) {
+      console.error("Failed to load linked statements:", linkedResult.error.message);
+    }
+    if (unlinkedResult.error) {
+      console.error("Failed to load unlinked statements:", unlinkedResult.error.message);
+    }
+
+    soaSlot = (
+      <ContactSoaCard
+        contactId={id}
+        statements={(linkedResult.data ?? []).map((soa) => ({
+          id: soa.id,
+          soaNo: soa.soa_no,
+          isPrevious: soa.kind === "previous",
+          originalNo: soa.original_no,
+          issueDate: soa.issue_date,
+          total: Number(soa.total_amount),
+          balance: Number(soa.balance),
+        }))}
+        unlinkedStatements={(unlinkedResult.data ?? []).map((soa) => ({
+          id: soa.id,
+          soaNo: soa.soa_no,
+          originalNo: soa.original_no,
+          billToName: soa.bill_to_name,
+          total: Number(soa.total_amount),
+        }))}
+      />
+    );
+  }
+
   let documentsSlot: React.ReactNode = null;
   if (clientType === "b2b") {
     const { data: documentRows, error: documentsError } = await supabase
@@ -201,6 +247,7 @@ export default async function CrmContactPage({
       canEdit={canEdit}
       quotesSlot={quotesSlot}
       documentsSlot={documentsSlot}
+      soaSlot={soaSlot}
     />
   );
 }

@@ -50,28 +50,54 @@ export const soaPaymentSchema = z.object({
 
 // Optional text fields are plain optional strings ("" = unset), converted
 // to null at the lib/soa/soa-row.ts boundary -- same as quote-form-schema.
+// These fields are shared by both kinds of SOA.
+const soaHeaderShape = {
+  billToName: z.string().trim().min(1, "Please enter who this is billed to"),
+  billToDetails: z.string().optional(),
+  contactId: z.string().optional(),
+  reference: z.string().optional(),
+  issueDate: isoDate,
+  dueDate: z.union([isoDate, z.literal("")]).optional(),
+  notes: z.string().optional(),
+};
+
+const dueAfterIssue = {
+  check: (v: { issueDate: string; dueDate?: string }) =>
+    !v.dueDate || v.dueDate >= v.issueDate,
+  params: {
+    message: "Due date can't be before the statement date",
+    path: ["dueDate"],
+  },
+};
+
+/** An SOA built in the SOA maker. */
 export const soaFormSchema = z
   .object({
-    billToName: z.string().trim().min(1, "Please enter who this is billed to"),
-    billToDetails: z.string().optional(),
-    contactId: z.string().optional(),
-    reference: z.string().optional(),
-    issueDate: isoDate,
-    dueDate: z.union([isoDate, z.literal("")]).optional(),
+    ...soaHeaderShape,
     lineItems: z.array(soaLineItemSchema).min(1, "Add at least one line item"),
     discounts: z.array(soaDiscountSchema),
     payments: z.array(soaPaymentSchema),
-    notes: z.string().optional(),
   })
-  .refine((v) => !v.dueDate || v.dueDate >= v.issueDate, {
-    message: "Due date can't be before the statement date",
-    path: ["dueDate"],
-  });
+  .refine(dueAfterIssue.check, dueAfterIssue.params);
+
+/** An SOA issued before this system: amounts are typed in, not computed. */
+export const previousSoaFormSchema = z
+  .object({
+    ...soaHeaderShape,
+    originalNo: z.string().optional(),
+    totalAmount: money.min(0, "Amount can't be negative"),
+    amountPaid: money.min(0, "Amount can't be negative"),
+  })
+  .refine(dueAfterIssue.check, dueAfterIssue.params);
 
 export type SoaLineItem = z.infer<typeof soaLineItemSchema>;
 export type SoaDiscount = z.infer<typeof soaDiscountSchema>;
 export type SoaPayment = z.infer<typeof soaPaymentSchema>;
 export type SoaFormValues = z.infer<typeof soaFormSchema>;
+export type PreviousSoaFormValues = z.infer<typeof previousSoaFormSchema>;
+
+export const SOA_KINDS = ["generated", "previous"] as const;
+export type SoaKind = (typeof SOA_KINDS)[number];
 
 /** Today in Manila as YYYY-MM-DD (en-CA formats dates that way). */
 export function todayInManila(): string {
@@ -90,5 +116,20 @@ export function emptySoaValues(): SoaFormValues {
     discounts: [],
     payments: [],
     notes: "",
+  };
+}
+
+export function emptyPreviousSoaValues(): PreviousSoaFormValues {
+  return {
+    billToName: "",
+    billToDetails: "",
+    contactId: "",
+    reference: "",
+    issueDate: todayInManila(),
+    dueDate: "",
+    notes: "",
+    originalNo: "",
+    totalAmount: undefined as unknown as number,
+    amountPaid: 0,
   };
 }

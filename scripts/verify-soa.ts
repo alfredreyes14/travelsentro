@@ -7,9 +7,19 @@
  */
 import { writeFileSync } from "node:fs";
 
-import { soaFormSchema } from "../components/admin/soa/soa-form-schema";
+import { previousSoaFormSchema, soaFormSchema } from "../components/admin/soa/soa-form-schema";
 import { computeSoaTotals, discountLabel } from "../lib/soa/totals";
-import { soaRowToFormValues, soaValuesToRow, type SoaContentRow } from "../lib/soa/soa-row";
+import {
+  previousSoaRowToFormValues,
+  previousSoaToPrintValues,
+  previousSoaValuesToRow,
+  soaRowToFormValues,
+  soaValuesToRow,
+  type PreviousSoaContentRow,
+  type SoaContentRow,
+} from "../lib/soa/soa-row";
+import { isSoaFileKey } from "../lib/soa/files";
+import { soaEmailSchema } from "../lib/soa/email-schema";
 import { renderSoaPdf } from "../lib/pdf/soa-pdf";
 import { LOCAL_LOGO_PATH } from "../lib/pdf/package-pdf";
 import { SAMPLE } from "./verify-soa-sample";
@@ -121,6 +131,87 @@ function checkLabels(): void {
   );
 }
 
+function checkStoredAmounts(): void {
+  const row = soaValuesToRow(SAMPLE);
+  record(
+    "generated SOA stores its computed total and amount paid",
+    row.total_amount === 22264.1 && row.amount_paid === 10000 && row.original_no === null,
+    JSON.stringify({ total: row.total_amount, paid: row.amount_paid })
+  );
+}
+
+const PREVIOUS = {
+  billToName: "ABC Corp.",
+  billToDetails: "",
+  contactId: "",
+  reference: "Team outing 2025",
+  issueDate: "2025-08-01",
+  dueDate: "",
+  notes: "",
+  originalNo: "2025-0142",
+  totalAmount: 154000.5,
+  amountPaid: 50000,
+};
+
+function checkPreviousRoundTrip(): void {
+  const stored = JSON.parse(JSON.stringify(previousSoaValuesToRow(PREVIOUS)));
+  const back = previousSoaRowToFormValues(stored as PreviousSoaContentRow);
+  record(
+    "previous SOA values survive the row round trip and keep their amounts",
+    previousSoaFormSchema.safeParse(back).success &&
+      back.totalAmount === 154000.5 &&
+      back.amountPaid === 50000 &&
+      back.originalNo === "2025-0142" &&
+      JSON.stringify(stored.line_items) === "[]",
+    JSON.stringify(back)
+  );
+}
+
+function checkPreviousPrint(): void {
+  const row = previousSoaValuesToRow(PREVIOUS) as unknown as PreviousSoaContentRow;
+  const printed = previousSoaToPrintValues(row);
+  const t = computeSoaTotals(printed);
+  record(
+    "a previous SOA prints with its own total, payment and balance",
+    t.total === 154000.5 && t.totalPaid === 50000 && t.balance === 104000.5 &&
+      soaFormSchema.safeParse(printed).success,
+    JSON.stringify(t)
+  );
+}
+
+function checkPreviousSchema(): void {
+  const bad = [
+    ["missing total", { ...PREVIOUS, totalAmount: undefined }],
+    ["negative paid", { ...PREVIOUS, amountPaid: -1 }],
+  ] as const;
+  const accepted = bad.filter(([, v]) => previousSoaFormSchema.safeParse(v).success).map(([n]) => n);
+  record("previous SOA schema rejects bad amounts", accepted.length === 0, accepted.join(", ") || "all rejected");
+}
+
+function checkFileKeys(): void {
+  const good = "statements/0f8fad5b-d9cb-469f-a165-70867728950e.pdf";
+  const bad = [
+    "contacts/0f8fad5b-d9cb-469f-a165-70867728950e.pdf",
+    "statements/../x.pdf",
+    "statements/0f8fad5b-d9cb-469f-a165-70867728950e/x.pdf",
+  ];
+  record(
+    "SOA file keys only accept statements/{uuid}.{ext}",
+    isSoaFileKey(good) && bad.every((k) => !isSoaFileKey(k)),
+    "checked"
+  );
+}
+
+function checkEmailSchema(): void {
+  const ok = soaEmailSchema.safeParse({ to: " Maria@Example.com ", subject: "SOA", message: "Hi" });
+  const bad = soaEmailSchema.safeParse({ to: "not-an-email", subject: "SOA", message: "Hi" });
+  record(
+    "email form normalizes the address and rejects invalid ones",
+    ok.success && ok.data.to === "maria@example.com" && !bad.success,
+    JSON.stringify(ok.success ? ok.data : ok.error.issues)
+  );
+}
+
 async function checkPdf(outPath: string | undefined): Promise<void> {
   const buffer = await renderSoaPdf({ soaNo: "SOA-000001", values: SAMPLE }, LOCAL_LOGO_PATH);
   const signature = buffer.subarray(0, 5).toString("ascii");
@@ -137,6 +228,12 @@ async function main(): Promise<void> {
   checkVoucherFieldsDroppedOnPlainDiscount();
   checkSchemaRules();
   checkLabels();
+  checkStoredAmounts();
+  checkPreviousRoundTrip();
+  checkPreviousPrint();
+  checkPreviousSchema();
+  checkFileKeys();
+  checkEmailSchema();
   const outIndex = process.argv.indexOf("--out");
   await checkPdf(outIndex > -1 ? process.argv[outIndex + 1] : undefined);
 

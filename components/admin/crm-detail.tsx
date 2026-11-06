@@ -92,6 +92,7 @@ export function CrmDetail({
   canEdit,
   quotesSlot,
   documentsSlot,
+  soaSlot,
 }: {
   contact: CrmDetailContact;
   formValues: ContactFormValues;
@@ -101,6 +102,8 @@ export function CrmDetail({
   canEdit: boolean;
   quotesSlot?: ReactNode;
   documentsSlot?: ReactNode;
+  /** Statements of Account -- shown for both client types. */
+  soaSlot?: ReactNode;
 }) {
   const router = useRouter();
   // Shows the picked stage at once; when the action settles it falls back
@@ -325,6 +328,8 @@ export function CrmDetail({
       ) : (
         quotesSlot
       )}
+
+      {soaSlot}
 
       <ContactActivity inquiries={inquiries} messages={messages} />
 
