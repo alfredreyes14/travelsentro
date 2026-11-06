@@ -11,11 +11,27 @@ import {
 
 import type { SoaFormValues } from "@/components/admin/soa/soa-form-schema";
 import { CONTACT_ADDRESS, CONTACT_EMAIL } from "@/lib/constants";
-import { computeSoaTotals, discountLabel, formatAmount } from "@/lib/soa/totals";
+import {
+  applyPaymentsToInstallments,
+  computeNextDueDate,
+  computeSoaTotals,
+  discountLabel,
+  formatAmount,
+  type InstallmentStatus,
+} from "@/lib/soa/totals";
 import { formatWhatsAppNumberForDisplay } from "@/lib/whatsapp";
 import type { Database, Tables } from "@/types/database";
 
-export type SoaPdfData = { soaNo: string; values: SoaFormValues };
+export type SoaPdfData = { soaNo: string; quoteNo?: string | null; values: SoaFormValues };
+
+/** A statement row plus the number of its linked quote, for printing. */
+export type StatementForPdf = Tables<"statements"> & { quoteNo: string | null };
+
+const INSTALLMENT_STATUS_LABELS: Record<InstallmentStatus, string> = {
+  paid: "Paid",
+  partial: "Partly paid",
+  unpaid: "Unpaid",
+};
 
 // "PHP" text, not "₱": react-pdf's built-in Helvetica has no ₱ glyph (same
 // convention as itinerary-pdf.tsx).
@@ -56,6 +72,10 @@ const ORANGE = "#f49314";
 const MUTED = "#6b7280";
 const BORDER = "#d1d5db";
 
+// Payment schedule columns (same 503pt of row width).
+const SCHED = { due: 110, amount: 100, status: 80 };
+const SCHED_DESC_WIDTH = 503 - SCHED.due - SCHED.amount - SCHED.status;
+
 // Fixed column widths: a flex:1 <Text> in a row gets mis-measured by
 // react-pdf's layout engine and inflates row height. 595pt A4 - 80pt page
 // padding - 12pt row padding = 503pt of columns.
@@ -77,7 +97,8 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 20,
   },
-  logo: { width: 150 },
+  // The public site's logo (with tagline), 1600x386.
+  logo: { width: 190 },
   docTitle: {
     fontSize: 16,
     fontFamily: "Helvetica-Bold",
@@ -159,7 +180,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 6,
   },
-  notes: { marginTop: 24 },
+  remarks: { marginTop: 24 },
+  schedule: { marginTop: 24 },
+  schedDue: { width: SCHED.due },
+  schedDesc: { width: SCHED_DESC_WIDTH, paddingRight: 8 },
+  schedAmount: { width: SCHED.amount, textAlign: "right" },
+  schedStatus: { width: SCHED.status, textAlign: "right" },
+  schedPaid: { width: SCHED.status, textAlign: "right", color: "#15803d" },
   footer: { position: "absolute", bottom: 0, left: 0, right: 0 },
   footerBar: {
     backgroundColor: NAVY,
@@ -181,8 +208,22 @@ const styles = StyleSheet.create({
 });
 
 export function SoaPdfDocument({ data, logoSrc }: { data: SoaPdfData; logoSrc: string }) {
-  const { soaNo, values } = data;
+  const { soaNo, quoteNo, values } = data;
   const totals = computeSoaTotals(values);
+  const installments = values.installments ?? [];
+  const progress = applyPaymentsToInstallments(installments, totals.totalPaid);
+  const schedule = installments
+    .map((installment, index) => ({ installment, status: progress[index].status }))
+    .sort((a, b) => a.installment.dueDate.localeCompare(b.installment.dueDate));
+  const nextDue =
+    installments.length > 0
+      ? computeNextDueDate({
+          installments,
+          dueDate: values.dueDate,
+          balance: totals.balance,
+          totalPaid: totals.totalPaid,
+        })
+      : null;
   const hasAdjustments = values.discounts.length > 0 || values.payments.length > 0;
   const balanceLabel = totals.balance < 0 ? "CREDIT BALANCE" : "BALANCE DUE";
 
@@ -207,6 +248,18 @@ export function SoaPdfDocument({ data, logoSrc }: { data: SoaPdfData; logoSrc: s
                 <Text style={styles.metaValue}>{formatDate(values.dueDate)}</Text>
               </View>
             ) : null}
+            {nextDue ? (
+              <View style={styles.metaLine}>
+                <Text style={styles.metaLabel}>Next payment</Text>
+                <Text style={styles.metaValue}>{formatDate(nextDue)}</Text>
+              </View>
+            ) : null}
+            {quoteNo ? (
+              <View style={styles.metaLine}>
+                <Text style={styles.metaLabel}>Quote No.</Text>
+                <Text style={styles.metaValue}>{quoteNo}</Text>
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -218,12 +271,6 @@ export function SoaPdfDocument({ data, logoSrc }: { data: SoaPdfData; logoSrc: s
               <Lines text={values.billToDetails} style={styles.paragraph} />
             ) : null}
           </View>
-          {values.reference ? (
-            <View style={styles.party}>
-              <Text style={styles.sectionLabel}>REFERENCE</Text>
-              <Text style={styles.paragraph}>{values.reference}</Text>
-            </View>
-          ) : null}
         </View>
 
         <View style={styles.tableHeader}>
@@ -272,7 +319,6 @@ export function SoaPdfDocument({ data, logoSrc }: { data: SoaPdfData; logoSrc: s
                 <View key={index} style={styles.summaryRow}>
                   <Text style={styles.summaryLabel}>
                     {formatDate(payment.date)}
-                    {payment.label ? ` – ${payment.label}` : ""}
                   </Text>
                   <Text style={styles.summaryValue}>{php(-payment.amount)}</Text>
                 </View>
@@ -286,10 +332,34 @@ export function SoaPdfDocument({ data, logoSrc }: { data: SoaPdfData; logoSrc: s
           </View>
         </View>
 
-        {values.notes ? (
-          <View style={styles.notes} wrap={false}>
-            <Text style={styles.sectionLabel}>NOTES / PAYMENT INSTRUCTIONS</Text>
-            <Lines text={values.notes} style={styles.paragraph} />
+        {installments.length > 0 ? (
+          <View style={styles.schedule} wrap={false}>
+            <Text style={styles.sectionLabel}>PAYMENT SCHEDULE</Text>
+            <View style={styles.tableHeader}>
+              <Text style={styles.schedDue}>DUE DATE</Text>
+              <Text style={styles.schedDesc}>DESCRIPTION</Text>
+              <Text style={styles.schedAmount}>AMOUNT</Text>
+              <Text style={styles.schedStatus}>STATUS</Text>
+            </View>
+            {schedule.map(({ installment, status }, index) => (
+              <View key={index} style={styles.tableRow}>
+                <Text style={styles.schedDue}>{formatDate(installment.dueDate)}</Text>
+                <Text style={styles.schedDesc}>
+                  {installment.label || `Installment ${index + 1}`}
+                </Text>
+                <Text style={styles.schedAmount}>{formatAmount(installment.amount)}</Text>
+                <Text style={status === "paid" ? styles.schedPaid : styles.schedStatus}>
+                  {INSTALLMENT_STATUS_LABELS[status]}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {values.remarks ? (
+          <View style={styles.remarks} wrap={false}>
+            <Text style={styles.sectionLabel}>REMARKS</Text>
+            <Lines text={values.remarks} style={styles.paragraph} />
           </View>
         ) : null}
 
@@ -321,10 +391,10 @@ export async function renderSoaPdf(data: SoaPdfData, logoSrc: string): Promise<B
 export async function fetchSoaForPdf(
   supabase: SupabaseClient<Database>,
   id: string
-): Promise<Tables<"statements"> | null> {
+): Promise<StatementForPdf | null> {
   const { data, error } = await supabase
     .from("statements")
-    .select("*")
+    .select("*, quote:quotes(quote_no)")
     .eq("id", id)
     .maybeSingle();
 
@@ -332,5 +402,12 @@ export async function fetchSoaForPdf(
     console.error("fetchSoaForPdf failed:", error);
     return null;
   }
-  return data;
+  if (!data) return null;
+
+  // To-one join; normalize whatever shape the client returns.
+  const { quote, ...row } = data as typeof data & {
+    quote: { quote_no: string } | Array<{ quote_no: string }> | null;
+  };
+  const linked = Array.isArray(quote) ? quote[0] : quote;
+  return { ...(row as Tables<"statements">), quoteNo: linked?.quote_no ?? null };
 }

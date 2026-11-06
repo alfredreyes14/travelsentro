@@ -13,6 +13,14 @@ export type SoaContactOption = {
   clientType: ClientType;
 };
 
+export type SoaQuoteOption = {
+  id: string;
+  quoteNo: string;
+  title: string;
+  customerName: string | null;
+  contactId: string | null;
+};
+
 export type SoaVoucherOption = {
   id: string;
   title: string;
@@ -23,8 +31,8 @@ export type SoaVoucherOption = {
 };
 
 /**
- * Contacts (with tags, for the "New contact" dialog) and usable vouchers
- * for the SOA forms' pickers. Vouchers are
+ * Contacts (with tags, for the "New contact" dialog), quotes and usable
+ * vouchers for the SOA forms' pickers. Vouchers are
  * RLS-gated by can_manage_vouchers, so staff without it just get an empty
  * list and type the voucher in by hand.
  */
@@ -33,9 +41,10 @@ export async function loadSoaFormOptions(
 ): Promise<{
   contacts: SoaContactOption[];
   vouchers: SoaVoucherOption[];
+  quotes: SoaQuoteOption[];
   existingTags: string[];
 }> {
-  const [contactsResult, vouchersResult, tagsResult] = await Promise.all([
+  const [contactsResult, vouchersResult, tagsResult, quotesResult] = await Promise.all([
     supabase.from("contacts").select("id, name, email, phone, client_type").order("name"),
     supabase
       .from("vouchers")
@@ -43,10 +52,15 @@ export async function loadSoaFormOptions(
       .in("status", ["available", "assigned", "redeemed"])
       .order("created_at", { ascending: false }),
     supabase.rpc("list_contact_tags"),
+    supabase
+      .from("quotes")
+      .select("id, quote_no, title, customer_name, contact_id")
+      .order("updated_at", { ascending: false }),
   ]);
 
   if (contactsResult.error) console.error("Failed to load contacts:", contactsResult.error.message);
   if (vouchersResult.error) console.error("Failed to load vouchers:", vouchersResult.error.message);
+  if (quotesResult.error) console.error("Failed to load quotes:", quotesResult.error.message);
 
   return {
     contacts: (contactsResult.data ?? []).map((row) => ({
@@ -57,6 +71,13 @@ export async function loadSoaFormOptions(
       clientType: toClientType(row.client_type),
     })),
     existingTags: tagsResult.data ?? [],
+    quotes: (quotesResult.data ?? []).map((row) => ({
+      id: row.id,
+      quoteNo: row.quote_no,
+      title: row.title,
+      customerName: row.customer_name,
+      contactId: row.contact_id,
+    })),
     vouchers: (vouchersResult.data ?? []).map((row) => ({
       id: row.id,
       title: row.title,

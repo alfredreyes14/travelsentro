@@ -6,16 +6,22 @@ import {
   useWatch,
   type ControllerRenderProps,
 } from "react-hook-form";
+import { format, parseISO } from "date-fns";
 import { Trash2Icon } from "lucide-react";
 
 import type { SoaFormValues } from "./soa-form-schema";
 import type { RequestRemove } from "@/components/admin/itinerary-fields/remove-confirmation";
 import {
+  applyPaymentsToInstallments,
+  computeNextDueDate,
   computeSoaTotals,
   discountLabel,
   formatPeso,
+  sumCents,
+  type InstallmentStatus,
 } from "@/lib/soa/totals";
 import type { SoaVoucherOption } from "@/lib/soa/soa-options";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -479,7 +485,7 @@ export function SoaPaymentsFields({
               )
             }
           />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[160px_1fr_1fr]">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-[160px_1fr]">
             <FormField
               control={form.control}
               name={`payments.${index}.date`}
@@ -506,24 +512,6 @@ export function SoaPaymentsFields({
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name={`payments.${index}.label`}
-              render={({ field }) => (
-                <FormItem className="col-span-2 sm:col-span-1">
-                  <FormLabel>Note (optional)</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      value={field.value ?? ""}
-                      type="text"
-                      placeholder="Downpayment via GCash"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
         </div>
       ))}
@@ -533,10 +521,159 @@ export function SoaPaymentsFields({
         size="sm"
         className="self-start"
         onClick={() =>
-          payments.append({ date: defaultDate(), label: "", amount: BLANK_NUMBER })
+          payments.append({ date: defaultDate(), amount: BLANK_NUMBER })
         }
       >
         Add payment
+      </Button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Installments (payment schedule)
+// ---------------------------------------------------------------------------
+
+const INSTALLMENT_STATUS: Record<
+  InstallmentStatus,
+  { label: string; variant: "secondary" | "outline" }
+> = {
+  paid: { label: "Paid", variant: "secondary" },
+  partial: { label: "Partly paid", variant: "outline" },
+  unpaid: { label: "Unpaid", variant: "outline" },
+};
+
+export function SoaInstallmentsFields({
+  onRequestRemove,
+  defaultDate,
+}: {
+  onRequestRemove: RequestRemove;
+  defaultDate: () => string;
+}) {
+  const form = useFormContext<SoaFormValues>();
+  const installments = useFieldArray({ control: form.control, name: "installments" });
+  const watched = useWatch({ control: form.control, name: "installments" }) ?? [];
+  const totals = useLiveTotals();
+  const progress = applyPaymentsToInstallments(watched, totals.totalPaid);
+
+  const totalCents = Math.round(totals.total * 100);
+  const unscheduledCents = totalCents - sumCents(watched.map((i) => i.amount));
+
+  /** A new row defaults to whatever of the total isn't scheduled yet. */
+  function addInstallment() {
+    installments.append({
+      dueDate: defaultDate(),
+      label: "",
+      amount: unscheduledCents > 0 ? unscheduledCents / 100 : BLANK_NUMBER,
+    });
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {installments.fields.map((field, index) => {
+        const status = progress[index]?.status ?? "unpaid";
+        return (
+          <div
+            key={field.id}
+            className="flex flex-col gap-3 rounded-lg border border-input bg-muted/30 p-3"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2 font-heading text-[16px] leading-[1.2] font-semibold">
+                Installment {index + 1}
+                <Badge variant={INSTALLMENT_STATUS[status].variant}>
+                  {INSTALLMENT_STATUS[status].label}
+                </Badge>
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={`Remove installment ${index + 1}`}
+                onClick={() =>
+                  onRequestRemove(
+                    Number.isFinite(form.getValues(`installments.${index}.amount`)),
+                    `Installment ${index + 1}`,
+                    () => installments.remove(index)
+                  )
+                }
+              >
+                <Trash2Icon className="size-4" />
+                Remove
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-[160px_1fr_1fr]">
+              <FormField
+                control={form.control}
+                name={`installments.${index}.dueDate`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Due date</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name={`installments.${index}.amount`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount</FormLabel>
+                    <FormControl>
+                      <Input {...numberInputProps(field)} min={0} prefix="₱" placeholder="0.00" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name={`installments.${index}.label`}
+                render={({ field }) => (
+                  <FormItem className="col-span-2 sm:col-span-1">
+                    <FormLabel>Description (optional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        value={field.value ?? ""}
+                        type="text"
+                        placeholder={index === 0 ? "Downpayment" : "2nd payment"}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        );
+      })}
+
+      {installments.fields.length > 0 && unscheduledCents !== 0 ? (
+        <p className="text-sm text-destructive">
+          {unscheduledCents > 0
+            ? `${formatPeso(unscheduledCents / 100)} of the total isn't scheduled yet.`
+            : `The installments are ${formatPeso(-unscheduledCents / 100)} more than the total.`}{" "}
+          They must add up to {formatPeso(totals.total)}.
+        </p>
+      ) : null}
+      <ArrayError
+        message={
+          form.formState.errors.installments?.message ??
+          form.formState.errors.installments?.root?.message
+        }
+      />
+
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="self-start"
+        onClick={addInstallment}
+      >
+        Add installment
       </Button>
     </div>
   );
@@ -566,8 +703,15 @@ function SummaryRow({
 export function SoaSummary() {
   const { control } = useFormContext<SoaFormValues>();
   const discounts = useWatch({ control, name: "discounts" }) ?? [];
+  const [installments, dueDate] = useWatch({ control, name: ["installments", "dueDate"] });
   const totals = useLiveTotals();
   const isCredit = totals.balance < 0;
+  const nextDue = computeNextDueDate({
+    installments: installments ?? [],
+    dueDate,
+    balance: totals.balance,
+    totalPaid: totals.totalPaid,
+  });
 
   return (
     <div className="flex flex-col gap-1.5 text-sm">
@@ -593,6 +737,13 @@ export function SoaSummary() {
         value={formatPeso(Math.abs(totals.balance))}
         className="mt-1 rounded-lg bg-primary px-3 py-2 text-base font-semibold text-primary-foreground"
       />
+      {nextDue ? (
+        <SummaryRow
+          label="Next payment due"
+          value={format(parseISO(nextDue), "MMM d, yyyy")}
+          className="px-3 text-muted-foreground"
+        />
+      ) : null}
     </div>
   );
 }
