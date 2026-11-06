@@ -44,14 +44,14 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.0.0
 
       - name: Link project
         run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
       - name: Pending migrations (dry run)
-        run: supabase db push --dry-run
+        run: supabase db push --remote --dry-run
 
       - name: Push migrations
         if: github.event_name != 'pull_request'
-        run: supabase db push
+        run: supabase db push --remote
