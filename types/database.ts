@@ -795,6 +795,75 @@ export type Database = {
           },
         ];
       };
+      statements: {
+        Row: {
+          bill_to_details: string | null;
+          bill_to_name: string;
+          contact_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          discounts: NonNullable<Json>;
+          due_date: string | null;
+          id: string;
+          issue_date: string;
+          line_items: NonNullable<Json>;
+          notes: string | null;
+          payments: NonNullable<Json>;
+          reference: string | null;
+          soa_no: string;
+          updated_at: string;
+        };
+        Insert: {
+          bill_to_details?: string | null;
+          bill_to_name: string;
+          contact_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          discounts?: NonNullable<Json>;
+          due_date?: string | null;
+          id?: string;
+          issue_date?: string;
+          line_items?: NonNullable<Json>;
+          notes?: string | null;
+          payments?: NonNullable<Json>;
+          reference?: string | null;
+          soa_no?: string;
+          updated_at?: string;
+        };
+        Update: {
+          bill_to_details?: string | null;
+          bill_to_name?: string;
+          contact_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          discounts?: NonNullable<Json>;
+          due_date?: string | null;
+          id?: string;
+          issue_date?: string;
+          line_items?: NonNullable<Json>;
+          notes?: string | null;
+          payments?: NonNullable<Json>;
+          reference?: string | null;
+          soa_no?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "statements_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "statements_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       testimonials: {
         Row: {
           created_at: string;

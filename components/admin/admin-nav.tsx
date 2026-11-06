@@ -12,6 +12,7 @@ import {
   FileTextIcon,
   HandshakeIcon,
   CalendarDaysIcon,
+  ReceiptTextIcon,
 } from "lucide-react";
 
 import { useNavigationGuard } from "./navigation-guard";
@@ -105,6 +106,13 @@ export function AdminNav({
       href: "/admin/quotes",
       label: "Quotes",
       icon: FileTextIcon,
+      show: canManageQuotes,
+    },
+    // Statements of Account share the Quotes permission -- no new toggle.
+    {
+      href: "/admin/soa",
+      label: "SOA",
+      icon: ReceiptTextIcon,
       show: canManageQuotes,
     },
     {
