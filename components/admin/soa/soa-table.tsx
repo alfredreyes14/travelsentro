@@ -6,7 +6,7 @@ import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 
 import { deleteSoa } from "@/actions/soa";
-import type { SoaKind } from "./soa-form-schema";
+import { todayInManila, type SoaKind } from "./soa-form-schema";
 import { CLIENT_TYPE_LABELS, toClientType } from "@/lib/crm/stage";
 import { formatPeso } from "@/lib/soa/totals";
 import { Badge } from "@/components/ui/badge";
@@ -41,12 +41,31 @@ export type SoaListItem = {
   total: number;
   paid: number;
   balance: number;
+  nextDueDate: string | null;
 };
 
 export function BalanceCell({ balance }: { balance: number }) {
   if (balance === 0) return <span className="text-green-700 dark:text-green-400">Paid</span>;
   if (balance < 0) return <span>{formatPeso(-balance)} credit</span>;
   return <span>{formatPeso(balance)}</span>;
+}
+
+/** The next payment's due date, flagged when it has passed. */
+export function NextDueCell({ date }: { date: string | null }) {
+  if (!date) return <span className="text-muted-foreground">—</span>;
+  const overdue = date < todayInManila();
+  return (
+    <span className="inline-flex flex-wrap items-center justify-end gap-1.5 tabular-nums">
+      <span className={overdue ? "text-destructive" : undefined}>
+        {format(parseISO(date), "MMM d, yyyy")}
+      </span>
+      {overdue ? (
+        <Badge variant="destructive" className="text-[11px]">
+          Overdue
+        </Badge>
+      ) : null}
+    </span>
+  );
 }
 
 export function SoaTable({ statements }: { statements: SoaListItem[] }) {
@@ -86,9 +105,10 @@ export function SoaTable({ statements }: { statements: SoaListItem[] }) {
             <TableHead>Bill to</TableHead>
             <TableHead>CRM contact</TableHead>
             <TableHead>Date</TableHead>
-            <TableHead className="text-right">Total</TableHead>
+            <TableHead className="text-right">Total amount</TableHead>
             <TableHead className="text-right">Paid</TableHead>
             <TableHead className="text-right">Balance</TableHead>
+            <TableHead className="text-right">Next due</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -133,6 +153,9 @@ export function SoaTable({ statements }: { statements: SoaListItem[] }) {
               <TableCell className="text-right tabular-nums">{formatPeso(soa.paid)}</TableCell>
               <TableCell className="text-right tabular-nums">
                 <BalanceCell balance={soa.balance} />
+              </TableCell>
+              <TableCell className="text-right">
+                <NextDueCell date={soa.nextDueDate} />
               </TableCell>
               <TableCell>
                 <div className="flex justify-end gap-2">

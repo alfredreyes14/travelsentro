@@ -862,13 +862,15 @@ export type Database = {
           file_size_bytes: number | null;
           file_storage_key: string | null;
           id: string;
+          installments: NonNullable<Json>;
           issue_date: string;
           kind: string;
           line_items: NonNullable<Json>;
-          notes: string | null;
+          next_due_date: string | null;
           original_no: string | null;
           payments: NonNullable<Json>;
-          reference: string | null;
+          quote_id: string | null;
+          remarks: string | null;
           soa_no: string;
           total_amount: number;
           updated_at: string;
@@ -888,13 +890,15 @@ export type Database = {
           file_size_bytes?: number | null;
           file_storage_key?: string | null;
           id?: string;
+          installments?: NonNullable<Json>;
           issue_date?: string;
           kind?: string;
           line_items?: NonNullable<Json>;
-          notes?: string | null;
+          next_due_date?: string | null;
           original_no?: string | null;
           payments?: NonNullable<Json>;
-          reference?: string | null;
+          quote_id?: string | null;
+          remarks?: string | null;
           soa_no?: string;
           total_amount?: number;
           updated_at?: string;
@@ -914,13 +918,15 @@ export type Database = {
           file_size_bytes?: number | null;
           file_storage_key?: string | null;
           id?: string;
+          installments?: NonNullable<Json>;
           issue_date?: string;
           kind?: string;
           line_items?: NonNullable<Json>;
-          notes?: string | null;
+          next_due_date?: string | null;
           original_no?: string | null;
           payments?: NonNullable<Json>;
-          reference?: string | null;
+          quote_id?: string | null;
+          remarks?: string | null;
           soa_no?: string;
           total_amount?: number;
           updated_at?: string;
@@ -938,6 +944,13 @@ export type Database = {
             columns: ["created_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "statements_quote_id_fkey";
+            columns: ["quote_id"];
+            isOneToOne: false;
+            referencedRelation: "quotes";
             referencedColumns: ["id"];
           },
         ];

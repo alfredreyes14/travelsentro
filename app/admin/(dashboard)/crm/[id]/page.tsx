@@ -172,7 +172,7 @@ export default async function CrmContactPage({
     const [linkedResult, unlinkedResult] = await Promise.all([
       supabase
         .from("statements")
-        .select("id, soa_no, kind, original_no, issue_date, total_amount, balance")
+        .select("id, soa_no, kind, original_no, issue_date, total_amount, balance, next_due_date")
         .eq("contact_id", id)
         .order("issue_date", { ascending: false }),
       supabase
@@ -199,6 +199,7 @@ export default async function CrmContactPage({
           issueDate: soa.issue_date,
           total: Number(soa.total_amount),
           balance: Number(soa.balance),
+          nextDueDate: soa.next_due_date,
         }))}
         unlinkedStatements={(unlinkedResult.data ?? []).map((soa) => ({
           id: soa.id,

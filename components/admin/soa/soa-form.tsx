@@ -15,6 +15,7 @@ import {
 } from "./soa-form-schema";
 import {
   SoaDiscountsFields,
+  SoaInstallmentsFields,
   SoaLineItemsFields,
   SoaPaymentsFields,
   SoaSummary,
@@ -22,11 +23,15 @@ import {
 import {
   SoaActionBar,
   SoaBillToFields,
-  SoaNotesField,
+  SoaRemarksField,
   SoaSection,
   type SoaEmailDefaults,
 } from "./soa-shared";
-import type { SoaContactOption, SoaVoucherOption } from "@/lib/soa/soa-options";
+import type {
+  SoaContactOption,
+  SoaQuoteOption,
+  SoaVoucherOption,
+} from "@/lib/soa/soa-options";
 import { useRemoveConfirmation } from "@/components/admin/itinerary-fields/remove-confirmation";
 import { Form } from "@/components/ui/form";
 
@@ -42,6 +47,7 @@ export function SoaForm({
   soaId,
   defaultValues,
   contacts,
+  quotes,
   vouchers,
   existingTags,
   canCreateContact,
@@ -50,6 +56,7 @@ export function SoaForm({
   soaId?: string;
   defaultValues?: SoaFormValues;
   contacts: SoaContactOption[];
+  quotes: SoaQuoteOption[];
   vouchers: SoaVoucherOption[];
   existingTags: string[];
   canCreateContact: boolean;
@@ -106,6 +113,7 @@ export function SoaForm({
         <SoaSection title="Bill to">
           <SoaBillToFields
             contacts={contacts}
+            quotes={quotes}
             existingTags={existingTags}
             canCreateContact={canCreateContact}
           />
@@ -130,10 +138,17 @@ export function SoaForm({
         </SoaSection>
 
         <SoaSection
-          title="Notes"
+          title="Installments (optional)"
+          description="Split the total into scheduled payments. Payments received are applied to the earliest installment first."
+        >
+          <SoaInstallmentsFields onRequestRemove={requestRemove} defaultDate={todayInManila} />
+        </SoaSection>
+
+        <SoaSection
+          title="Remarks"
           description="e.g. bank / GCash details and payment terms. Printed at the bottom."
         >
-          <SoaNotesField />
+          <SoaRemarksField />
         </SoaSection>
 
         <SoaSection title="Summary">

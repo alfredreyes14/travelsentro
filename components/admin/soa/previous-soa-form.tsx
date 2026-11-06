@@ -20,13 +20,13 @@ import {
 import {
   SoaActionBar,
   SoaBillToFields,
-  SoaNotesField,
+  SoaRemarksField,
   SoaSection,
   type SoaEmailDefaults,
 } from "./soa-shared";
 import { DOCUMENT_ACCEPT, checkDocument, formatBytes } from "@/lib/crm/documents";
 import type { SoaFileChange } from "@/lib/soa/files";
-import type { SoaContactOption } from "@/lib/soa/soa-options";
+import type { SoaContactOption, SoaQuoteOption } from "@/lib/soa/soa-options";
 import { formatPeso } from "@/lib/soa/totals";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -97,6 +97,7 @@ export function PreviousSoaForm({
   defaultValues,
   savedFile,
   contacts,
+  quotes,
   existingTags,
   canCreateContact,
   emailDefaults,
@@ -105,6 +106,7 @@ export function PreviousSoaForm({
   defaultValues?: PreviousSoaFormValues;
   savedFile?: SavedSoaFile | null;
   contacts: SoaContactOption[];
+  quotes: SoaQuoteOption[];
   existingTags: string[];
   canCreateContact: boolean;
   emailDefaults?: SoaEmailDefaults;
@@ -200,6 +202,7 @@ export function PreviousSoaForm({
         <SoaSection title="Bill to">
           <SoaBillToFields
             contacts={contacts}
+            quotes={quotes}
             existingTags={existingTags}
             canCreateContact={canCreateContact}
           />
@@ -295,8 +298,8 @@ export function PreviousSoaForm({
           ) : null}
         </SoaSection>
 
-        <SoaSection title="Notes (optional)">
-          <SoaNotesField />
+        <SoaSection title="Remarks (optional)">
+          <SoaRemarksField />
         </SoaSection>
 
         <SoaActionBar

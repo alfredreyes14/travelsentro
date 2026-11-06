@@ -9,7 +9,7 @@ import { FormActionBar } from "@/components/admin/form-action-bar";
 import { SoaSendDialog } from "./soa-send-dialog";
 import { contactLabel } from "@/lib/crm/contact-label";
 import { CLIENT_TYPE_LABELS } from "@/lib/crm/stage";
-import type { SoaContactOption } from "@/lib/soa/soa-options";
+import type { SoaContactOption, SoaQuoteOption } from "@/lib/soa/soa-options";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -41,10 +41,10 @@ type SoaHeaderValues = {
   billToName: string;
   billToDetails?: string;
   contactId?: string;
-  reference?: string;
+  quoteId?: string;
   issueDate: string;
   dueDate?: string;
-  notes?: string;
+  remarks?: string;
 };
 
 /**
@@ -82,6 +82,10 @@ function optionLabel(contact: SoaContactOption): string {
   return `${contactLabel(contact)} · ${CLIENT_TYPE_LABELS[contact.clientType]}`;
 }
 
+function quoteOptionLabel(quote: SoaQuoteOption): string {
+  return `${quote.quoteNo} · ${quote.title}${quote.customerName ? ` · ${quote.customerName}` : ""}`;
+}
+
 /**
  * Who the SOA is for. Linking a CRM contact (B2C or B2B) is optional: an
  * SOA can be saved with just a name and linked later from the contact's
@@ -90,10 +94,12 @@ function optionLabel(contact: SoaContactOption): string {
  */
 export function SoaBillToFields({
   contacts: initialContacts,
+  quotes,
   existingTags,
   canCreateContact,
 }: {
   contacts: SoaContactOption[];
+  quotes: SoaQuoteOption[];
   existingTags: string[];
   canCreateContact: boolean;
 }) {
@@ -103,6 +109,28 @@ export function SoaBillToFields({
 
   const contactId = useWatch({ control: form.control, name: "contactId" });
   const selectedContact = contacts.find((c) => c.id === contactId) ?? null;
+
+  const quoteId = useWatch({ control: form.control, name: "quoteId" });
+  const selectedQuote = quotes.find((q) => q.id === quoteId) ?? null;
+  // The linked contact's quotes first, then the rest.
+  const sortedQuotes = contactId
+    ? [...quotes].sort(
+        (a, b) => Number(b.contactId === contactId) - Number(a.contactId === contactId)
+      )
+    : quotes;
+
+  /** Links a quote, filling in blanks (contact, name) from it. */
+  function selectQuote(quote: SoaQuoteOption | null) {
+    const opts = { shouldDirty: true };
+    form.setValue("quoteId", quote?.id ?? "", opts);
+    if (!quote) return;
+    if (!form.getValues("contactId") && quote.contactId) {
+      selectContact(contacts.find((c) => c.id === quote.contactId) ?? null);
+    }
+    if (!form.getValues("billToName") && quote.customerName) {
+      form.setValue("billToName", quote.customerName, opts);
+    }
+  }
 
   function selectContact(contact: SoaContactOption | null) {
     const opts = { shouldDirty: true };
@@ -179,6 +207,40 @@ export function SoaBillToFields({
       />
       </StopSubmit>
 
+      {quotes.length > 0 ? (
+        <FormItem>
+          <FormLabel>Quote (optional)</FormLabel>
+          <Combobox
+            items={sortedQuotes}
+            value={selectedQuote}
+            onValueChange={(quote: SoaQuoteOption | null) => selectQuote(quote)}
+            itemToStringLabel={quoteOptionLabel}
+          >
+            <ComboboxInputGroup>
+              <ComboboxInput placeholder="Not linked..." />
+              {selectedQuote ? <ComboboxClear /> : <ComboboxTrigger />}
+            </ComboboxInputGroup>
+            <ComboboxPortal>
+              <ComboboxPositioner>
+                <ComboboxPopup>
+                  <ComboboxEmpty>No quotes found.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(quote: SoaQuoteOption) => (
+                      <ComboboxItem key={quote.id} value={quote}>
+                        {quoteOptionLabel(quote)}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxPopup>
+              </ComboboxPositioner>
+            </ComboboxPortal>
+          </Combobox>
+          <FormDescription>
+            The quote this SOA bills for. Its number prints on the SOA.
+          </FormDescription>
+        </FormItem>
+      ) : null}
+
       <FormField
         control={form.control}
         name="billToName"
@@ -201,25 +263,6 @@ export function SoaBillToFields({
             <FormLabel>Address / contact details (optional)</FormLabel>
             <FormControl>
               <Textarea {...field} value={field.value ?? ""} rows={3} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <FormField
-        control={form.control}
-        name="reference"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Reference (optional)</FormLabel>
-            <FormControl>
-              <Input
-                {...field}
-                value={field.value ?? ""}
-                type="text"
-                placeholder="Coron trip, Dec 20–22 · Quote TSQ-000012"
-              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -258,12 +301,12 @@ export function SoaBillToFields({
   );
 }
 
-export function SoaNotesField({ label }: { label?: string }) {
+export function SoaRemarksField({ label }: { label?: string }) {
   const form = useFormContext<SoaHeaderValues>();
   return (
     <FormField
       control={form.control}
-      name="notes"
+      name="remarks"
       render={({ field }) => (
         <FormItem>
           {label ? <FormLabel>{label}</FormLabel> : null}

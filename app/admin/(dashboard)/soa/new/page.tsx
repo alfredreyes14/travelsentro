@@ -29,7 +29,7 @@ export default async function NewSoaPage({
   const isPrevious = kind === "previous";
 
   const supabase = await createClient();
-  const { contacts, vouchers, existingTags } = await loadSoaFormOptions(supabase);
+  const { contacts, vouchers, quotes, existingTags } = await loadSoaFormOptions(supabase);
   const canCreateContact = profile.role === "admin" || profile.can_edit_crm;
 
   // Only a contact that really exists is preset.
@@ -56,6 +56,7 @@ export default async function NewSoaPage({
       {isPrevious ? (
         <PreviousSoaForm
           contacts={contacts}
+          quotes={quotes}
           existingTags={existingTags}
           canCreateContact={canCreateContact}
           defaultValues={{ ...emptyPreviousSoaValues(), ...presetFields }}
@@ -63,6 +64,7 @@ export default async function NewSoaPage({
       ) : (
         <SoaForm
           contacts={contacts}
+          quotes={quotes}
           vouchers={vouchers}
           existingTags={existingTags}
           canCreateContact={canCreateContact}

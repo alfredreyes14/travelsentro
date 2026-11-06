@@ -2,13 +2,14 @@ import { z } from "zod";
 
 import {
   soaDiscountSchema,
+  soaInstallmentSchema,
   soaLineItemSchema,
   soaPaymentSchema,
   type PreviousSoaFormValues,
   type SoaFormValues,
   type SoaKind,
 } from "@/components/admin/soa/soa-form-schema";
-import { computeSoaTotals } from "@/lib/soa/totals";
+import { computeNextDueDate, computeSoaTotals } from "@/lib/soa/totals";
 import type { Tables, TablesInsert } from "@/types/database";
 
 type StatementRow = Tables<"statements">;
@@ -19,16 +20,18 @@ export type SoaRowPatch = Pick<
   | "bill_to_name"
   | "bill_to_details"
   | "contact_id"
-  | "reference"
+  | "quote_id"
   | "issue_date"
   | "due_date"
   | "line_items"
   | "discounts"
   | "payments"
-  | "notes"
+  | "installments"
+  | "remarks"
   | "original_no"
   | "total_amount"
   | "amount_paid"
+  | "next_due_date"
 >;
 
 export type SoaContentRow = Pick<
@@ -36,13 +39,14 @@ export type SoaContentRow = Pick<
   | "bill_to_name"
   | "bill_to_details"
   | "contact_id"
-  | "reference"
+  | "quote_id"
   | "issue_date"
   | "due_date"
   | "line_items"
   | "discounts"
   | "payments"
-  | "notes"
+  | "installments"
+  | "remarks"
 >;
 
 export type PreviousSoaContentRow = Pick<
@@ -50,10 +54,10 @@ export type PreviousSoaContentRow = Pick<
   | "bill_to_name"
   | "bill_to_details"
   | "contact_id"
-  | "reference"
+  | "quote_id"
   | "issue_date"
   | "due_date"
-  | "notes"
+  | "remarks"
   | "original_no"
   | "total_amount"
   | "amount_paid"
@@ -68,6 +72,7 @@ const storedSchema = z.object({
   lineItems: z.array(soaLineItemSchema),
   discounts: z.array(soaDiscountSchema),
   payments: z.array(soaPaymentSchema),
+  installments: z.array(soaInstallmentSchema),
 });
 
 const blankToNull = (value: string | undefined) => value?.trim() || null;
@@ -80,19 +85,19 @@ function headerToRow(values: {
   billToName: string;
   billToDetails?: string;
   contactId?: string;
-  reference?: string;
+  quoteId?: string;
   issueDate: string;
   dueDate?: string;
-  notes?: string;
+  remarks?: string;
 }) {
   return {
     bill_to_name: values.billToName.trim(),
     bill_to_details: blankToNull(values.billToDetails),
     contact_id: values.contactId || null,
-    reference: blankToNull(values.reference),
+    quote_id: values.quoteId || null,
     issue_date: values.issueDate,
     due_date: values.dueDate || null,
-    notes: blankToNull(values.notes),
+    remarks: blankToNull(values.remarks),
   };
 }
 
@@ -101,16 +106,21 @@ function headerToValues(row: SoaContentRow | PreviousSoaContentRow) {
     billToName: row.bill_to_name,
     billToDetails: row.bill_to_details ?? "",
     contactId: row.contact_id ?? "",
-    reference: row.reference ?? "",
+    quoteId: row.quote_id ?? "",
     issueDate: row.issue_date,
     dueDate: row.due_date ?? "",
-    notes: row.notes ?? "",
+    remarks: row.remarks ?? "",
   };
 }
 
+/** Installments are stored in due-date order, which is how they print. */
+function sortInstallments<T extends { dueDate: string }>(installments: T[]): T[] {
+  return [...installments].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+}
+
 /**
- * A generated SOA's row. total_amount/amount_paid are computed here from
- * the validated rows -- the browser never supplies them.
+ * A generated SOA's row. total_amount/amount_paid/next_due_date are
+ * computed here from the validated rows -- the browser never supplies them.
  */
 export function soaValuesToRow(values: SoaFormValues): SoaRowPatch {
   const totals = computeSoaTotals(values);
@@ -119,6 +129,17 @@ export function soaValuesToRow(values: SoaFormValues): SoaRowPatch {
     original_no: null,
     total_amount: totals.total,
     amount_paid: totals.totalPaid,
+    next_due_date: computeNextDueDate({
+      installments: values.installments,
+      dueDate: values.dueDate,
+      balance: totals.balance,
+      totalPaid: totals.totalPaid,
+    }),
+    installments: sortInstallments(values.installments).map((installment) => ({
+      dueDate: installment.dueDate,
+      amount: installment.amount,
+      ...(installment.label?.trim() ? { label: installment.label.trim() } : {}),
+    })),
     line_items: values.lineItems.map((item) => ({
       description: item.description.trim(),
       quantity: item.quantity,
@@ -143,7 +164,6 @@ export function soaValuesToRow(values: SoaFormValues): SoaRowPatch {
     payments: values.payments.map((payment) => ({
       date: payment.date,
       amount: payment.amount,
-      ...(payment.label?.trim() ? { label: payment.label.trim() } : {}),
     })),
   };
 }
@@ -155,9 +175,12 @@ export function previousSoaValuesToRow(values: PreviousSoaFormValues): SoaRowPat
     original_no: blankToNull(values.originalNo),
     total_amount: values.totalAmount,
     amount_paid: values.amountPaid,
+    next_due_date:
+      values.totalAmount > values.amountPaid ? values.dueDate || null : null,
     line_items: [],
     discounts: [],
     payments: [],
+    installments: [],
   };
 }
 
@@ -167,6 +190,7 @@ export function soaRowToFormValues(row: SoaContentRow): SoaFormValues {
     lineItems: row.line_items,
     discounts: row.discounts,
     payments: row.payments,
+    installments: row.installments,
   });
 
   return {
@@ -177,9 +201,10 @@ export function soaRowToFormValues(row: SoaContentRow): SoaFormValues {
       voucherId: discount.voucherId ?? "",
       voucherCode: discount.voucherCode ?? "",
     })),
-    payments: stored.payments.map((payment) => ({
-      ...payment,
-      label: payment.label ?? "",
+    payments: stored.payments,
+    installments: stored.installments.map((installment) => ({
+      ...installment,
+      label: installment.label ?? "",
     })),
   };
 }
@@ -206,9 +231,6 @@ export function previousSoaToPrintValues(
   const values = previousSoaRowToFormValues(row);
   return {
     ...headerToValues(row),
-    reference: [values.originalNo ? `Original SOA no. ${values.originalNo}` : "", values.reference]
-      .filter(Boolean)
-      .join(" · "),
     lineItems: [
       {
         description: values.originalNo
@@ -221,8 +243,9 @@ export function previousSoaToPrintValues(
     discounts: [],
     payments:
       values.amountPaid > 0
-        ? [{ date: values.issueDate, label: "Amount paid", amount: values.amountPaid }]
+        ? [{ date: values.issueDate, amount: values.amountPaid }]
         : [],
+    installments: [],
   };
 }
 
