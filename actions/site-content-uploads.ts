@@ -20,6 +20,7 @@ const ALLOWED_FOLDERS = [
   "destinations",
   "visa-services",
   "partners",
+  "events",
 ] as const;
 
 export type UploadImageInput = {

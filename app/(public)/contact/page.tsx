@@ -5,6 +5,7 @@ import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { WhatsAppCta } from "@/components/packages/whatsapp-cta";
 import { FacebookCta } from "@/components/packages/facebook-cta";
 import { buildPageMetadata } from "@/lib/seo/page-metadata";
+import { BackToHomeLink } from "@/components/layout/back-to-home-link";
 
 export const metadata: Metadata = buildPageMetadata({
   title: "Contact Us",
@@ -17,6 +18,8 @@ export default function ContactPage() {
   return (
     <ViewTransition enter="slide-up" default="none">
       <div className="mx-auto flex max-w-2xl flex-col gap-6 px-6 py-12 sm:px-8 lg:py-16">
+        <BackToHomeLink />
+
         <div className="flex flex-col gap-2">
           <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
             Contact Us

@@ -7,14 +7,18 @@ import { HeroCarousel, type HeroSlideDisplay } from "@/components/homepage/hero-
 import { HeroSearchBar } from "@/components/homepage/hero-search-bar";import { WhyChooseUs } from "@/components/homepage/why-choose-us";
 import { FeaturedPackagesGrid } from "@/components/homepage/featured-packages-grid";
 import { VisaServicesSection } from "@/components/homepage/visa-services-section";
+import { toPublicVisaService } from "@/lib/visa/public-visa";
 import { DestinationsSection } from "@/components/homepage/destinations-section";
 import { TestimonialsSection } from "@/components/homepage/testimonials-section";
+import { EventsSection } from "@/components/homepage/events-section";
 import { PartnerAffiliations } from "@/components/homepage/partner-affiliations";
 import { CorporateClients } from "@/components/homepage/corporate-clients";
 import { Reveal } from "@/components/motion/reveal";
 import { GetInTouchSection } from "@/components/inquiry/get-in-touch-section";
 import { readLogoFolder, type LogoFile } from "@/lib/logos/read-logo-folder";
 import { buildPageMetadata } from "@/lib/seo/page-metadata";
+import { manilaToday, pickHomepageEvents } from "@/lib/events/event-dates";
+import { toPublicEvent } from "@/lib/events/public-event";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = buildPageMetadata({
@@ -26,9 +30,9 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 // Homepage content (hero slides, featured packages, testimonials,
-// destinations, partners) is identical for every visitor and admin-managed,
+// destinations, partners, events) is identical for every visitor and admin-managed,
 // not per-request -- ISR lets it serve from cache instead of re-querying
-// Supabase 6x on every single request. Paired with lib/supabase/public.ts
+// Supabase 7x on every single request. Paired with lib/supabase/public.ts
 // (no cookies() call) so this route is actually eligible for static
 // rendering rather than being forced dynamic.
 export const revalidate = 60;
@@ -64,6 +68,7 @@ export default async function HomePage() {
     { data: destinationsData, error: destinationsError },
     { data: visaServicesData, error: visaServicesError },
     { data: partnersData, error: partnersError },
+    { data: eventsData, error: eventsError },
   ] = await Promise.all([
     // (1) Hero slides -- plain admin-uploaded images, in carousel order.
     supabase
@@ -110,6 +115,14 @@ export default async function HomePage() {
       .select("id, partner_type, name, logo_storage_path, link_url")
       .eq("is_published", true)
       .order("sort_order", { ascending: true }),
+    // (4.6) Events staff switched on for the homepage. Public read RLS
+    // already scopes this to published events; the filter is kept too.
+    // Picked and ordered below by date (upcoming first, at most 4).
+    supabase
+      .from("events")
+      .select("*")
+      .eq("is_published", true)
+      .eq("is_featured", true),
   ]);
 
   if (slidesError) {
@@ -175,20 +188,8 @@ export default async function HomePage() {
   }
 
   const visaServices = (visaServicesData ?? []).map(
-    (v: Database["public"]["Tables"]["visa_services"]["Row"]) => ({
-      id: v.id,
-      country: v.country,
-      description: v.description,
-      processingTime: v.processing_time,
-      price: v.price,
-      requirements: (v.requirements ?? "")
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0),
-      photoUrl: v.photo_storage_path
-        ? getPublicImageUrl(v.photo_storage_path)
-        : null,
-    })
+    (v: Database["public"]["Tables"]["visa_services"]["Row"]) =>
+      toPublicVisaService(v)
   );
 
   const localDestinations = destinationTiles.filter(
@@ -228,6 +229,16 @@ export default async function HomePage() {
             : undefined,
       }));
   }
+
+  if (eventsError) {
+    console.error("Failed to load events:", eventsError.message);
+  }
+
+  const today = manilaToday();
+  const homepageEvents = pickHomepageEvents(
+    ((eventsData ?? []) as Database["public"]["Tables"]["events"]["Row"][]).map(toPublicEvent),
+    today
+  );
 
   const brandPartnerLogos = partnerLogosOf("brand_partner");
   const corporateClientLogos = partnerLogosOf("corporate_client");
@@ -276,6 +287,11 @@ export default async function HomePage() {
         <Reveal>
           <TestimonialsSection testimonials={testimonials} />
         </Reveal>
+        {homepageEvents.length > 0 && (
+          <Reveal>
+            <EventsSection events={homepageEvents} today={today} />
+          </Reveal>
+        )}
 
         <Reveal>
           <PartnerAffiliations

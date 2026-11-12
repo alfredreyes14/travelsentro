@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/constants";
 import { packagePath } from "@/lib/packages/package-url";
+import { visaServicePath } from "@/lib/visa/public-visa";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
@@ -22,13 +23,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })
   );
 
+  // RLS limits anonymous reads to published events too; the filter keeps
+  // drafts out even for a session-aware client.
+  const { data: events } = await supabase
+    .from("events")
+    .select("slug, created_at")
+    .eq("is_published", true);
+
+  const eventEntries: MetadataRoute.Sitemap = (events ?? []).map((event) => ({
+    url: `${SITE_URL}/events/${event.slug}`,
+    lastModified: event.created_at,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
+
+  // Same published-only filter for visa services.
+  const { data: visaServices } = await supabase
+    .from("visa_services")
+    .select("slug, updated_at")
+    .eq("is_published", true);
+
+  const visaEntries: MetadataRoute.Sitemap = (visaServices ?? []).map(
+    (service) => ({
+      url: `${SITE_URL}${visaServicePath(service)}`,
+      lastModified: service.updated_at,
+      changeFrequency: "monthly",
+      priority: 0.6,
+    })
+  );
+
   return [
     { url: SITE_URL, changeFrequency: "weekly", priority: 1 },
     { url: `${SITE_URL}/packages`, changeFrequency: "weekly", priority: 0.9 },
+    { url: `${SITE_URL}/events`, changeFrequency: "weekly", priority: 0.7 },
     { url: `${SITE_URL}/faq`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/contact`, changeFrequency: "yearly", priority: 0.5 },
     {
-      url: `${SITE_URL}/booking-terms`,
+      url: `${SITE_URL}/booking-terms-and-conditions`,
       changeFrequency: "yearly",
       priority: 0.3,
     },
@@ -38,5 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.3,
     },
     ...packageEntries,
+    ...eventEntries,
+    ...visaEntries,
   ];
 }

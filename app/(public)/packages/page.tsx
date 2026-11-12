@@ -12,6 +12,7 @@ import { SectionHeading } from "@/components/ui/section-heading";
 import { InquiryForm } from "@/components/inquiry/inquiry-form";
 import { MONTH_OPTIONS } from "@/lib/months";
 import { buildPageMetadata } from "@/lib/seo/page-metadata";
+import { BackToHomeLink } from "@/components/layout/back-to-home-link";
 import type { Database } from "@/types/database";
 
 const PAGE_SIZE = 6;
@@ -320,6 +321,8 @@ export default async function PackagesPage({
   return (
     <ViewTransition enter="slide-up" default="none">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-12 sm:px-8 lg:py-16">
+        <BackToHomeLink />
+
         {/* Heading left, search right on desktop; stacked on mobile. The
             search's lg:ml-auto keeps it right-aligned even when the heading
             is hidden (empty results). */}

@@ -112,7 +112,6 @@ export type Database = {
           services_availed: string[];
           services_other: string | null;
           stage: string;
-          status: string;
           tags: string[];
           updated_at: string;
           updated_by: string | null;
@@ -137,7 +136,6 @@ export type Database = {
           services_availed?: string[];
           services_other?: string | null;
           stage?: string;
-          status?: string;
           tags?: string[];
           updated_at?: string;
           updated_by?: string | null;
@@ -162,7 +160,6 @@ export type Database = {
           services_availed?: string[];
           services_other?: string | null;
           stage?: string;
-          status?: string;
           tags?: string[];
           updated_at?: string;
           updated_by?: string | null;
@@ -215,6 +212,89 @@ export type Database = {
           region?: string;
           slug?: string;
           sort_order?: number;
+        };
+        Relationships: [];
+      };
+      event_photos: {
+        Row: {
+          created_at: string;
+          display_order: number;
+          event_id: string;
+          id: string;
+          storage_path: string;
+        };
+        Insert: {
+          created_at?: string;
+          display_order?: number;
+          event_id: string;
+          id?: string;
+          storage_path: string;
+        };
+        Update: {
+          created_at?: string;
+          display_order?: number;
+          event_id?: string;
+          id?: string;
+          storage_path?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "event_photos_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      events: {
+        Row: {
+          cover_storage_path: string | null;
+          created_at: string;
+          description: string | null;
+          end_date: string | null;
+          event_type: string;
+          id: string;
+          is_featured: boolean;
+          is_published: boolean;
+          link_url: string | null;
+          name: string;
+          slug: string;
+          start_date: string;
+          summary: string | null;
+          venue: string;
+        };
+        Insert: {
+          cover_storage_path?: string | null;
+          created_at?: string;
+          description?: string | null;
+          end_date?: string | null;
+          event_type: string;
+          id?: string;
+          is_featured?: boolean;
+          is_published?: boolean;
+          link_url?: string | null;
+          name: string;
+          slug: string;
+          start_date: string;
+          summary?: string | null;
+          venue: string;
+        };
+        Update: {
+          cover_storage_path?: string | null;
+          created_at?: string;
+          description?: string | null;
+          end_date?: string | null;
+          event_type?: string;
+          id?: string;
+          is_featured?: boolean;
+          is_published?: boolean;
+          link_url?: string | null;
+          name?: string;
+          slug?: string;
+          start_date?: string;
+          summary?: string | null;
+          venue?: string;
         };
         Relationships: [];
       };
@@ -724,6 +804,153 @@ export type Database = {
           },
         ];
       };
+      statement_emails: {
+        Row: {
+          created_at: string;
+          id: string;
+          provider_message_id: string | null;
+          sent_by: string | null;
+          sent_by_name: string | null;
+          sent_to: string;
+          statement_id: string;
+          status: string;
+          subject: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          provider_message_id?: string | null;
+          sent_by?: string | null;
+          sent_by_name?: string | null;
+          sent_to: string;
+          statement_id: string;
+          status: string;
+          subject: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          provider_message_id?: string | null;
+          sent_by?: string | null;
+          sent_by_name?: string | null;
+          sent_to?: string;
+          statement_id?: string;
+          status?: string;
+          subject?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "statement_emails_sent_by_fkey";
+            columns: ["sent_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "statement_emails_statement_id_fkey";
+            columns: ["statement_id"];
+            isOneToOne: false;
+            referencedRelation: "statements";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      statements: {
+        Row: {
+          amount_paid: number;
+          balance: number;
+          bill_to_details: string | null;
+          bill_to_name: string;
+          contact_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          discounts: NonNullable<Json>;
+          due_date: string | null;
+          file_content_type: string | null;
+          file_name: string | null;
+          file_size_bytes: number | null;
+          file_storage_key: string | null;
+          id: string;
+          issue_date: string;
+          kind: string;
+          line_items: NonNullable<Json>;
+          notes: string | null;
+          original_no: string | null;
+          payments: NonNullable<Json>;
+          reference: string | null;
+          soa_no: string;
+          total_amount: number;
+          updated_at: string;
+        };
+        Insert: {
+          amount_paid?: number;
+          balance?: never;
+          bill_to_details?: string | null;
+          bill_to_name: string;
+          contact_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          discounts?: NonNullable<Json>;
+          due_date?: string | null;
+          file_content_type?: string | null;
+          file_name?: string | null;
+          file_size_bytes?: number | null;
+          file_storage_key?: string | null;
+          id?: string;
+          issue_date?: string;
+          kind?: string;
+          line_items?: NonNullable<Json>;
+          notes?: string | null;
+          original_no?: string | null;
+          payments?: NonNullable<Json>;
+          reference?: string | null;
+          soa_no?: string;
+          total_amount?: number;
+          updated_at?: string;
+        };
+        Update: {
+          amount_paid?: number;
+          balance?: never;
+          bill_to_details?: string | null;
+          bill_to_name?: string;
+          contact_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          discounts?: NonNullable<Json>;
+          due_date?: string | null;
+          file_content_type?: string | null;
+          file_name?: string | null;
+          file_size_bytes?: number | null;
+          file_storage_key?: string | null;
+          id?: string;
+          issue_date?: string;
+          kind?: string;
+          line_items?: NonNullable<Json>;
+          notes?: string | null;
+          original_no?: string | null;
+          payments?: NonNullable<Json>;
+          reference?: string | null;
+          soa_no?: string;
+          total_amount?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "statements_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "statements_created_by_fkey";
+            columns: ["created_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       testimonials: {
         Row: {
           created_at: string;
@@ -833,7 +1060,9 @@ export type Database = {
           price: number | null;
           processing_time: string | null;
           requirements: string | null;
+          slug: string;
           sort_order: number;
+          updated_at: string;
         };
         Insert: {
           country: string;
@@ -845,7 +1074,9 @@ export type Database = {
           price?: number | null;
           processing_time?: string | null;
           requirements?: string | null;
+          slug?: string;
           sort_order?: number;
+          updated_at?: string;
         };
         Update: {
           country?: string;
@@ -857,7 +1088,9 @@ export type Database = {
           price?: number | null;
           processing_time?: string | null;
           requirements?: string | null;
+          slug?: string;
           sort_order?: number;
+          updated_at?: string;
         };
         Relationships: [];
       };

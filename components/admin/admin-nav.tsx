@@ -11,6 +11,8 @@ import {
   TicketIcon,
   FileTextIcon,
   HandshakeIcon,
+  CalendarDaysIcon,
+  ReceiptTextIcon,
 } from "lucide-react";
 
 import { useNavigationGuard } from "./navigation-guard";
@@ -77,6 +79,14 @@ export function AdminNav({
       icon: HandshakeIcon,
       show: canManagePackages,
     },
+    // Events pages and homepage section. Reuses canManagePackages like
+    // Partners above -- no new permission toggle.
+    {
+      href: "/admin/events",
+      label: "Events",
+      icon: CalendarDaysIcon,
+      show: canManagePackages,
+    },
     // CRM-03: universal read -- every authenticated Admin/Staff sees
     // "Contacts" regardless of can_edit_crm, deliberately NOT
     // permission-gated (unlike Packages/Content/Destinations/Users).
@@ -96,6 +106,13 @@ export function AdminNav({
       href: "/admin/quotes",
       label: "Quotes",
       icon: FileTextIcon,
+      show: canManageQuotes,
+    },
+    // Statements of Account share the Quotes permission -- no new toggle.
+    {
+      href: "/admin/soa",
+      label: "SOA",
+      icon: ReceiptTextIcon,
       show: canManageQuotes,
     },
     {

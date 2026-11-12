@@ -1,7 +1,7 @@
 /**
  * Proves the contacts B2C/B2B migration against a real database: the
  * stage/type, email-or-phone, contract-date and services constraints; the
- * status <-> stage sync trigger in both directions; that record_inquiry()
+ * removal of the old status column (20261023120000); that record_inquiry()
  * still creates a B2C / New contact; and the RLS on contacts inserts and
  * contact_documents. Mirrors scripts/verify-quote-rls.ts's structure.
  *
@@ -85,7 +85,7 @@ async function main() {
   const readContact = async (id: string) => {
     const { data, error } = await service
       .from("contacts")
-      .select("status, stage, client_type")
+      .select("stage, client_type")
       .eq("id", id)
       .single();
     if (error || !data) throw new Error(`readContact failed: ${error?.message}`);
@@ -97,55 +97,42 @@ async function main() {
     const { data: base, error: baseError } = await service
       .from("contacts")
       .insert({ name: `${PREFIX} base`, email: emailFor("base") })
-      .select("id, status, stage, client_type")
+      .select("id, stage, client_type")
       .single();
     if (baseError || !base) throw new Error(`fixture insert failed: ${baseError?.message}`);
 
     results.push({
-      name: "a new contact defaults to b2c / new, status new",
-      pass: base.client_type === "b2c" && base.stage === "new" && base.status === "new",
+      name: "a new contact defaults to b2c / new",
+      pass: base.client_type === "b2c" && base.stage === "new",
       detail: JSON.stringify(base),
     });
 
+    // Would fail if the old status <-> stage trigger were still attached,
+    // since its function reads the dropped column.
     await service.from("contacts").update({ stage: "quotation" }).eq("id", base.id);
     let row = await readContact(base.id);
     results.push({
-      name: "new code sets stage=quotation -> status follows as qualified",
-      pass: row.status === "qualified",
-      detail: JSON.stringify(row),
-    });
-
-    await service.from("contacts").update({ status: "won" }).eq("id", base.id);
-    row = await readContact(base.id);
-    results.push({
-      name: "old code sets status=won on a B2C contact -> stage follows as confirmation",
-      pass: row.stage === "confirmation",
+      name: "setting a stage works with the status column gone",
+      pass: row.stage === "quotation",
       detail: JSON.stringify(row),
     });
 
     await service.from("contacts").update({ client_type: "b2b", stage: "follow_up" }).eq("id", base.id);
     row = await readContact(base.id);
     results.push({
-      name: "converting to b2b / follow_up -> status follows as contacted",
-      pass: row.client_type === "b2b" && row.stage === "follow_up" && row.status === "contacted",
+      name: "converting to b2b / follow_up",
+      pass: row.client_type === "b2b" && row.stage === "follow_up",
       detail: JSON.stringify(row),
     });
 
-    await service.from("contacts").update({ status: "qualified" }).eq("id", base.id);
-    row = await readContact(base.id);
-    results.push({
-      name: "old code sets status=qualified on a B2B contact -> stage follows as discovery",
-      pass: row.stage === "discovery",
-      detail: JSON.stringify(row),
-    });
-
-    await service.from("contacts").update({ status: "lost" }).eq("id", base.id);
-    row = await readContact(base.id);
-    results.push({
-      name: "old code sets status=lost -> stage follows as lost",
-      pass: row.stage === "lost",
-      detail: JSON.stringify(row),
-    });
+    {
+      const { error } = await service.from("contacts").select("status").limit(1);
+      results.push({
+        name: "contacts.status no longer exists",
+        pass: error !== null,
+        detail: error ? `rejected: ${error.message}` : "column still readable",
+      });
+    }
 
     // ---------------------------------------------------------- constraints
     {
@@ -228,7 +215,7 @@ async function main() {
       const created = contactId ? await readContact(contactId) : null;
       results.push({
         name: "record_inquiry() still creates a b2c / new contact",
-        pass: !error && created?.client_type === "b2c" && created.stage === "new" && created.status === "new",
+        pass: !error && created?.client_type === "b2c" && created.stage === "new",
         detail: error ? error.message : JSON.stringify(created),
       });
     }
