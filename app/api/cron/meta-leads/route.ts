@@ -14,7 +14,7 @@ import { createServiceClient } from "@/lib/supabase/service";
  * lookback, run `npm run import:meta-leads`.
  *
  * Vercel sends `Authorization: Bearer $CRON_SECRET` with each cron call;
- * anything else is refused.
+ * anything else is refused, as is any deployment other than production.
  */
 export const maxDuration = 60;
 
@@ -51,6 +51,16 @@ async function notifyStaff(outcome: LeadOutcome, origin: string): Promise<void> 
 }
 
 export async function GET(request: Request) {
+  // Production only. Staging has its own database, which must stay free of
+  // real customer leads, so a manual call on a staging/preview deployment
+  // (or locally) is refused even with the right secret. Vercel only runs
+  // crons on production anyway.
+  if (process.env.VERCEL_ENV !== "production") {
+    return Response.json(
+      { error: "Meta lead sync only runs on the production deployment" },
+      { status: 403 }
+    );
+  }
   if (!process.env.CRON_SECRET) {
     console.error("Meta lead sync: CRON_SECRET is not set");
     return Response.json({ error: "Not configured" }, { status: 500 });
