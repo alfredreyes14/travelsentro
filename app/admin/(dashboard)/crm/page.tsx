@@ -6,10 +6,14 @@ import { CrmContactsView } from "@/components/admin/crm-contacts-view";
 import type { AdminContactListItem } from "@/components/admin/crm-table";
 import { toServiceKeys } from "@/lib/crm/services";
 import { isClientType, toClientType, toContactStage } from "@/lib/crm/stage";
+import { isMetaLeadSyncEnabled } from "@/lib/meta-leads/run-sync";
 
 export const metadata: Metadata = {
   title: "Contacts | TravelSentro Admin",
 };
+
+// Covers the "Sync Meta leads" Server Action (same limit as the cron route).
+export const maxDuration = 60;
 
 export default async function AdminCrmPage({
   searchParams,
@@ -59,6 +63,7 @@ export default async function AdminCrmPage({
       contacts={items}
       initialType={isClientType(type) ? type : "b2c"}
       canEdit={profile.role === "admin" || profile.can_edit_crm}
+      metaLeadSyncEnabled={isMetaLeadSyncEnabled()}
     />
   );
 }

@@ -10,6 +10,7 @@ export type MetaLeadSourceDetails = {
   formName: string | null;
   campaignName: string | null;
   adName: string | null;
+  adId: string | null;
 };
 
 /** inquiries.source_details (jsonb, written by record_meta_lead) for display. */
@@ -24,5 +25,6 @@ export function toMetaLeadSourceDetails(value: unknown): MetaLeadSourceDetails {
     formName: text("form_name"),
     campaignName: text("campaign_name"),
     adName: text("ad_name"),
+    adId: text("ad_id"),
   };
 }

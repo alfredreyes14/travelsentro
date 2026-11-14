@@ -8,6 +8,7 @@ import type { RowSelectionState } from "@tanstack/react-table";
 import { ContactAddDialog } from "./contact-add-dialog";
 import { CrmTable, type AdminContactListItem } from "./crm-table";
 import { MessageComposeDialog } from "./message-compose-dialog";
+import { MetaLeadSyncButton } from "./meta-lead-sync-button";
 import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,10 +64,13 @@ export function CrmContactsView({
   contacts,
   initialType,
   canEdit,
+  metaLeadSyncEnabled,
 }: {
   contacts: AdminContactListItem[];
   initialType: ClientType;
   canEdit: boolean;
+  /** Production only; see lib/meta-leads/run-sync.ts. */
+  metaLeadSyncEnabled: boolean;
 }) {
   const router = useRouter();
   const [type, setType] = useState<ClientType>(initialType);
@@ -155,10 +159,13 @@ export function CrmContactsView({
           Contacts
         </h1>
         {canEdit ? (
-          <Button onClick={() => setIsAddOpen(true)}>
-            <PlusIcon className="size-4" />
-            Add Contact
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <MetaLeadSyncButton enabled={metaLeadSyncEnabled} />
+            <Button onClick={() => setIsAddOpen(true)}>
+              <PlusIcon className="size-4" />
+              Add Contact
+            </Button>
+          </div>
         ) : null}
       </div>
 

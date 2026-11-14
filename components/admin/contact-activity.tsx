@@ -107,13 +107,17 @@ export function ContactActivity({
                       {item.message}
                     </p>
                     {item.source === "meta_lead_ad" &&
-                    (item.sourceDetails.campaignName || item.sourceDetails.adName) ? (
+                    (item.sourceDetails.campaignName ||
+                      item.sourceDetails.adName ||
+                      item.sourceDetails.adId) ? (
                       <p className="text-sm text-muted-foreground">
                         {[
                           item.sourceDetails.campaignName &&
                             `Campaign: ${item.sourceDetails.campaignName}`,
                           item.sourceDetails.adName &&
                             `Ad: ${item.sourceDetails.adName}`,
+                          item.sourceDetails.adId &&
+                            `Ad ID: ${item.sourceDetails.adId}`,
                         ]
                           .filter(Boolean)
                           .join(" · ")}
