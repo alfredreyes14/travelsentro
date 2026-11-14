@@ -15,6 +15,11 @@ import {
   type MessageChannel,
   type MessageStatus,
 } from "@/lib/crm/messages";
+import {
+  INQUIRY_SOURCE_LABELS,
+  type InquirySource,
+  type MetaLeadSourceDetails,
+} from "@/lib/crm/inquiry-source";
 
 export type CrmDetailInquiry = {
   id: string;
@@ -22,6 +27,8 @@ export type CrmDetailInquiry = {
   created_at: string;
   package_id: string | null;
   packages: { id: string; name: string; slug: string } | null;
+  source: InquirySource;
+  sourceDetails: MetaLeadSourceDetails;
 };
 
 export type CrmDetailMessage = {
@@ -84,7 +91,34 @@ export function ContactActivity({
                 </Tooltip>
                 {item.kind === "inquiry" ? (
                   <>
-                    <p className="text-base leading-[1.5]">{item.message}</p>
+                    {item.source === "meta_lead_ad" ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline">
+                          {INQUIRY_SOURCE_LABELS.meta_lead_ad}
+                        </Badge>
+                        {item.sourceDetails.formName ? (
+                          <span className="text-sm text-muted-foreground">
+                            {item.sourceDetails.formName}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                    <p className="text-base leading-[1.5] whitespace-pre-line">
+                      {item.message}
+                    </p>
+                    {item.source === "meta_lead_ad" &&
+                    (item.sourceDetails.campaignName || item.sourceDetails.adName) ? (
+                      <p className="text-sm text-muted-foreground">
+                        {[
+                          item.sourceDetails.campaignName &&
+                            `Campaign: ${item.sourceDetails.campaignName}`,
+                          item.sourceDetails.adName &&
+                            `Ad: ${item.sourceDetails.adName}`,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    ) : null}
                     {item.package_id && item.packages ? (
                       <Link
                         href={`/admin/packages/${item.packages.id}`}
@@ -92,11 +126,11 @@ export function ContactActivity({
                       >
                         <Badge variant="secondary">{item.packages.name}</Badge>
                       </Link>
-                    ) : (
+                    ) : item.source === "website" ? (
                       <span className="text-sm text-muted-foreground">
                         General inquiry
                       </span>
-                    )}
+                    ) : null}
                   </>
                 ) : (
                   <>

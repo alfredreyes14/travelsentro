@@ -16,6 +16,7 @@ import {
   parseLabeledList,
 } from "@/lib/crm/contact-schema";
 import type { MessageChannel, MessageStatus } from "@/lib/crm/messages";
+import { toMetaLeadSourceDetails } from "@/lib/crm/inquiry-source";
 import { toServiceKeys } from "@/lib/crm/services";
 import { toClientType, toContactStage } from "@/lib/crm/stage";
 import type { Database } from "@/types/database";
@@ -59,7 +60,7 @@ export default async function CrmContactPage({
     supabase
       .from("contacts")
       .select(
-        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name)"
+        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name)"
       )
       .eq("id", id)
       .order("created_at", { referencedTable: "inquiries", ascending: false })
@@ -109,6 +110,8 @@ export default async function CrmContactPage({
       created_at: inquiry.created_at,
       package_id: inquiry.package_id,
       packages: inquiry.packages,
+      source: inquiry.source === "meta_lead_ad" ? "meta_lead_ad" : "website",
+      sourceDetails: toMetaLeadSourceDetails(inquiry.source_details),
     })
   );
 
