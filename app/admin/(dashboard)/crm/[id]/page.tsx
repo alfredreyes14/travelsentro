@@ -22,7 +22,7 @@ import { toClientType, toContactStage } from "@/lib/crm/stage";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
-  title: "Contact | TravelSentro Admin",
+  title: "Lead | TravelSentro Admin",
 };
 
 type ContactRow = Database["public"]["Tables"]["contacts"]["Row"];

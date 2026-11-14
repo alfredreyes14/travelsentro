@@ -486,6 +486,66 @@ export type Database = {
           },
         ];
       };
+      meta_lead_sync_runs: {
+        Row: {
+          added: number;
+          error: string | null;
+          error_detail: string | null;
+          existing: number;
+          failed: number;
+          finished_at: string | null;
+          forms: number | null;
+          id: string;
+          lead_errors: Json;
+          lookback_days: number | null;
+          no_contact: number;
+          pulled: number;
+          started_at: string;
+          status: string;
+          trigger: string;
+          triggered_by: string | null;
+          triggered_by_name: string | null;
+        };
+        Insert: {
+          added?: number;
+          error?: string | null;
+          error_detail?: string | null;
+          existing?: number;
+          failed?: number;
+          finished_at?: string | null;
+          forms?: number | null;
+          id?: string;
+          lead_errors?: Json;
+          lookback_days?: number | null;
+          no_contact?: number;
+          pulled?: number;
+          started_at?: string;
+          status?: string;
+          trigger: string;
+          triggered_by?: string | null;
+          triggered_by_name?: string | null;
+        };
+        Update: {
+          added?: number;
+          error?: string | null;
+          error_detail?: string | null;
+          existing?: number;
+          failed?: number;
+          finished_at?: string | null;
+          forms?: number | null;
+          id?: string;
+          lead_errors?: Json;
+          lookback_days?: number | null;
+          no_contact?: number;
+          pulled?: number;
+          started_at?: string;
+          status?: string;
+          trigger?: string;
+          triggered_by?: string | null;
+          triggered_by_name?: string | null;
+        };
+        Relationships: [];
+      };
       package_inclusions: {
         Row: {
           id: string;

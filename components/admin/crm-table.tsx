@@ -3,15 +3,23 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   flexRender,
   type Column,
   type ColumnDef,
   type OnChangeFn,
+  type PaginationState,
   type RowSelectionState,
   type SortingState,
 } from "@tanstack/react-table";
@@ -19,8 +27,16 @@ import {
 import { ContactStageChip } from "./contact-stage-chip";
 import { ContractEndChip } from "./contract-end-chip";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -36,6 +52,9 @@ import {
 } from "@/components/ui/tooltip";
 import { SERVICE_LABELS, type ServiceKey } from "@/lib/crm/services";
 import type { ClientType, ContactStage } from "@/lib/crm/stage";
+
+const PAGE_SIZES = [10, 25, 50, 100] as const;
+const DEFAULT_PAGE_SIZE = 25;
 
 export type AdminContactListItem = {
   id: string;
@@ -228,9 +247,10 @@ const COLUMNS: Record<ClientType, ColumnDef<AdminContactListItem>[]> = {
 };
 
 /**
- * The contacts table (desktop) and cards (mobile) for one client type.
+ * The leads table (desktop) and cards (mobile) for one client type.
  * Filtering and the selection state live in CrmContactsView; this owns
- * only sorting and layout.
+ * sorting, pagination and layout. The page resets to the first one
+ * whenever the filtered rows or the sort change (autoResetPageIndex).
  */
 export function CrmTable({
   type,
@@ -245,21 +265,33 @@ export function CrmTable({
 }) {
   const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
   const columns = useMemo(() => COLUMNS[type], [type]);
 
   const table = useReactTable({
     data: contacts,
     columns,
-    state: { rowSelection, sorting },
+    state: { rowSelection, sorting, pagination },
     onRowSelectionChange,
     onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    autoResetPageIndex: true,
     getRowId: (row) => row.id,
     enableRowSelection: (row) => !row.original.opted_out,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
   const rows = table.getRowModel().rows;
+  const total = contacts.length;
+  const { pageIndex, pageSize } = pagination;
+  const firstRow = total === 0 ? 0 : pageIndex * pageSize + 1;
+  const lastRow = Math.min(total, (pageIndex + 1) * pageSize);
+  const pageCount = Math.max(1, table.getPageCount());
 
   return (
     <>
@@ -335,6 +367,52 @@ export function CrmTable({
             </Card>
           );
         })}
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Showing {firstRow}–{lastRow} of {total} lead{total === 1 ? "" : "s"}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground">Rows per page</span>
+          <Select
+            items={Object.fromEntries(PAGE_SIZES.map((size) => [String(size), String(size)]))}
+            value={String(pageSize)}
+            onValueChange={(value) => table.setPageSize(Number(value))}
+          >
+            <SelectTrigger size="sm" className="w-18" aria-label="Rows per page">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZES.map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground">
+            Page {pageIndex + 1} of {pageCount}
+          </span>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronLeftIcon />
+            <span className="sr-only">Previous page</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronRightIcon />
+            <span className="sr-only">Next page</span>
+          </Button>
+        </div>
       </div>
     </>
   );

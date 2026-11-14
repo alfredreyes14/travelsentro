@@ -220,11 +220,11 @@ export function CrmDetail({
           {canEdit ? (
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
               <DialogTrigger render={<Button variant="secondary" size="sm" />}>
-                Edit Contact
+                Edit Lead
               </DialogTrigger>
               <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Edit Contact</DialogTitle>
+                  <DialogTitle>Edit Lead</DialogTitle>
                 </DialogHeader>
                 <ContactEditForm
                   contactId={contact.id}

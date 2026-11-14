@@ -88,11 +88,11 @@ export function AdminNav({
       show: canManagePackages,
     },
     // CRM-03: universal read -- every authenticated Admin/Staff sees
-    // "Contacts" regardless of can_edit_crm, deliberately NOT
+    // "Leads" regardless of can_edit_crm, deliberately NOT
     // permission-gated (unlike Packages/Content/Destinations/Users).
     {
       href: "/admin/crm",
-      label: "Contacts",
+      label: "Leads",
       icon: ContactIcon,
       show: true,
     },

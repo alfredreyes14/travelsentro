@@ -9,7 +9,7 @@ import { isClientType, toClientType, toContactStage } from "@/lib/crm/stage";
 import { isMetaLeadSyncEnabled } from "@/lib/meta-leads/run-sync";
 
 export const metadata: Metadata = {
-  title: "Contacts | TravelSentro Admin",
+  title: "Leads | TravelSentro Admin",
 };
 
 // Covers the "Sync Meta leads" Server Action (same limit as the cron route).

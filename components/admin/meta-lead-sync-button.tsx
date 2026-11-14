@@ -16,20 +16,28 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 export function MetaLeadSyncButton({ enabled }: { enabled: boolean }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const logAction = {
+    label: "View log",
+    onClick: () => router.push("/admin/crm/sync-log"),
+  };
 
   function handleClick() {
     startTransition(async () => {
       const response = await syncMetaLeadsNow();
       if (!response.ok) {
-        toast.error(response.error);
+        toast.error("Meta lead sync failed", { description: response.error, action: logAction });
+        router.refresh();
         return;
       }
-      const { added, existing, failed, lookbackDays } = response.result;
-      const summary = `${added} new, ${existing} already in the CRM (last ${lookbackDays} days).`;
-      if (failed > 0) {
-        toast.warning(`Meta leads synced with ${failed} error(s): ${summary}`);
+      const { status, error, pulled, added, existing, lookbackDays } = response.result;
+      const summary = `Pulled ${pulled} from Meta (last ${lookbackDays} days): ${added} new, ${existing} already in the CRM.`;
+      if (status === "failed") {
+        toast.error("Meta lead sync failed", {
+          description: `${error ?? ""} ${summary}`.trim(),
+          action: logAction,
+        });
       } else {
-        toast.success(`Meta leads synced: ${summary}`);
+        toast.success("Meta leads synced", { description: summary, action: logAction });
       }
       router.refresh();
     });

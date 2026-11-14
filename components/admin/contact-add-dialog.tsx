@@ -75,7 +75,7 @@ function AddContactForm({
     try {
       const result = await createContact(clientType, values);
       if (result.ok) {
-        toast.success("Contact added.");
+        toast.success("Lead added.");
         if (onCreated) {
           onCreated({
             id: result.id,
@@ -156,7 +156,7 @@ function AddContactForm({
           disabled={isSubmitting}
           className="self-end"
         >
-          {isSubmitting ? "Adding..." : "Add Contact"}
+          {isSubmitting ? "Adding..." : "Add Lead"}
         </Button>
       </form>
     </Form>
@@ -186,7 +186,7 @@ export function ContactAddDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Add Contact</DialogTitle>
+          <DialogTitle>Add Lead</DialogTitle>
           <DialogDescription>
             An email or a phone number is required.
           </DialogDescription>
