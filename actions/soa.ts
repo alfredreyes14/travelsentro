@@ -22,6 +22,7 @@ import {
   sanitizeFileName,
 } from "@/lib/crm/documents";
 import { FROM_EMAIL, resend } from "@/lib/resend";
+import { fetchSoaForPdf } from "@/lib/pdf/soa-pdf";
 import { buildSoaAttachment } from "@/lib/soa/attachment";
 import { SOA_FILE_PREFIX, isSoaFileKey, type SoaFileChange } from "@/lib/soa/files";
 import { previousSoaValuesToRow, soaValuesToRow } from "@/lib/soa/soa-row";
@@ -429,17 +430,13 @@ export async function sendSoaEmail(
   }
 
   const supabase = await createClient();
-  const { data: soa, error } = await supabase
-    .from("statements")
-    .select("*")
-    .eq("id", soaId)
-    .maybeSingle();
-  if (error) console.error("sendSoaEmail read failed:", error.message);
+  const soa = await fetchSoaForPdf(supabase, soaId);
   if (!soa) return { ok: false, error: GONE_MESSAGE };
 
   let attachment: Awaited<ReturnType<typeof buildSoaAttachment>>;
   try {
-    const logoSrc = new URL("/logo-header.png", await getSiteOrigin()).toString();
+    // Same logo as the public site header.
+    const logoSrc = new URL("/logo.png", await getSiteOrigin()).toString();
     attachment = await buildSoaAttachment(soa, logoSrc);
   } catch (err) {
     console.error(`sendSoaEmail attachment failed for ${soa.soa_no}:`, err);

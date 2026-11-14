@@ -6,9 +6,15 @@
  * sample PDF for a visual check.
  */
 import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 import { previousSoaFormSchema, soaFormSchema } from "../components/admin/soa/soa-form-schema";
-import { computeSoaTotals, discountLabel } from "../lib/soa/totals";
+import {
+  applyPaymentsToInstallments,
+  computeNextDueDate,
+  computeSoaTotals,
+  discountLabel,
+} from "../lib/soa/totals";
 import {
   previousSoaRowToFormValues,
   previousSoaToPrintValues,
@@ -21,7 +27,6 @@ import {
 import { isSoaFileKey } from "../lib/soa/files";
 import { soaEmailSchema } from "../lib/soa/email-schema";
 import { renderSoaPdf } from "../lib/pdf/soa-pdf";
-import { LOCAL_LOGO_PATH } from "../lib/pdf/package-pdf";
 import { SAMPLE } from "./verify-soa-sample";
 
 type CheckResult = { name: string; pass: boolean; detail: string };
@@ -87,7 +92,7 @@ function checkRoundTrip(): void {
     soaFormSchema.safeParse(back).success &&
     JSON.stringify(computeSoaTotals(back)) === JSON.stringify(computeSoaTotals(SAMPLE)) &&
     back.discounts[1].voucherCode === "HTL-2026-001" &&
-    back.payments[0].label === "Downpayment via GCash" &&
+    back.payments[0].amount === 10000 &&
     back.contactId === "" &&
     row.contact_id === null;
   record("values survive soaValuesToRow -> JSON -> soaRowToFormValues", ok, JSON.stringify(back));
@@ -144,10 +149,10 @@ const PREVIOUS = {
   billToName: "ABC Corp.",
   billToDetails: "",
   contactId: "",
-  reference: "Team outing 2025",
+  quoteId: "",
   issueDate: "2025-08-01",
-  dueDate: "",
-  notes: "",
+  dueDate: "2025-09-01",
+  remarks: "",
   originalNo: "2025-0142",
   totalAmount: 154000.5,
   amountPaid: 50000,
@@ -212,8 +217,81 @@ function checkEmailSchema(): void {
   );
 }
 
+// SAMPLE totals 22,264.10 with 10,000 paid.
+const WITH_SCHEDULE = {
+  ...SAMPLE,
+  installments: [
+    { dueDate: "2026-12-15", label: "Balance", amount: 12264.1 },
+    { dueDate: "2026-11-01", label: "Downpayment", amount: 10000 },
+  ],
+};
+
+function checkInstallments(): void {
+  const t = computeSoaTotals(WITH_SCHEDULE);
+  const progress = applyPaymentsToInstallments(WITH_SCHEDULE.installments, 7000);
+  record(
+    "payments are applied to the earliest installment first",
+    progress[1].paid === 7000 && progress[1].status === "partial" && progress[0].status === "unpaid",
+    JSON.stringify(progress)
+  );
+
+  const next = computeNextDueDate({
+    installments: WITH_SCHEDULE.installments,
+    dueDate: WITH_SCHEDULE.dueDate,
+    balance: t.balance,
+    totalPaid: t.totalPaid,
+  });
+  const nextPaidUp = computeNextDueDate({
+    installments: WITH_SCHEDULE.installments,
+    dueDate: WITH_SCHEDULE.dueDate,
+    balance: 0,
+    totalPaid: t.total,
+  });
+  const nextNoSchedule = computeNextDueDate({
+    installments: [],
+    dueDate: "2026-11-20",
+    balance: 5,
+    totalPaid: 0,
+  });
+  record(
+    "next due = first unpaid installment, the SOA due date without one, none once paid",
+    next === "2026-12-15" && nextPaidUp === null && nextNoSchedule === "2026-11-20",
+    JSON.stringify({ next, nextPaidUp, nextNoSchedule })
+  );
+
+  const row = soaValuesToRow(WITH_SCHEDULE);
+  const stored = row.installments as Array<{ dueDate: string }>;
+  record(
+    "installments are stored by due date with the next due date computed",
+    stored[0].dueDate === "2026-11-01" && row.next_due_date === "2026-12-15",
+    JSON.stringify({ stored, next: row.next_due_date })
+  );
+
+  const short = {
+    ...WITH_SCHEDULE,
+    installments: [{ dueDate: "2026-12-15", label: "", amount: 100 }],
+  };
+  record(
+    "a schedule that doesn't add up to the total is rejected",
+    soaFormSchema.safeParse(WITH_SCHEDULE).success && !soaFormSchema.safeParse(short).success,
+    "checked"
+  );
+
+  const prev = previousSoaValuesToRow(PREVIOUS);
+  const prevPaid = previousSoaValuesToRow({ ...PREVIOUS, amountPaid: PREVIOUS.totalAmount });
+  record(
+    "a previous SOA's next due date is its due date while unpaid",
+    prev.next_due_date === "2025-09-01" && prevPaid.next_due_date === null,
+    JSON.stringify({ prev: prev.next_due_date, paid: prevPaid.next_due_date })
+  );
+}
+
 async function checkPdf(outPath: string | undefined): Promise<void> {
-  const buffer = await renderSoaPdf({ soaNo: "SOA-000001", values: SAMPLE }, LOCAL_LOGO_PATH);
+  const logo = join(process.cwd(), "public", "logo.png");
+  const buffer = await renderSoaPdf(
+    { soaNo: "SOA-000001", quoteNo: "TSQ-000012", values: WITH_SCHEDULE },
+    logo
+  );
   const signature = buffer.subarray(0, 5).toString("ascii");
   if (outPath) writeFileSync(outPath, buffer);
   record("renderSoaPdf produces a well-formed PDF offline", signature === "%PDF-" && buffer.length > 1000, `length=${buffer.length}`);
@@ -234,6 +312,7 @@ async function main(): Promise<void> {
   checkPreviousSchema();
   checkFileKeys();
   checkEmailSchema();
+  checkInstallments();
   const outIndex = process.argv.indexOf("--out");
   await checkPdf(outIndex > -1 ? process.argv[outIndex + 1] : undefined);
 

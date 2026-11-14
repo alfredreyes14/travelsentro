@@ -50,6 +50,7 @@ export default async function EditSoaPage({
   const kind = toSoaKind(soa.kind);
   const canCreateContact = profile.role === "admin" || profile.can_edit_crm;
   const linkedContact = options.contacts.find((c) => c.id === soa.contact_id) ?? null;
+  const linkedQuote = options.quotes.find((q) => q.id === soa.quote_id) ?? null;
 
   const emailDefaults: SoaEmailDefaults = {
     soaNo: soa.soa_no,
@@ -62,6 +63,7 @@ export default async function EditSoaPage({
   const shared = {
     soaId: soa.id,
     contacts: options.contacts,
+    quotes: options.quotes,
     existingTags: options.existingTags,
     canCreateContact,
     emailDefaults,
@@ -77,14 +79,24 @@ export default async function EditSoaPage({
             : soa.bill_to_name
         }
       >
-        {linkedContact ? (
-          <Link
-            href={`/admin/crm/${linkedContact.id}`}
-            className="text-sm text-primary underline-offset-4 hover:underline"
-          >
-            Open contact: {linkedContact.name}
-          </Link>
-        ) : null}
+        <div className="flex flex-col items-start gap-1 sm:items-end">
+          {linkedContact ? (
+            <Link
+              href={`/admin/crm/${linkedContact.id}`}
+              className="text-sm text-primary underline-offset-4 hover:underline"
+            >
+              Open contact: {linkedContact.name}
+            </Link>
+          ) : null}
+          {linkedQuote ? (
+            <Link
+              href={`/admin/quotes/${linkedQuote.id}`}
+              className="text-sm text-primary underline-offset-4 hover:underline"
+            >
+              Open quote: {linkedQuote.quoteNo}
+            </Link>
+          ) : null}
+        </div>
       </PageHeader>
 
       {/* Throws on malformed stored jsonb -> the admin error boundary, never a half-filled form. */}

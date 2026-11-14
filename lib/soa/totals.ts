@@ -1,5 +1,6 @@
 import type {
   SoaDiscount,
+  SoaInstallment,
   SoaLineItem,
   SoaPayment,
 } from "@/components/admin/soa/soa-form-schema";
@@ -72,6 +73,72 @@ export function computeSoaTotals(input: {
     totalPaid: fromCents(paidCents),
     balance: fromCents(totalCents - paidCents),
   };
+}
+
+/** Adds money amounts exactly, in whole centavos. Blank/NaN count as 0. */
+export function sumCents(values: unknown[]): number {
+  return values.reduce<number>((sum, value) => sum + toCents(num(value)), 0);
+}
+
+export type InstallmentStatus = "paid" | "partial" | "unpaid";
+
+export type InstallmentProgress = {
+  paid: number;
+  remaining: number;
+  status: InstallmentStatus;
+};
+
+/**
+ * Applies the total paid to the installments, earliest due date first
+ * (ties keep their order), and says how much of each is paid. The result
+ * lines up with the input order.
+ */
+export function applyPaymentsToInstallments(
+  installments: Array<Partial<SoaInstallment>>,
+  totalPaid: number
+): InstallmentProgress[] {
+  const order = installments
+    .map((installment, index) => ({ index, dueDate: installment.dueDate ?? "" }))
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.index - b.index);
+
+  let leftCents = Math.max(toCents(totalPaid), 0);
+  const progress: InstallmentProgress[] = new Array(installments.length);
+  for (const { index } of order) {
+    const amountCents = Math.max(toCents(num(installments[index].amount)), 0);
+    const paidCents = Math.min(amountCents, leftCents);
+    leftCents -= paidCents;
+    progress[index] = {
+      paid: fromCents(paidCents),
+      remaining: fromCents(amountCents - paidCents),
+      status:
+        amountCents > 0 && paidCents === amountCents
+          ? "paid"
+          : paidCents > 0
+            ? "partial"
+            : "unpaid",
+    };
+  }
+  return progress;
+}
+
+/**
+ * When the customer's next payment is due: the first installment (by due
+ * date) that isn't fully paid, or the SOA's own due date when there's no
+ * schedule. Null once nothing is owed, or when no date was set.
+ */
+export function computeNextDueDate(input: {
+  installments: Array<Partial<SoaInstallment>>;
+  dueDate?: string | null;
+  balance: number;
+  totalPaid: number;
+}): string | null {
+  if (input.balance <= 0) return null;
+  const progress = applyPaymentsToInstallments(input.installments, input.totalPaid);
+  const open = input.installments
+    .filter((installment, index) => installment.dueDate && progress[index].remaining > 0)
+    .map((installment) => installment.dueDate as string)
+    .sort();
+  return open[0] ?? (input.dueDate || null);
 }
 
 /** "1,234.50" -- always two decimals, en-PH grouping. */

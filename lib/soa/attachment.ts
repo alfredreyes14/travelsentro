@@ -1,9 +1,8 @@
 import "server-only";
 
-import { renderSoaPdf } from "@/lib/pdf/soa-pdf";
+import { renderSoaPdf, type StatementForPdf } from "@/lib/pdf/soa-pdf";
 import { statementToPrintValues } from "@/lib/soa/soa-row";
 import { getPrivateObjectBytes } from "@/lib/storage/r2-private";
-import type { Tables } from "@/types/database";
 
 /** The extension a stored file name should end with, from its content type. */
 function withExtension(fileName: string, fallbackExt: string): string {
@@ -15,7 +14,7 @@ function withExtension(fileName: string, fallbackExt: string): string {
  * file when it has one, otherwise the SOA PDF.
  */
 export async function buildSoaAttachment(
-  soa: Tables<"statements">,
+  soa: StatementForPdf,
   logoSrc: string
 ): Promise<{ filename: string; content: Buffer; contentType: string }> {
   if (soa.file_storage_key && soa.file_name && soa.file_content_type) {
@@ -29,7 +28,7 @@ export async function buildSoaAttachment(
   }
 
   const content = await renderSoaPdf(
-    { soaNo: soa.soa_no, values: statementToPrintValues(soa) },
+    { soaNo: soa.soa_no, quoteNo: soa.quoteNo, values: statementToPrintValues(soa) },
     logoSrc
   );
   return { filename: `${soa.soa_no}.pdf`, content, contentType: "application/pdf" };

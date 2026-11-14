@@ -44,12 +44,13 @@ export async function GET(
     redirect(url);
   }
 
-  const logoSrc = new URL("/logo-header.png", request.url).toString();
+  // Same logo as the public site header.
+  const logoSrc = new URL("/logo.png", request.url).toString();
 
   let buffer: Buffer;
   try {
     buffer = await renderSoaPdf(
-      { soaNo: soa.soa_no, values: statementToPrintValues(soa) },
+      { soaNo: soa.soa_no, quoteNo: soa.quoteNo, values: statementToPrintValues(soa) },
       logoSrc
     );
   } catch (err) {
