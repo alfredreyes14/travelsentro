@@ -33,10 +33,22 @@ const MAX_LOGGED_LEAD_ERRORS = 50;
 export type MetaLeadSyncResult = SyncSummary & {
   lookbackDays: number;
   alertsSkipped: number;
-  status: "success" | "failed";
-  /** Plain-language reason, when status is "failed". */
+  status: MetaLeadSyncStatus;
+  /** Plain-language reason, when status is "partial" or "failed". */
   error: string | null;
 };
+
+/**
+ * success: every lead pulled was handled.
+ * partial: some leads were saved (or already in the CRM), some failed.
+ * failed: nothing could be saved -- Meta was unreachable or every lead failed.
+ */
+export type MetaLeadSyncStatus = "success" | "partial" | "failed";
+
+function statusFor(summary: SyncSummary, hadFailure: boolean): MetaLeadSyncStatus {
+  if (!hadFailure) return "success";
+  return summary.added + summary.existing > 0 ? "partial" : "failed";
+}
 
 /** Who started a run, for the sync log (meta_lead_sync_runs). */
 export type MetaLeadSyncTrigger =
@@ -98,7 +110,7 @@ async function finishLog(
   supabase: SupabaseClient,
   runId: string | null,
   fields: {
-    status: "success" | "failed";
+    status: MetaLeadSyncStatus;
     summary: SyncSummary;
     error?: string | null;
     errorDetail?: string | null;
@@ -113,7 +125,7 @@ async function finishLog(
       status: fields.status,
       finished_at: new Date().toISOString(),
       // A run that failed before listing the forms never learned how many there are.
-      forms: fields.status === "failed" && summary.forms === 0 ? null : summary.forms,
+      forms: fields.status !== "success" && summary.forms === 0 ? null : summary.forms,
       pulled: summary.pulled,
       added: summary.added,
       existing: summary.existing,
@@ -131,8 +143,9 @@ async function finishLog(
 
 /**
  * Runs the sync and records it in meta_lead_sync_runs. A run where some
- * leads couldn't be saved resolves with status "failed"; one that couldn't
- * reach Meta at all rejects, with the reason already logged. Either way
+ * leads couldn't be saved resolves with status "partial" or "failed"; one
+ * that stopped part-way (Meta unreachable) rejects, with the reason already
+ * logged. Either way
  * the thrown/returned error is written for staff (see ./errors).
  */
 export async function runMetaLeadSync(
@@ -171,17 +184,19 @@ export async function runMetaLeadSync(
     });
   } catch (err) {
     const described = describeSyncError(err);
+    const partialSummary =
+      err instanceof MetaLeadSyncError
+        ? err.summary
+        : { forms: 0, pulled: 0, added: 0, existing: 0, noContact: 0, failed: 0 };
+    const status = partialSummary.added + partialSummary.existing > 0 ? "partial" : "failed";
     await finishLog(supabase, runId, {
-      status: "failed",
-      summary:
-        err instanceof MetaLeadSyncError
-          ? err.summary
-          : { forms: 0, pulled: 0, added: 0, existing: 0, noContact: 0, failed: 0 },
+      status,
+      summary: partialSummary,
       error: described.message,
       errorDetail: described.detail,
       leadErrors,
     });
-    throw new MetaLeadSyncRunError(described.message, err);
+    throw new MetaLeadSyncRunError(described.message, status, err);
   }
 
   // sendInternalNotificationEmails logs its own failures and never throws.
@@ -194,7 +209,7 @@ export async function runMetaLeadSync(
   }
 
   const described = leadErrors.length > 0 ? describeLeadFailures(leadErrors, summary.pulled) : null;
-  const status = described ? "failed" : "success";
+  const status = statusFor(summary, described !== null);
   await finishLog(supabase, runId, {
     status,
     summary,
@@ -218,6 +233,8 @@ export async function runMetaLeadSync(
 export class MetaLeadSyncRunError extends Error {
   constructor(
     message: string,
+    /** "partial" when some leads were saved before it stopped. */
+    readonly status: Exclude<MetaLeadSyncStatus, "success">,
     readonly cause: unknown
   ) {
     super(message);

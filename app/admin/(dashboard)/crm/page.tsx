@@ -28,19 +28,34 @@ export default async function AdminCrmPage({
 
   const supabase = await createClient();
 
-  const { data: contacts, error } = await supabase
-    .from("contacts")
-    .select(
-      "id, name, email, phone, client_type, stage, tags, opted_out, services_availed, services_other, rep_name, contract_end, created_at"
-    )
-    .order("created_at", { ascending: false });
+  const [contactsResult, activityResult] = await Promise.all([
+    supabase
+      .from("contacts")
+      .select(
+        "id, name, email, phone, client_type, stage, tags, opted_out, services_availed, services_other, rep_name, contract_end, created_at"
+      )
+      .order("created_at", { ascending: false }),
+    // Latest inquiry and latest contact per lead (a view; see
+    // 20261115120000_lead_contact_tracking.sql).
+    supabase
+      .from("contact_last_activity")
+      .select("contact_id, last_inquiry_at, last_contacted_at"),
+  ]);
+  const { data: contacts, error } = contactsResult;
 
   if (error) {
     console.error("Failed to load contacts:", error.message);
   }
+  if (activityResult.error) {
+    console.error("Failed to load lead activity dates:", activityResult.error.message);
+  }
+  const activityById = new Map(
+    (activityResult.data ?? []).map((row) => [row.contact_id, row])
+  );
 
   const items: AdminContactListItem[] = (contacts ?? []).map((contact) => {
     const clientType = toClientType(contact.client_type);
+    const activity = activityById.get(contact.id);
     return {
       id: contact.id,
       name: contact.name,
@@ -55,6 +70,8 @@ export default async function AdminCrmPage({
       repName: contact.rep_name,
       contractEnd: contact.contract_end,
       createdAt: contact.created_at,
+      lastInquiryAt: activity?.last_inquiry_at ?? null,
+      lastContactedAt: activity?.last_contacted_at ?? null,
     };
   });
 

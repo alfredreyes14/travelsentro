@@ -12,7 +12,7 @@ import {
 
 export type MetaLeadSyncActionResult =
   | { ok: true; result: MetaLeadSyncResult }
-  | { ok: false; error: string };
+  | { ok: false; error: string; partial?: boolean };
 
 /**
  * The CRM's "Sync Meta leads" button: the same run as the nightly cron, on
@@ -44,6 +44,7 @@ export async function syncMetaLeadsNow(): Promise<MetaLeadSyncActionResult> {
         err instanceof MetaLeadSyncRunError
           ? err.message
           : "Couldn't start the sync. Please try again in a few minutes.",
+      partial: err instanceof MetaLeadSyncRunError && err.status === "partial",
     };
   }
 }

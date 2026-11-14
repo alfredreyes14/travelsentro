@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-export type SyncRunStatus = "success" | "failed" | "running" | "timed_out";
+export type SyncRunStatus = "success" | "partial" | "failed" | "running" | "timed_out";
 
 export type SyncRunItem = {
   id: string;
@@ -36,9 +36,10 @@ const TIMED_OUT_MESSAGE =
 
 const STATUS_BADGE: Record<SyncRunStatus, { label: string; className: string }> = {
   success: { label: "SUCCESS", className: "border-green-200 bg-green-100 text-green-800" },
+  partial: { label: "PARTIAL", className: "border-orange-200 bg-orange-100 text-orange-800" },
   failed: { label: "FAILED", className: "border-red-200 bg-red-100 text-red-800" },
   timed_out: { label: "FAILED", className: "border-red-200 bg-red-100 text-red-800" },
-  running: { label: "RUNNING", className: "border-amber-200 bg-amber-100 text-amber-800" },
+  running: { label: "RUNNING", className: "border-blue-200 bg-blue-100 text-blue-800" },
 };
 
 const dateTimeFormat = new Intl.DateTimeFormat("en-PH", {
@@ -86,7 +87,8 @@ function Stat({
 
 function SyncRunCard({ run }: { run: SyncRunItem }) {
   const badge = STATUS_BADGE[run.status];
-  const hasResult = run.status === "success" || run.status === "failed";
+  const hasResult =
+    run.status === "success" || run.status === "partial" || run.status === "failed";
   const duration = formatDuration(run.startedAt, run.finishedAt);
   const error = run.status === "timed_out" ? TIMED_OUT_MESSAGE : run.error;
   const hasDetails = Boolean(run.errorDetail) || run.leadErrors.length > 0;
@@ -144,7 +146,14 @@ function SyncRunCard({ run }: { run: SyncRunItem }) {
       </div>
 
       {error ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
+        <div
+          className={cn(
+            "rounded-lg border px-3 py-2 text-sm",
+            run.status === "partial"
+              ? "border-orange-200 bg-orange-50 text-orange-900 dark:border-orange-900/50 dark:bg-orange-950/40 dark:text-orange-200"
+              : "border-red-200 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+          )}
+        >
           {error}
         </div>
       ) : null}
@@ -211,6 +220,7 @@ export function MetaLeadSyncLog({
             </h1>
             <p className="text-base leading-[1.5] text-muted-foreground">
               Every pull of Facebook lead ad leads into the CRM, nightly at 11:59 PM and on demand.
+              PARTIAL means some leads were saved and some failed.
             </p>
           </div>
           {canSync ? <MetaLeadSyncButton enabled={syncEnabled} /> : null}

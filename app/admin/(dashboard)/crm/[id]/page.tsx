@@ -8,6 +8,7 @@ import { ContactQuotesCard } from "@/components/admin/contact-quotes-card";
 import { ContactSoaCard } from "@/components/admin/contact-soa-card";
 import { CrmDetail, type CrmDetailContact } from "@/components/admin/crm-detail";
 import type {
+  CrmDetailContactLog,
   CrmDetailInquiry,
   CrmDetailMessage,
 } from "@/components/admin/contact-activity";
@@ -15,6 +16,7 @@ import {
   contactRowToFormValues,
   parseLabeledList,
 } from "@/lib/crm/contact-schema";
+import { CONTACT_LOG_CHANNEL_LABELS, toContactLogChannel } from "@/lib/crm/contact-logs";
 import type { MessageChannel, MessageStatus } from "@/lib/crm/messages";
 import { toMetaLeadSourceDetails } from "@/lib/crm/inquiry-source";
 import { toServiceKeys } from "@/lib/crm/services";
@@ -29,6 +31,7 @@ type ContactRow = Database["public"]["Tables"]["contacts"]["Row"];
 type InquiryRow = Database["public"]["Tables"]["inquiries"]["Row"];
 type PackageRow = Database["public"]["Tables"]["packages"]["Row"];
 type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
+type ContactLogRow = Database["public"]["Tables"]["contact_logs"]["Row"];
 
 type ContactDetail = ContactRow & {
   inquiries: (InquiryRow & {
@@ -37,6 +40,10 @@ type ContactDetail = ContactRow & {
   messages: Pick<
     MessageRow,
     "id" | "channel" | "subject" | "body" | "status" | "created_at" | "sent_by_name"
+  >[];
+  contact_logs: Pick<
+    ContactLogRow,
+    "id" | "channel" | "note" | "contacted_at" | "logged_by_name"
   >[];
 };
 
@@ -60,11 +67,12 @@ export default async function CrmContactPage({
     supabase
       .from("contacts")
       .select(
-        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name)"
+        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name), contact_logs(id, channel, note, contacted_at, logged_by_name)"
       )
       .eq("id", id)
       .order("created_at", { referencedTable: "inquiries", ascending: false })
       .order("created_at", { referencedTable: "messages", ascending: false })
+      .order("contacted_at", { referencedTable: "contact_logs", ascending: false })
       .single(),
     supabase.rpc("list_contact_tags"),
   ]);
@@ -124,6 +132,26 @@ export default async function CrmContactPage({
     created_at: m.created_at,
     sent_by_name: m.sent_by_name,
   }));
+
+  const detailContactLogs: CrmDetailContactLog[] = contact.contact_logs.map((log) => ({
+    id: log.id,
+    channel: toContactLogChannel(log.channel),
+    note: log.note,
+    created_at: log.contacted_at,
+    logged_by_name: log.logged_by_name,
+  }));
+
+  // Same rule as the contact_last_activity view: a sent email/SMS or a
+  // logged contact, whichever is latest. Both lists are newest first.
+  const lastSent = detailMessages.find((m) => m.status === "sent");
+  const lastLog = detailContactLogs[0];
+  const lastContact =
+    lastSent &&
+    (!lastLog || new Date(lastSent.created_at).getTime() > new Date(lastLog.created_at).getTime())
+      ? { at: lastSent.created_at, via: lastSent.channel === "email" ? "email" : "SMS" }
+      : lastLog
+        ? { at: lastLog.created_at, via: CONTACT_LOG_CHANNEL_LABELS[lastLog.channel] }
+        : null;
 
   // Quotes are readable only with can_manage_quotes (RLS), so the card is
   // not rendered at all for anyone else. B2C only, per the spec.
@@ -248,6 +276,8 @@ export default async function CrmContactPage({
       existingTags={tagsResult.data ?? []}
       inquiries={detailInquiries}
       messages={detailMessages}
+      contactLogs={detailContactLogs}
+      lastContact={lastContact}
       canEdit={canEdit}
       quotesSlot={quotesSlot}
       documentsSlot={documentsSlot}

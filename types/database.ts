@@ -92,6 +92,54 @@ export type Database = {
           },
         ];
       };
+      contact_logs: {
+        Row: {
+          channel: string;
+          contact_id: string;
+          contacted_at: string;
+          created_at: string;
+          id: string;
+          logged_by: string | null;
+          logged_by_name: string | null;
+          note: string | null;
+        };
+        Insert: {
+          channel: string;
+          contact_id: string;
+          contacted_at?: string;
+          created_at?: string;
+          id?: string;
+          logged_by?: string | null;
+          logged_by_name?: string | null;
+          note?: string | null;
+        };
+        Update: {
+          channel?: string;
+          contact_id?: string;
+          contacted_at?: string;
+          created_at?: string;
+          id?: string;
+          logged_by?: string | null;
+          logged_by_name?: string | null;
+          note?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "contact_logs_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contact_logs_logged_by_fkey";
+            columns: ["logged_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       contacts: {
         Row: {
           client_type: string;
@@ -1229,7 +1277,14 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      contact_last_activity: {
+        Row: {
+          contact_id: string | null;
+          last_contacted_at: string | null;
+          last_inquiry_at: string | null;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       get_notification_recipients: {

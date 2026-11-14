@@ -23,7 +23,7 @@ const RUN_LIMIT = 100;
 const STALE_RUN_MS = 5 * 60 * 1000;
 
 function toStatus(status: string, startedAt: string, now: number): SyncRunStatus {
-  if (status === "success" || status === "failed") return status;
+  if (status === "success" || status === "partial" || status === "failed") return status;
   return now - new Date(startedAt).getTime() > STALE_RUN_MS ? "timed_out" : "running";
 }
 

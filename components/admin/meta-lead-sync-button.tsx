@@ -25,13 +25,21 @@ export function MetaLeadSyncButton({ enabled }: { enabled: boolean }) {
     startTransition(async () => {
       const response = await syncMetaLeadsNow();
       if (!response.ok) {
-        toast.error("Meta lead sync failed", { description: response.error, action: logAction });
+        toast.error(
+          response.partial ? "Meta lead sync partly failed" : "Meta lead sync failed",
+          { description: response.error, action: logAction }
+        );
         router.refresh();
         return;
       }
       const { status, error, pulled, added, existing, lookbackDays } = response.result;
       const summary = `Pulled ${pulled} from Meta (last ${lookbackDays} days): ${added} new, ${existing} already in the CRM.`;
-      if (status === "failed") {
+      if (status === "partial") {
+        toast.warning("Meta lead sync partly failed", {
+          description: `${error ?? ""} ${summary}`.trim(),
+          action: logAction,
+        });
+      } else if (status === "failed") {
         toast.error("Meta lead sync failed", {
           description: `${error ?? ""} ${summary}`.trim(),
           action: logAction,

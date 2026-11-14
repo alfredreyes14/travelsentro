@@ -3,19 +3,21 @@
 import { useOptimistic, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
-import { SendIcon } from "lucide-react";
+import { PhoneIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateStage } from "@/actions/crm";
 import { updateOptOut } from "@/actions/messages";
 import {
   ContactActivity,
+  type CrmDetailContactLog,
   type CrmDetailInquiry,
   type CrmDetailMessage,
 } from "./contact-activity";
 import { ContactB2bCard } from "./contact-b2b-card";
 import { ContactConvertDialog } from "./contact-convert-dialog";
 import { ContactEditForm } from "./contact-edit-form";
+import { ContactLogDialog } from "./contact-log-dialog";
 import { ContactStageChip } from "./contact-stage-chip";
 import { MessageComposeDialog } from "./message-compose-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -89,6 +91,8 @@ export function CrmDetail({
   existingTags,
   inquiries,
   messages,
+  contactLogs,
+  lastContact,
   canEdit,
   quotesSlot,
   documentsSlot,
@@ -99,6 +103,9 @@ export function CrmDetail({
   existingTags: string[];
   inquiries: CrmDetailInquiry[];
   messages: CrmDetailMessage[];
+  contactLogs: CrmDetailContactLog[];
+  /** Latest sent email/SMS or logged contact; null if never contacted. */
+  lastContact: { at: string; via: string } | null;
   canEdit: boolean;
   quotesSlot?: ReactNode;
   documentsSlot?: ReactNode;
@@ -115,6 +122,7 @@ export function CrmDetail({
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
+  const [isLogOpen, setIsLogOpen] = useState(false);
 
   const isB2b = contact.clientType === "b2b";
   const otherType: ClientType = isB2b ? "b2c" : "b2b";
@@ -190,6 +198,12 @@ export function CrmDetail({
             Message
           </Button>
           {canEdit ? (
+            <Button variant="outline" onClick={() => setIsLogOpen(true)}>
+              <PhoneIcon className="size-4" />
+              Log contact
+            </Button>
+          ) : null}
+          {canEdit ? (
             <Button variant="outline" onClick={() => setIsConvertOpen(true)}>
               Convert to {CLIENT_TYPE_LABELS[otherType]}
             </Button>
@@ -205,6 +219,11 @@ export function CrmDetail({
           ) : (
             <p>Added {formatDistanceToNow(new Date(contact.created_at))} ago</p>
           )}
+          <p>
+            {lastContact
+              ? `Last contacted ${formatDistanceToNow(new Date(lastContact.at))} ago (${lastContact.via}, ${format(new Date(lastContact.at), "MMM d, yyyy")})`
+              : "Not contacted yet"}
+          </p>
           {contact.updated_by ? (
             <p>
               Last updated by {contact.updated_by_name ?? "a staff member"}{" "}
@@ -331,7 +350,13 @@ export function CrmDetail({
 
       {soaSlot}
 
-      <ContactActivity inquiries={inquiries} messages={messages} />
+      <ContactActivity
+        contactId={contact.id}
+        inquiries={inquiries}
+        messages={messages}
+        contactLogs={contactLogs}
+        canEdit={canEdit}
+      />
 
       <MessageComposeDialog
         contacts={[
@@ -358,6 +383,13 @@ export function CrmDetail({
         currentType={contact.clientType}
         open={isConvertOpen}
         onOpenChange={setIsConvertOpen}
+      />
+
+      <ContactLogDialog
+        contactId={contact.id}
+        contactName={contact.name}
+        open={isLogOpen}
+        onOpenChange={setIsLogOpen}
       />
     </div>
   );
