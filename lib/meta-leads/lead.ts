@@ -1,5 +1,5 @@
 /**
- * Turns a raw Meta lead (Graph API `/{leadgen-id}`) into what
+ * Turns a raw Meta lead (Graph API `/{form-id}/leads`) into what
  * record_meta_lead() stores. Pure, no network, so
  * scripts/verify-meta-leads.ts can test it directly.
  */
@@ -125,34 +125,4 @@ export function parseMetaLead(
     }),
     createdAt: lead.created_time ?? null,
   };
-}
-
-/** The leadgen events in a Page webhook body (`entry[].changes[]`). */
-export type LeadgenChange = {
-  leadgen_id: string;
-  form_id?: string;
-  page_id?: string;
-};
-
-export function extractLeadgenChanges(payload: unknown): LeadgenChange[] {
-  const entries = (payload as { entry?: unknown[] } | null)?.entry;
-  if (!Array.isArray(entries)) return [];
-
-  const result: LeadgenChange[] = [];
-  for (const entry of entries) {
-    const changes = (entry as { changes?: unknown[] } | null)?.changes;
-    if (!Array.isArray(changes)) continue;
-    for (const change of changes) {
-      const c = change as { field?: string; value?: Record<string, unknown> } | null;
-      if (c?.field !== "leadgen" || !c.value) continue;
-      const id = c.value.leadgen_id;
-      if (typeof id !== "string" && typeof id !== "number") continue;
-      result.push({
-        leadgen_id: String(id),
-        form_id: c.value.form_id != null ? String(c.value.form_id) : undefined,
-        page_id: c.value.page_id != null ? String(c.value.page_id) : undefined,
-      });
-    }
-  }
-  return result;
 }

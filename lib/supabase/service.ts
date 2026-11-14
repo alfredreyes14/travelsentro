@@ -5,7 +5,8 @@ import { createClient } from "@supabase/supabase-js";
 /**
  * Service-role Supabase client: bypasses RLS. Only for server code that has
  * already authenticated its caller some other way -- today just the Meta
- * webhook, which verifies Meta's signature before writing a lead. Never use
+ * lead sync cron (app/api/cron/meta-leads), which checks CRON_SECRET
+ * before writing leads. Never use
  * it to serve a request on behalf of a staff member or visitor.
  */
 export function createServiceClient() {

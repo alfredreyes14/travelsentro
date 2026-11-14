@@ -3,6 +3,9 @@
  * same approach as lib/messenger/webhook.ts). No "server-only" import so
  * scripts/import-meta-leads.ts can share it -- but it reads a secret token,
  * so never import it from a client component.
+ *
+ * Leads are polled (app/api/cron/meta-leads), not pushed: the Meta app
+ * stays in Development mode, where lead webhooks don't fire for real leads.
  */
 import type { MetaLead } from "./lead";
 
@@ -13,25 +16,9 @@ const GRAPH = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
 const CORE_LEAD_FIELDS = "id,created_time,form_id,field_data";
 // Ad / campaign fields need ads_management on top of leads_retrieval. If
 // the token lacks it (or Meta rejects any of these), the request fails as a
-// whole, so fetchLead retries with the core fields rather than losing the lead.
+// whole, so listFormLeads retries with the core fields rather than losing the lead.
 const AD_LEAD_FIELDS = "ad_id,ad_name,adset_name,campaign_id,campaign_name,platform,is_organic";
 const ALL_LEAD_FIELDS = `${CORE_LEAD_FIELDS},${AD_LEAD_FIELDS}`;
-
-/**
- * A Page access token with leads_retrieval. META_LEADS_ACCESS_TOKEN wins
- * when set; otherwise the Messenger Page token is reused, which works once
- * it has been regenerated with the lead permissions.
- */
-export function getLeadsAccessToken(): string {
-  const token =
-    process.env.META_LEADS_ACCESS_TOKEN || process.env.MESSENGER_PAGE_ACCESS_TOKEN;
-  if (!token) {
-    throw new Error(
-      "Meta lead sync is not configured: set META_LEADS_ACCESS_TOKEN (or MESSENGER_PAGE_ACCESS_TOKEN)."
-    );
-  }
-  return token;
-}
 
 export class GraphApiError extends Error {
   constructor(
@@ -57,32 +44,6 @@ function withFields(path: string, fields: string, extra = ""): string {
   return `${GRAPH}/${path}?fields=${encodeURIComponent(fields)}${extra}`;
 }
 
-export async function fetchLead(leadgenId: string, token: string): Promise<MetaLead> {
-  const id = encodeURIComponent(leadgenId);
-  try {
-    return await graphGet<MetaLead>(withFields(id, ALL_LEAD_FIELDS), token);
-  } catch (err) {
-    if (err instanceof GraphApiError && err.status >= 400 && err.status < 500) {
-      return graphGet<MetaLead>(withFields(id, CORE_LEAD_FIELDS), token);
-    }
-    throw err;
-  }
-}
-
-/** Best-effort: a missing form name never blocks saving the lead. */
-export async function fetchFormName(formId: string, token: string): Promise<string | null> {
-  try {
-    const form = await graphGet<{ name?: string }>(
-      withFields(encodeURIComponent(formId), "name"),
-      token
-    );
-    return form.name ?? null;
-  } catch (err) {
-    console.error("Meta lead form name lookup failed", err);
-    return null;
-  }
-}
-
 type Page<T> = { data: T[]; paging?: { next?: string } };
 
 async function collectPages<T>(firstUrl: string, token: string): Promise<T[]> {
@@ -94,6 +55,41 @@ async function collectPages<T>(firstUrl: string, token: string): Promise<T[]> {
     url = page.paging?.next;
   }
   return items;
+}
+
+/**
+ * A Page access token with leads_retrieval for `pageId`.
+ *
+ * Preferred: META_SYSTEM_USER_TOKEN, a never-expiring System User token
+ * (Business settings -> System users) with the Page assigned. It is swapped
+ * for the Page's own token on each run, which also never expires.
+ *
+ * Fallback: a Page token stored directly in META_LEADS_ACCESS_TOKEN or,
+ * failing that, MESSENGER_PAGE_ACCESS_TOKEN.
+ */
+export async function getPageAccessToken(pageId: string): Promise<string> {
+  const systemToken = process.env.META_SYSTEM_USER_TOKEN;
+  if (systemToken) {
+    const page = await graphGet<{ access_token?: string }>(
+      withFields(encodeURIComponent(pageId), "access_token"),
+      systemToken
+    );
+    if (!page.access_token) {
+      throw new Error(
+        `META_SYSTEM_USER_TOKEN has no access to page ${pageId}: assign the Page to the System User.`
+      );
+    }
+    return page.access_token;
+  }
+
+  const pageToken =
+    process.env.META_LEADS_ACCESS_TOKEN || process.env.MESSENGER_PAGE_ACCESS_TOKEN;
+  if (!pageToken) {
+    throw new Error(
+      "Meta lead sync is not configured: set META_SYSTEM_USER_TOKEN (or META_LEADS_ACCESS_TOKEN / MESSENGER_PAGE_ACCESS_TOKEN)."
+    );
+  }
+  return pageToken;
 }
 
 export type MetaLeadForm = { id: string; name?: string; status?: string };

@@ -1,10 +1,10 @@
 /**
- * Stateless checks for lib/meta-leads/lead.ts (lead parsing and webhook
- * payload extraction). No network. Mirrors verify-messenger-webhook.ts.
+ * Stateless checks for lib/meta-leads/lead.ts (lead parsing). No network.
+ * Mirrors verify-messenger-webhook.ts.
  *
  * Run via `npm run verify:meta-leads`.
  */
-import { extractLeadgenChanges, humanizeFieldName, parseMetaLead } from "../lib/meta-leads/lead";
+import { humanizeFieldName, parseMetaLead } from "../lib/meta-leads/lead";
 
 type CheckResult = { name: string; pass: boolean; detail: string };
 
@@ -71,28 +71,6 @@ results.push(
   check("humanizeFieldName", humanizeFieldName("preferred__destination") === "Preferred destination",
     humanizeFieldName("preferred__destination"))
 );
-
-{
-  const changes = extractLeadgenChanges({
-    object: "page",
-    entry: [
-      {
-        id: "446521218543410",
-        changes: [
-          { field: "leadgen", value: { leadgen_id: 999, form_id: "f1", page_id: "446521218543410" } },
-          { field: "feed", value: { item: "post" } },
-        ],
-      },
-      { id: "x", messaging: [{ sender: { id: "1" } }] },
-    ],
-  });
-  results.push(
-    check("Only leadgen changes are extracted, IDs as strings",
-      changes.length === 1 && changes[0].leadgen_id === "999" && changes[0].page_id === "446521218543410",
-      JSON.stringify(changes)),
-    check("Garbage payload yields nothing", extractLeadgenChanges(null).length === 0 && extractLeadgenChanges({ entry: "x" }).length === 0, "ok")
-  );
-}
 
 let failed = 0;
 for (const r of results) {

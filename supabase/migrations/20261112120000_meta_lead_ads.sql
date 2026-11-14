@@ -1,13 +1,13 @@
 -- Meta lead ads -> CRM sync.
 --
 -- (1) inquiries gains source ('website' | 'meta_lead_ad'), external_id (the
---     Meta leadgen ID, unique, so a redelivered webhook or a re-run import
---     never duplicates a lead) and source_details (form / campaign / ad
+--     Meta leadgen ID, unique, so the daily sync re-reading recent leads or a
+--     re-run import never duplicates a lead) and source_details (form / campaign / ad
 --     names, for reporting).
 -- (2) record_meta_lead() -- the single write path for Meta leads. Finds the
 --     contact by email, then by phone, else creates one; tags it
 --     "Meta Lead Ad"; appends the inquiry. Callable by service_role only:
---     the webhook and the import script authenticate to Meta first and
+--     the daily sync cron and the import script authenticate first and
 --     write with the service-role key, so unlike record_inquiry() there is
 --     no reason for anon to reach it.
 --

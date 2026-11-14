@@ -1,9 +1,10 @@
 /**
  * Pulls leads from every lead form on the TravelSentro Page into the CRM.
- * Use it once after setup (to bring in leads collected before the webhook
- * existed) and any time the webhook may have missed some (e.g. while the
- * token was expired). Safe to re-run: leads already in the CRM are
- * skipped, and no staff emails are sent for imported leads.
+ * The daily cron (app/api/cron/meta-leads) only looks back a few days; use
+ * this once after setup to bring in older leads, and after any outage
+ * longer than the cron's lookback (e.g. while the token was revoked). Safe
+ * to re-run: leads already in the CRM are skipped, and no staff emails are
+ * sent for imported leads.
  *
  * Meta's API only returns leads from roughly the last 90 days. Older ones
  * must be exported as CSV from Meta Business Suite.
@@ -18,9 +19,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { FACEBOOK_PAGE_ID } from "../lib/constants";
-import { getLeadsAccessToken, listFormLeads, listLeadForms } from "../lib/meta-leads/graph";
-import { parseMetaLead } from "../lib/meta-leads/lead";
-import { recordMetaLead } from "../lib/meta-leads/record";
+import { syncMetaLeads } from "../lib/meta-leads/sync";
 
 // supabase-js needs a global WebSocket, which Node 20 lacks (same fix as
 // scripts/verify-inquiry-ingestion.ts).
@@ -45,9 +44,15 @@ function parseArgs(argv: string[]) {
   return { dryRun, since };
 }
 
+const STATUS_LABEL = {
+  added: "added",
+  existing: "already in CRM",
+  "no-contact": "skipped, no email or phone on the lead",
+  failed: "FAILED",
+} as const;
+
 async function main() {
   const { dryRun, since } = parseArgs(process.argv.slice(2));
-  const token = getLeadsAccessToken();
   await ensureWebSocketPolyfill();
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
@@ -57,48 +62,26 @@ async function main() {
   }
   const supabase = dryRun ? null : createClient(url!, key!, { auth: { persistSession: false } });
 
-  const forms = await listLeadForms(FACEBOOK_PAGE_ID, token);
-  console.log(`Found ${forms.length} lead form(s) on page ${FACEBOOK_PAGE_ID}.`);
-
-  let added = 0;
-  let skipped = 0;
-  let failed = 0;
-
-  for (const form of forms) {
-    const leads = await listFormLeads(form.id, token, since);
-    console.log(`\n${form.name ?? form.id} [${form.status ?? "?"}]: ${leads.length} lead(s)`);
-
-    for (const lead of leads) {
-      const parsed = parseMetaLead(lead, form.name);
+  const summary = await syncMetaLeads({
+    supabase,
+    since,
+    onLead: ({ parsed, formName, status, error }) => {
       const who = parsed.name ?? parsed.email ?? parsed.phone ?? parsed.leadgenId;
+      const form = formName ?? parsed.details.form_id ?? "?";
+      const result =
+        status === "dry-run" ? parsed.createdAt ?? "no date" : STATUS_LABEL[status];
+      console.log(`  - [${form}] ${who}: ${result}${error ? ` (${error})` : ""}`);
+    },
+  });
 
-      if (!parsed.email && !parsed.phone) {
-        console.log(`  - ${who}: skipped, no email or phone on the lead`);
-        failed++;
-        continue;
-      }
-      if (!supabase) {
-        console.log(`  - ${who} (${parsed.createdAt ?? "no date"})`);
-        continue;
-      }
-      try {
-        const result = await recordMetaLead(supabase, parsed);
-        if (result.isNew) added++;
-        else skipped++;
-        console.log(`  - ${who}: ${result.isNew ? "added" : "already in CRM"}`);
-      } catch (err) {
-        failed++;
-        console.error(`  - ${who}: FAILED`, err instanceof Error ? err.message : err);
-      }
-    }
-  }
-
+  console.log(`\nChecked ${summary.forms} lead form(s) on page ${FACEBOOK_PAGE_ID}.`);
   console.log(
     dryRun
-      ? "\nDry run: nothing written."
-      : `\nDone. Added ${added}, already in CRM ${skipped}, failed ${failed}.`
+      ? "Dry run: nothing written."
+      : `Done. Added ${summary.added}, already in CRM ${summary.existing}, ` +
+          `no contact info ${summary.noContact}, failed ${summary.failed}.`
   );
-  if (failed > 0) process.exitCode = 1;
+  if (summary.failed > 0) process.exitCode = 1;
 }
 
 main().catch((err) => {
