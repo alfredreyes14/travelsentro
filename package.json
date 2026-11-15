@@ -44,7 +44,8 @@
     "verify:soa": "tsx scripts/verify-soa.ts",
     "verify:follow-ups": "tsx scripts/verify-follow-ups.ts",
     "verify:meta-sync": "tsx scripts/verify-meta-sync.ts",
-    "setup:meta-sync": "tsx --env-file=.env.local scripts/setup-meta-sync.ts"
+    "setup:meta-sync": "tsx --env-file=.env.local scripts/setup-meta-sync.ts",
+    "check:messenger-access": "tsx --env-file=.env.local scripts/check-messenger-access.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
