@@ -73,6 +73,8 @@ export type CrmDetailContact = {
   otherPhones: LabeledValue[];
   contractStart: string | null;
   contractEnd: string | null;
+  /** When the follow-up automation moved this contact to Lost. */
+  followUpsClosedAt: string | null;
   created_at: string;
   created_by: string | null;
   created_by_name: string | null;
@@ -349,7 +351,11 @@ export function CrmDetail({
 
       {soaSlot}
 
-      <ContactActivity inquiries={inquiries} messages={messages} />
+      <ContactActivity
+        inquiries={inquiries}
+        messages={messages}
+        autoLostAt={contact.followUpsClosedAt}
+      />
 
       <MessageComposeDialog
         contacts={[composeContact]}

@@ -13,6 +13,9 @@
 --     path (anon). Moves the contact to Inquiry (B2C) / Discovery (B2B).
 -- (7) list_due_follow_ups() -- the daily automation's work list
 --     (service_role only).
+-- (8) close_unconverted_follow_ups() -- the daily automation moves leads
+--     who never clicked after the whole sequence to Lost (service_role
+--     only), stamping contacts.follow_ups_closed_at.
 
 -- ============================================================================
 -- (1) B2C follow_up stage
@@ -46,6 +49,10 @@ alter table messages
 
 create index messages_contact_kind_created_at_idx
   on messages(contact_id, kind, created_at desc);
+
+-- When the automation moved this contact to Lost (shown on Activity). Set
+-- once: a lead staff reopen afterwards is never auto-closed again.
+alter table contacts add column follow_ups_closed_at timestamptz;
 
 -- ============================================================================
 -- (3) message_clicks
@@ -241,8 +248,9 @@ grant execute on function public.record_follow_up_click(text, text) to anon, aut
 -- p_gap_days[n] = days to wait before step n, counted from the previous
 -- sent follow-up (or from when the lead came in, for step 1). Half a day of
 -- slack lets a once-a-day run catch leads that came in later in the day.
--- Skips contacts staff messaged in the last day, and gives up on a contact
--- after 3 failed sends. Newest leads first.
+-- p_max_lead_age_days only limits who STARTS the sequence; a lead already in
+-- it finishes it. Skips contacts staff messaged in the last day, and gives
+-- up on a contact after 3 failed sends. Newest leads first.
 -- ============================================================================
 create function public.list_due_follow_ups(
   p_gap_days integer[],
@@ -297,7 +305,10 @@ as $$
     and c.stage in ('new', 'follow_up')
     and c.opted_out = false
     and nullif(trim(coalesce(c.email, '')), '') is not null
-    and c.created_at >= now() - make_interval(days => p_max_lead_age_days)
+    and (
+      coalesce(fu.sent_count, 0) > 0
+      or c.created_at >= now() - make_interval(days => p_max_lead_age_days)
+    )
     and exists (select 1 from inquiries i where i.contact_id = c.id)
     and coalesce(fu.clicked, false) = false
     and coalesce(fu.failed_count, 0) < 3
@@ -313,4 +324,55 @@ $$;
 revoke execute on function public.list_due_follow_ups(integer[], integer, integer)
   from public, anon, authenticated;
 grant execute on function public.list_due_follow_ups(integer[], integer, integer)
+  to service_role;
+
+-- ============================================================================
+-- (8) close_unconverted_follow_ups()
+--
+-- B2C leads still at New / Follow-up who got at least p_step_count
+-- follow-ups, never clicked, and whose last follow-up is p_grace_days old
+-- (half a day of slack, like list_due_follow_ups) move to Lost. Each
+-- contact is auto-closed at most once. Returns how many moved.
+-- ============================================================================
+create function public.close_unconverted_follow_ups(
+  p_step_count integer,
+  p_grace_days integer
+)
+returns integer
+language sql
+security invoker
+set search_path = public
+as $$
+  with fu as (
+    select
+      m.contact_id,
+      count(*) filter (where m.status = 'sent') as sent_count,
+      max(m.created_at) filter (where m.status = 'sent') as last_sent_at,
+      bool_or(m.click_count > 0) as clicked
+    from messages m
+    where m.kind = 'follow_up'
+    group by m.contact_id
+  ),
+  closed as (
+    update contacts c
+    set stage = 'lost',
+        follow_ups_closed_at = now()
+    from fu
+    where fu.contact_id = c.id
+      and c.client_type = 'b2c'
+      and c.stage in ('new', 'follow_up')
+      and c.follow_ups_closed_at is null
+      and exists (select 1 from inquiries i where i.contact_id = c.id)
+      and fu.clicked = false
+      and fu.sent_count >= p_step_count
+      and fu.last_sent_at
+        <= now() - make_interval(days => p_grace_days) + interval '12 hours'
+    returning c.id
+  )
+  select count(*)::integer from closed;
+$$;
+
+revoke execute on function public.close_unconverted_follow_ups(integer, integer)
+  from public, anon, authenticated;
+grant execute on function public.close_unconverted_follow_ups(integer, integer)
   to service_role;

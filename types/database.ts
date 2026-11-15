@@ -101,6 +101,7 @@ export type Database = {
           created_by: string | null;
           created_by_name: string | null;
           email: string | null;
+          follow_ups_closed_at: string | null;
           id: string;
           name: string;
           opted_out: boolean;
@@ -125,6 +126,7 @@ export type Database = {
           created_by?: string | null;
           created_by_name?: string | null;
           email?: string | null;
+          follow_ups_closed_at?: string | null;
           id?: string;
           name: string;
           opted_out?: boolean;
@@ -149,6 +151,7 @@ export type Database = {
           created_by?: string | null;
           created_by_name?: string | null;
           email?: string | null;
+          follow_ups_closed_at?: string | null;
           id?: string;
           name?: string;
           opted_out?: boolean;
@@ -1216,6 +1219,10 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      close_unconverted_follow_ups: {
+        Args: { p_grace_days: number; p_step_count: number };
+        Returns: number;
+      };
       get_notification_recipients: {
         Args: Record<PropertyKey, never>;
         Returns: {

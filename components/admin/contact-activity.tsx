@@ -20,7 +20,10 @@ import {
   type InquirySource,
   type MetaLeadSourceDetails,
 } from "@/lib/crm/inquiry-source";
+import { STAGE_CHIP_CLASSNAME } from "@/lib/crm/stage";
 import { CHAT_TARGET_LABELS, type ChatTarget } from "@/lib/follow-ups/links";
+import { FOLLOW_UP_STEP_COUNT } from "@/lib/follow-ups/templates";
+import { cn } from "@/lib/utils";
 
 export type CrmDetailInquiry = {
   id: string;
@@ -48,19 +51,26 @@ export type CrmDetailMessage = {
 
 type ActivityItem =
   | ({ kind: "inquiry" } & CrmDetailInquiry)
-  | ({ kind: "message" } & CrmDetailMessage);
+  | ({ kind: "message" } & CrmDetailMessage)
+  | { kind: "auto_lost"; id: string; created_at: string };
 
 /** A contact's inquiries and sent messages, newest first. */
 export function ContactActivity({
   inquiries,
   messages,
+  autoLostAt,
 }: {
   inquiries: CrmDetailInquiry[];
   messages: CrmDetailMessage[];
+  /** When the follow-up automation moved this contact to Lost, if it did. */
+  autoLostAt?: string | null;
 }) {
   const activity: ActivityItem[] = [
     ...inquiries.map((i) => ({ kind: "inquiry" as const, ...i })),
     ...messages.map((m) => ({ kind: "message" as const, ...m })),
+    ...(autoLostAt
+      ? [{ kind: "auto_lost" as const, id: "auto-lost", created_at: autoLostAt }]
+      : []),
   ].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
@@ -94,7 +104,19 @@ export function ContactActivity({
                     {format(new Date(item.created_at), "MMM d, yyyy h:mm a")}
                   </TooltipContent>
                 </Tooltip>
-                {item.kind === "inquiry" ? (
+                {item.kind === "auto_lost" ? (
+                  <>
+                    <Badge
+                      variant="outline"
+                      className={cn("w-fit", STAGE_CHIP_CLASSNAME.lost)}
+                    >
+                      Moved to Lost automatically
+                    </Badge>
+                    <p className="text-base leading-[1.5]">
+                      No reply after {FOLLOW_UP_STEP_COUNT} follow-up emails.
+                    </p>
+                  </>
+                ) : item.kind === "inquiry" ? (
                   <>
                     {item.source === "meta_lead_ad" ? (
                       <div className="flex flex-wrap items-center gap-2">
@@ -154,7 +176,9 @@ export function ContactActivity({
                       </span>
                       {item.followUpStep !== null ? (
                         <Badge variant="outline">
-                          Follow-up #{item.followUpStep}
+                          {item.followUpStep <= FOLLOW_UP_STEP_COUNT
+                            ? `Follow-up ${item.followUpStep} of ${FOLLOW_UP_STEP_COUNT}`
+                            : `Follow-up #${item.followUpStep}`}
                         </Badge>
                       ) : null}
                     </div>

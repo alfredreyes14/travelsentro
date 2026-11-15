@@ -14,7 +14,11 @@ type Step = {
   email: (trip: string) => FollowUpTemplate;
 };
 
-/** Day 1, day 3, day 7 after the lead came in. */
+/**
+ * Each gap is counted from the previous follow-up: emails land on day 1, 4,
+ * 9 and 19 after the lead came in. A lead who never clicks is moved to Lost
+ * LOST_AFTER_DAYS after the last one (close_unconverted_follow_ups()).
+ */
 export const FOLLOW_UP_STEPS: readonly Step[] = [
   {
     gapDays: 1,
@@ -26,7 +30,7 @@ export const FOLLOW_UP_STEPS: readonly Step[] = [
     }),
   },
   {
-    gapDays: 2,
+    gapDays: 3,
     email: (trip) => ({
       subject: "Have you picked your travel dates?",
       body:
@@ -35,7 +39,16 @@ export const FOLLOW_UP_STEPS: readonly Step[] = [
     }),
   },
   {
-    gapDays: 4,
+    gapDays: 5,
+    email: (trip) => ({
+      subject: "Need help choosing?",
+      body:
+        `Still deciding on ${trip}? Tell us your budget, your dates and who's coming along, and we'll suggest options that fit — including trips that aren't on our website yet.\n\n` +
+        "It only takes a minute on chat.",
+    }),
+  },
+  {
+    gapDays: 10,
     email: (trip) => ({
       subject: "Still thinking about your trip?",
       body:
@@ -44,6 +57,9 @@ export const FOLLOW_UP_STEPS: readonly Step[] = [
     }),
   },
 ];
+
+/** Days after the last follow-up before a lead who never clicked moves to Lost. */
+export const LOST_AFTER_DAYS = 3;
 
 export const FOLLOW_UP_GAP_DAYS = FOLLOW_UP_STEPS.map((step) => step.gapDays);
 

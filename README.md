@@ -72,9 +72,11 @@ Follow-ups nudge leads into a chat and move them through the funnel.
 - **By hand:** "Follow Up" on a contact, or "Follow Up Selected" in the CRM
   list. Drafts come pre-filled and are editable.
 - **Automatic:** a daily cron (01:07 UTC = 9:07 AM Manila) emails B2C leads
-  with an inquiry that are still at New/Follow-up and haven't clicked, on day
-  1, 3 and 7. Off until `FOLLOW_UPS_ENABLED=true`; see `.env.local.example`
-  for the limits. Copy and cadence: `lib/follow-ups/templates.ts`.
+  with an inquiry that are still at New/Follow-up and haven't clicked. Gaps
+  are 1, 3, 5 and 10 days from the previous follow-up (day 1, 4, 9, 19).
+  3 days after the 4th, a lead who never clicked moves to **Lost** (once;
+  shown on Activity). On by default; `FOLLOW_UPS_ENABLED=false` stops it.
+  Limits: `.env.local.example`. Copy and cadence: `lib/follow-ups/templates.ts`.
 - **SMS caveat:** Philippine telcos filter texts with links. Semaphore's A2P
   route delivers them with a registered sender name (`SEMAPHORE_SENDER_NAME`);
   never use link shorteners (Smart drops them). Test on Globe and Smart

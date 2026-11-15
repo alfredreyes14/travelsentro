@@ -5,9 +5,9 @@ import {
 } from "@/lib/follow-ups/run-automation";
 
 /**
- * Daily lead follow-up emails, run by Vercel Cron (vercel.json: 01:07 UTC =
- * 9:07 AM Asia/Manila, so leads get them in business hours). Needs
- * FOLLOW_UPS_ENABLED=true and the same CRON_SECRET as the Meta lead sync.
+ * Daily lead follow-ups, run by Vercel Cron (vercel.json: 01:07 UTC =
+ * 9:07 AM Asia/Manila, so leads get them in business hours). Uses the same
+ * CRON_SECRET as the Meta lead sync; FOLLOW_UPS_ENABLED=false turns it off.
  */
 export const maxDuration = 60;
 
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
   if (!isFollowUpAutomationEnabled()) {
-    return Response.json({ skipped: "FOLLOW_UPS_ENABLED is not true" });
+    return Response.json({ skipped: "FOLLOW_UPS_ENABLED is false" });
   }
 
   try {

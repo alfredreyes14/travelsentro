@@ -21,6 +21,8 @@ import {
 import {
   FOLLOW_UP_GAP_DAYS,
   FOLLOW_UP_SMS_TEMPLATE,
+  FOLLOW_UP_STEP_COUNT,
+  LOST_AFTER_DAYS,
   followUpEmailTemplate,
   trackedLinkLength,
 } from "../lib/follow-ups/templates";
@@ -101,12 +103,16 @@ check(
 );
 
 // ---------------------------------------------------------------- templates
-check("cadence: day 1, 3, 7", FOLLOW_UP_GAP_DAYS.reduce<number[]>((acc, gap) => [...acc, (acc.at(-1) ?? 0) + gap], []), [1, 3, 7]);
+check("gaps: 1, 3, 5, 10 days", FOLLOW_UP_GAP_DAYS, [1, 3, 5, 10]);
+check("emails land on day 1, 4, 9, 19", FOLLOW_UP_GAP_DAYS.reduce<number[]>((acc, gap) => [...acc, (acc.at(-1) ?? 0) + gap], []), [1, 4, 9, 19]);
+check("4 steps", FOLLOW_UP_STEP_COUNT, 4);
+check("lost 3 days after the last email", LOST_AFTER_DAYS, 3);
+check("last step says it's the last", followUpEmailTemplate(4).body.includes("last check-in"), true);
 const step1 = followUpEmailTemplate(1, "Palawan Escape");
 check("step 1 names the package", step1.body.includes("your Palawan Escape trip"), true);
 check("step 1 subject has the name tag", applyNameTemplate(step1.subject, "Ana"), "Ana, let's plan your Palawan Escape trip");
 check("no package -> generic trip", followUpEmailTemplate(2, null).body.includes("your next trip"), true);
-check("step past the end reuses the last", followUpEmailTemplate(9).subject, followUpEmailTemplate(3).subject);
+check("step past the end reuses the last", followUpEmailTemplate(9).subject, followUpEmailTemplate(4).subject);
 check("step 0 clamps to the first", followUpEmailTemplate(0).subject, followUpEmailTemplate(1).subject);
 check(
   "SMS draft + link fits 2 segments",

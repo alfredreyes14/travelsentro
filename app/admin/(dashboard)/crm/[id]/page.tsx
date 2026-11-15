@@ -107,6 +107,7 @@ export default async function CrmContactPage({
     otherPhones: parseLabeledList(contact.other_phones),
     contractStart: contact.contract_start,
     contractEnd: contact.contract_end,
+    followUpsClosedAt: contact.follow_ups_closed_at,
     created_at: contact.created_at,
     created_by: contact.created_by,
     created_by_name: contact.created_by_name,
