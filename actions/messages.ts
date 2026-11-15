@@ -32,6 +32,8 @@ import type { ActionResult } from "@/lib/action-result";
 const SEND_ERROR_MESSAGE = "Couldn't send the message. Please try again.";
 const NO_ELIGIBLE_RECIPIENTS_MESSAGE =
   "No eligible contacts to message — all selected contacts are opted out or missing the required contact info.";
+const UNSUBSCRIBED_MESSAGE =
+  "This contact unsubscribed, so they can't be messaged.";
 const OPT_OUT_ERROR_MESSAGE =
   "Something went wrong updating this contact's opt-out status. Please try again.";
 
@@ -42,9 +44,10 @@ export type BulkSendResult =
 /**
  * MSG-01/MSG-06 -- individual email send. Awaited inline, never scheduled
  * as background work (04-RESEARCH.md Pitfall 4, T-04-11): a staff-initiated send
- * must surface a real failure via toast, not a false success. Individual
- * sends are never filtered by opted_out (Open Question 1) and never carry
- * an unsubscribe footer (04-02's design -- that's bulk-only).
+ * must surface a real failure via toast, not a false success. A contact
+ * who unsubscribed (opted_out) gets nothing, not even individual sends.
+ * Individual sends never carry an unsubscribe footer (04-02's design --
+ * that's bulk-only).
  */
 export async function sendIndividualEmail(
   contactId: string,
@@ -61,12 +64,16 @@ export async function sendIndividualEmail(
 
   const { data: contact, error: contactError } = await supabase
     .from("contacts")
-    .select("id, name, email")
+    .select("id, name, email, opted_out")
     .eq("id", contactId)
     .single();
 
   if (contactError || !contact) {
     return { ok: false, error: SEND_ERROR_MESSAGE };
+  }
+
+  if (contact.opted_out) {
+    return { ok: false, error: UNSUBSCRIBED_MESSAGE };
   }
 
   if (!contact.email?.trim()) {
@@ -125,12 +132,16 @@ export async function sendIndividualSms(
 
   const { data: contact, error: contactError } = await supabase
     .from("contacts")
-    .select("id, name, phone")
+    .select("id, name, phone, opted_out")
     .eq("id", contactId)
     .single();
 
   if (contactError || !contact) {
     return { ok: false, error: SEND_ERROR_MESSAGE };
+  }
+
+  if (contact.opted_out) {
+    return { ok: false, error: UNSUBSCRIBED_MESSAGE };
   }
 
   if (!contact.phone) {

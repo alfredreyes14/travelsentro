@@ -35,8 +35,8 @@ import { createClient } from "@/lib/supabase/server";
  * sequence (lib/follow-ups/templates.ts), so it counts toward the automatic
  * 4. A click moves the lead on (see the lead_follow_ups migration).
  *
- * Unlike other individual sends, follow-ups respect opted_out: a lead who
- * unsubscribed gets no more follow-ups, individual or bulk.
+ * A lead who unsubscribed (opted_out) gets no follow-ups, individual or
+ * bulk, the same as any other message.
  *
  * Bulk sends take `values: null` to give each contact their own next
  * follow-up message, so contacts at different steps never get a repeat;
@@ -45,7 +45,7 @@ import { createClient } from "@/lib/supabase/server";
 
 const SEND_ERROR_MESSAGE = "Couldn't send the follow-up. Please try again.";
 const OPTED_OUT_MESSAGE =
-  "This lead unsubscribed, so follow-ups have stopped. You can still send a regular message.";
+  "This lead unsubscribed, so follow-ups have stopped.";
 const NO_ELIGIBLE_RECIPIENTS_MESSAGE =
   "No eligible contacts to follow up — all selected contacts are opted out or missing the required contact info.";
 

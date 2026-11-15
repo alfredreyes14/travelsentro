@@ -224,7 +224,11 @@ export function CrmDetail({
             stage={contact.stage}
             optedOut={optedOut}
           />
-          <Button onClick={() => setIsMessageOpen(true)}>
+          <Button
+            onClick={() => setIsMessageOpen(true)}
+            disabled={optedOut}
+            title={optedOut ? "This lead unsubscribed, so they can't be messaged." : undefined}
+          >
             <SendIcon className="size-4" />
             Message
           </Button>
@@ -388,11 +392,11 @@ export function CrmDetail({
               />
               <div className="flex flex-col">
                 <span className="text-sm font-semibold">
-                  Opted out of bulk messages and follow-ups
+                  Unsubscribed
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  This contact won&apos;t receive bulk email or SMS sends, or
-                  any follow-ups. Individual messages are still allowed.
+                  This contact won&apos;t receive any emails, texts or
+                  follow-ups, including ones sent by hand.
                 </span>
               </div>
             </div>

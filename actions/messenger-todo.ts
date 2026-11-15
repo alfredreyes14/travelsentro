@@ -133,10 +133,13 @@ export async function markMessengerFollowUpSent(contactId: string): Promise<Acti
 
   const { data: contact, error: contactError } = await supabase
     .from("contacts")
-    .select("id, name")
+    .select("id, name, opted_out")
     .eq("id", contactId)
     .single();
   if (contactError || !contact) return { ok: false, error: ERROR };
+  if (contact.opted_out) {
+    return { ok: false, error: "This lead unsubscribed, so follow-ups have stopped." };
+  }
 
   const next = (await nextFollowUps(supabase, [contactId])).get(contactId);
   if (!next || next.step > MESSENGER_FOLLOW_UP_GAP_DAYS.length) {

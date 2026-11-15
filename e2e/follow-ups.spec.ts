@@ -142,7 +142,7 @@ test("a lead who never responds stays put after all 4 follow-ups, for staff to m
   await expect(page.getByText("All 4 follow-ups sent")).toBeVisible();
 });
 
-test("a lead who unsubscribes gets no more follow-ups", async ({ request, page }) => {
+test("a lead who unsubscribes gets no more follow-ups or messages", async ({ request, page }) => {
   const lead = await seedLead({ daysOld: 3 });
   const { error } = await db().from("contacts").update({ opted_out: true }).eq("id", lead.id);
   expect(error).toBeNull();
@@ -154,4 +154,5 @@ test("a lead who unsubscribes gets no more follow-ups", async ({ request, page }
   await page.goto(`/admin/crm/${lead.id}`);
   await expect(page.getByText("Unsubscribed", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Follow Up", exact: true })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Message", exact: true })).toBeDisabled();
 });
