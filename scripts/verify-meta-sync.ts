@@ -15,6 +15,7 @@ import {
   isFreshEnough,
   normalizePhoneForMeta,
 } from "../lib/meta-sync/capi";
+import { chatUrl, newMessages } from "../lib/meta-sync/chats";
 import { extractEmails, extractPhoneKeys } from "../lib/meta-sync/parse";
 import {
   ALL_META_STAGE_NAMES,
@@ -84,6 +85,40 @@ check("email hashed, normalised", parsed.data[0].user_data.em, [createHash("sha2
 check("phone hashed with country code", parsed.data[0].user_data.ph, [createHash("sha256").update("639175551234").digest("hex")]);
 check("test code only when given", "test_event_code" in parsed, false);
 check("test code included", JSON.parse(buildCapiBody([], "TEST123")).test_event_code, "TEST123");
+
+// ---------------------------------------------------------------- reading chats
+const PAGE = "446521218543410";
+const since = new Date("2026-11-10T00:00:00Z");
+const chats = [
+  {
+    id: "c1",
+    link: "/446521218543410/inbox/123/?section=messages",
+    updated_time: "2026-11-14T10:00:00Z",
+    participants: { data: [{ id: "CUST1", name: "Juan" }, { id: PAGE, name: "TravelSentro" }] },
+    messages: {
+      data: [
+        // Newest first, as Meta returns them.
+        { id: "m4", message: "Morning. 4 pax.", created_time: "2026-11-14T10:00:00Z", from: { id: "CUST1" } },
+        { id: "m3", message: "", created_time: "2026-11-13T09:00:00Z", from: { id: PAGE } },
+        { id: "m2", message: "Hello po! How many pax?", created_time: "2026-11-13T08:00:00Z", from: { id: PAGE } },
+        { id: "m1", message: "Hello! I filled out your form", created_time: "2026-11-12T08:00:00Z", from: { id: "CUST1" } },
+        { id: "m0", message: "old", created_time: "2026-11-01T08:00:00Z", from: { id: "CUST1" } },
+      ],
+    },
+  },
+];
+const read = newMessages(chats, PAGE, since);
+check("only messages after the last run, no empty ones", read.map((m) => m.text), [
+  "Hello! I filled out your form",
+  "Hello po! How many pax?",
+  "Morning. 4 pax.",
+]);
+check("oldest first", read.map((m) => m.sentAt), [...read.map((m) => m.sentAt)].sort());
+check("customer vs staff", read.map((m) => m.fromCustomer), [true, false, true]);
+check("customer id + name on every message", read.every((m) => m.psid === "CUST1" && m.name === "Juan"), true);
+check("chat link kept", read[0].chatLink, "/446521218543410/inbox/123/?section=messages");
+check("chat URL", chatUrl(read[0].chatLink), "https://www.facebook.com/446521218543410/inbox/123/?section=messages");
+check("no URL for odd links", chatUrl("https://evil.example"), null);
 
 let allPass = true;
 for (const r of results) {

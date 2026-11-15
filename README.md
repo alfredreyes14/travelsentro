@@ -101,34 +101,46 @@ Verify the link/template logic offline: `npm run verify:follow-ups`.
 ### CRM ↔ Meta stage sync
 
 Code: `lib/meta-sync`. Database: `supabase/migrations/20261116120000_meta_stage_sync.sql`.
+Settings page: **Contacts → Messenger settings** (`/admin/crm/messenger`).
 
-- **Messenger inbox labels ↔ CRM stage.** Each Messenger chat can be
-  linked to a contact:
-  - automatically, when the lead's email or phone appears in the chat (the
-    lead form's first message has both);
-  - automatically, when they tap "Chat on Messenger" in a follow-up;
-  - by hand, from "Messenger chat" on the contact page.
+**Messenger → CRM** (works without Meta App Review)
 
-  Once linked:
-  - a stage label staff put on the chat ("New lead", "Inquiry",
-    "Quotation", "Confirmation", "Lost"; B2B: "Contacted", "Follow-up", …)
-    sets the CRM stage;
-  - a CRM stage change puts the matching label on the chat (one stage label
-    at a time);
-  - a linked lead who writes again moves from New/Lost to Inquiry.
-- **CRM stage → Meta Ads (Conversions API for CRM).** Each stage a Meta
-  lead-ad lead reaches is sent with its lead ID, so Meta can show ads to
-  people like the ones who book.
-- **How it runs:**
-  - Database triggers queue jobs in `meta_outbox`.
-  - The app sends them right after a change (and from the daily crons).
-  - Parts that aren't configured are skipped.
-- **Setup:**
-  - env vars in `.env.local.example`;
-  - `npm run setup:meta-sync` once (webhook fields and inbox labels).
-- **Real customers:** Messenger webhooks and labels only work for real
-  customers once the Meta app has Advanced Access to `pages_messaging`
-  (App Review).
+Every 15 minutes the CRM reads new Messenger messages through the
+Conversations API (`lib/meta-sync/poll.ts`).
+- **Linking:** a chat links to its contact automatically when the lead's
+  email or phone appears in it (the lead form's first message has both).
+  Otherwise staff link it by hand on the contact page, which also gets an
+  **Open chat** button.
+- **Replies:** a linked lead who writes again moves from New/Lost to
+  **Inquiry**.
+- **Saved replies:** a staff message containing a saved-reply phrase moves
+  the lead forward (e.g. the prices message → **Quotation**). Rules are set
+  in Messenger settings.
+
+**Schedule:** Supabase pg_cron calls `/api/cron/messenger-sync` every 15
+minutes (Vercel's free plan only runs crons once a day). It's production
+only. One-time setup in the production Supabase SQL editor:
+
+```sql
+select vault.create_secret('https://travelsentro.com', 'app_url');
+select vault.create_secret('<the CRON_SECRET value from Vercel>', 'cron_secret');
+```
+
+Messenger settings shows when it last ran, so you can tell it's working.
+
+**Inbox labels ↔ stage:** built, but Meta blocks labels on customers' chats
+until the app passes App Review (Advanced Access to `pages_messaging`).
+Turn on with `META_INBOX_LABELS_ENABLED=true` after approval. Check access
+any time with `npm run check:messenger-access` (read-only, prints no
+customer data).
+
+**CRM stage → Meta Ads (Conversions API for CRM):** each stage a Meta
+lead-ad lead reaches is sent with its lead ID, so Meta can show ads to
+people like the ones who book. Needs `META_CRM_DATASET_ID` and
+`META_CAPI_ACCESS_TOKEN`.
+
+Stage changes queue jobs in `meta_outbox`. They're sent right after the
+change and by the crons; parts that aren't configured are skipped.
 
 Verify offline: `npm run verify:meta-sync`.
 

@@ -25,6 +25,7 @@ import { toMetaLeadSourceDetails } from "@/lib/crm/inquiry-source";
 import { toServiceKeys } from "@/lib/crm/services";
 import { toClientType, toContactStage } from "@/lib/crm/stage";
 import { toChatTarget } from "@/lib/follow-ups/links";
+import { chatUrl } from "@/lib/meta-sync/chats";
 import { toFollowUpProgress } from "@/lib/follow-ups/progress";
 import {
   followUpSequenceFor,
@@ -104,7 +105,7 @@ export default async function CrmContactPage({
     // This contact's chat (if linked) plus recent chats nobody linked yet.
     supabase
       .from("messenger_threads")
-      .select("psid, name, last_snippet, last_inbound_at, contact_id")
+      .select("psid, name, last_snippet, last_inbound_at, chat_link, contact_id")
       .or(`contact_id.eq.${id},contact_id.is.null`)
       .order("last_inbound_at", { ascending: false, nullsFirst: false })
       .limit(50),
@@ -206,11 +207,13 @@ export default async function CrmContactPage({
     name: string | null;
     last_snippet: string | null;
     last_inbound_at: string | null;
+    chat_link: string | null;
   }): MessengerChatOption => ({
     psid: row.psid,
     name: row.name,
     snippet: row.last_snippet,
     lastInboundAt: row.last_inbound_at,
+    chatUrl: chatUrl(row.chat_link),
   });
   const chatRows = chatsResult.data ?? [];
   const linkedRow = chatRows.find((row) => row.contact_id === id);
@@ -221,7 +224,7 @@ export default async function CrmContactPage({
         linkedRow
           ? toChat(linkedRow)
           : contact.messenger_psid
-            ? { psid: contact.messenger_psid, name: null, snippet: null, lastInboundAt: null }
+            ? { psid: contact.messenger_psid, name: null, snippet: null, lastInboundAt: null, chatUrl: null }
             : null
       }
       unlinkedChats={chatRows.filter((row) => row.contact_id === null).map(toChat)}

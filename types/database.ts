@@ -683,8 +683,54 @@ export type Database = {
           },
         ];
       };
+      messenger_stage_phrases: {
+        Row: {
+          created_at: string;
+          created_by_name: string | null;
+          id: string;
+          phrase: string;
+          stage: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by_name?: string | null;
+          id?: string;
+          phrase: string;
+          stage: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by_name?: string | null;
+          id?: string;
+          phrase?: string;
+          stage?: string;
+        };
+        Relationships: [];
+      };
+      messenger_sync_state: {
+        Row: {
+          id: boolean;
+          last_result: Json | null;
+          last_synced_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: boolean;
+          last_result?: Json | null;
+          last_synced_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: boolean;
+          last_result?: Json | null;
+          last_synced_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       messenger_threads: {
         Row: {
+          chat_link: string | null;
           contact_id: string | null;
           created_at: string;
           last_inbound_at: string | null;
@@ -694,6 +740,7 @@ export type Database = {
           psid: string;
         };
         Insert: {
+          chat_link?: string | null;
           contact_id?: string | null;
           created_at?: string;
           last_inbound_at?: string | null;
@@ -703,6 +750,7 @@ export type Database = {
           psid: string;
         };
         Update: {
+          chat_link?: string | null;
           contact_id?: string | null;
           created_at?: string;
           last_inbound_at?: string | null;
@@ -1424,13 +1472,25 @@ export type Database = {
       };
       record_messenger_inbound: {
         Args: {
+          p_chat_link?: string | null;
           p_emails: string[];
           p_name: string | null;
           p_phone_keys: string[];
           p_psid: string;
+          p_sent_at?: string;
           p_snippet: string;
         };
         Returns: { contact_id: string | null; linked_now: boolean; moved_to: string | null }[];
+      };
+      record_messenger_staff_message: {
+        Args: {
+          p_chat_link?: string | null;
+          p_name: string | null;
+          p_psid: string;
+          p_sent_at?: string;
+          p_text: string;
+        };
+        Returns: string | null;
       };
       set_contact_opted_out: { Args: { p_contact_id: string }; Returns: undefined };
       unlink_messenger_thread: { Args: { p_contact_id: string }; Returns: undefined };

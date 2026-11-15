@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
+import { ExternalLinkIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { linkMessengerChat, unlinkMessengerChat } from "@/actions/messenger-link";
@@ -20,6 +21,8 @@ export type MessengerChatOption = {
   name: string | null;
   snippet: string | null;
   lastInboundAt: string | null;
+  /** Opens the chat in the Facebook inbox. */
+  chatUrl: string | null;
 };
 
 function describe(chat: MessengerChatOption): string {
@@ -32,8 +35,9 @@ function describe(chat: MessengerChatOption): string {
 }
 
 /**
- * The contact's Messenger chat: linked (stage label and CRM stage stay in
- * step), or a picker of recent chats nobody linked yet.
+ * The contact's Messenger chat: linked (with an "Open chat" button; their
+ * replies and staff's saved replies there update the stage), or a picker
+ * of recent chats nobody linked yet.
  */
 export function ContactMessengerLink({
   contactId,
@@ -72,6 +76,17 @@ export function ContactMessengerLink({
       <div className="flex flex-wrap items-center gap-2 pt-2">
         <span className="text-muted-foreground">Messenger chat: </span>
         <span>{linkedChat.name ?? "Linked"}</span>
+        {linkedChat.chatUrl ? (
+          <Button
+            variant="outline"
+            size="sm"
+            nativeButton={false}
+            render={<a href={linkedChat.chatUrl} target="_blank" rel="noopener noreferrer" />}
+          >
+            <ExternalLinkIcon className="size-4" />
+            Open chat
+          </Button>
+        ) : null}
         {canEdit ? (
           <Button
             variant="ghost"
@@ -83,8 +98,8 @@ export function ContactMessengerLink({
           </Button>
         ) : null}
         <p className="w-full text-xs text-muted-foreground">
-          The chat&apos;s stage label in the Facebook inbox and this contact&apos;s
-          stage stay in sync.
+          When they reply there, they move to Inquiry. Staff saved replies set
+          in Messenger settings move them further.
         </p>
       </div>
     );

@@ -1,10 +1,15 @@
 -- Sync CRM stages with Meta, two ways (lib/meta-sync):
 --
---   A. Messenger inbox labels <-> CRM stage. Each Messenger chat (a PSID,
---      Meta's page-scoped id for the person) can be linked to a contact.
---      Then a stage label staff put on the chat changes the CRM stage, and
---      a CRM stage change puts the matching label on the chat. A linked
---      lead who writes to us again moves from New (or Lost) to Inquiry.
+--   A. Messenger chats -> CRM stage. Each Messenger chat (a PSID, Meta's
+--      page-scoped id for the person) can be linked to a contact. Chats are
+--      read every 15 minutes (lib/meta-sync/poll.ts, scheduled below with
+--      pg_cron) and, when Meta delivers them, through the webhook:
+--        - a linked lead who writes to us again moves New/Lost -> Inquiry;
+--        - a staff message containing a saved-reply phrase
+--          (messenger_stage_phrases) moves the lead forward, e.g. sending
+--          the prices -> Quotation.
+--      Inbox labels <-> stage also work once the Meta app has App Review
+--      (Advanced Access to pages_messaging); off until then.
 --   B. CRM stage -> Meta Ads (Conversions API for CRM). Every stage change
 --      of a contact that came from a Meta lead ad is reported with its
 --      leadgen id, so Meta can optimise ads toward leads that book.
@@ -21,6 +26,8 @@
 --     Messenger" tap opened the chat
 -- (6) apply_inbox_stage() -- webhook: staff put a stage label on a chat
 -- (7) link_messenger_thread() / unlink_messenger_thread() -- staff, by hand
+-- (8) messenger_stage_phrases + record_messenger_staff_message()
+-- (9) messenger_sync_state + the 15-minute pg_cron schedule
 
 -- ============================================================================
 -- (1) Messenger chats
@@ -36,6 +43,8 @@ create table messenger_threads (
   contact_id uuid references contacts(id) on delete set null,
   last_inbound_at timestamptz,
   last_snippet text check (last_snippet is null or length(last_snippet) <= 100),
+  -- The chat in the Facebook inbox (facebook.com + this path).
+  chat_link text check (chat_link is null or chat_link like '/%'),
   -- A stage label staff put on the chat before it was linked; applied on link.
   pending_stage text,
   created_at timestamptz not null default now()
@@ -256,15 +265,20 @@ revoke execute on function public.link_messenger_psid(uuid, text) from public, a
 -- one contact whose email or phone appears in the message (the lead form's
 -- first Messenger message carries both); that message is the form, not a
 -- reply, so it moves nothing. When it was already linked, the customer is
--- replying: a B2C contact at New or Lost moves to Inquiry.
+-- replying: a B2C contact at New or Lost moves to Inquiry -- unless the
+-- message is older than the contact's current stage (a reply read late
+-- must not undo a stage staff or the automation set since).
 -- p_phone_keys are the last 10 digits of each phone number in the text.
+-- Safe to call twice for the same message.
 -- ============================================================================
 create function public.record_messenger_inbound(
   p_psid text,
   p_name text,
   p_snippet text,
   p_emails text[],
-  p_phone_keys text[]
+  p_phone_keys text[],
+  p_chat_link text default null,
+  p_sent_at timestamptz default now()
 )
 returns table (contact_id uuid, linked_now boolean, moved_to text)
 language plpgsql
@@ -276,13 +290,20 @@ declare
   v_candidates uuid[];
   v_stage text;
   v_type text;
+  v_stage_changed_at timestamptz;
 begin
-  insert into messenger_threads (psid, name, last_inbound_at, last_snippet)
-  values (p_psid, nullif(trim(p_name), ''), now(), left(p_snippet, 100))
+  insert into messenger_threads (psid, name, last_inbound_at, last_snippet, chat_link)
+  values (p_psid, nullif(trim(p_name), ''), p_sent_at, left(p_snippet, 100), p_chat_link)
   on conflict (psid) do update
   set name = coalesce(nullif(trim(excluded.name), ''), messenger_threads.name),
-      last_inbound_at = excluded.last_inbound_at,
-      last_snippet = excluded.last_snippet;
+      chat_link = coalesce(excluded.chat_link, messenger_threads.chat_link),
+      last_inbound_at = greatest(excluded.last_inbound_at, messenger_threads.last_inbound_at),
+      last_snippet = case
+        when messenger_threads.last_inbound_at is null
+          or excluded.last_inbound_at >= messenger_threads.last_inbound_at
+        then excluded.last_snippet
+        else messenger_threads.last_snippet
+      end;
 
   select c.id into v_contact_id from contacts c where c.messenger_psid = p_psid;
 
@@ -305,8 +326,11 @@ begin
     return;
   end if;
 
-  select c.stage, c.client_type into v_stage, v_type from contacts c where c.id = v_contact_id;
-  if v_type = 'b2c' and v_stage in ('new', 'lost') then
+  select c.stage, c.client_type, c.stage_changed_at
+  into v_stage, v_type, v_stage_changed_at
+  from contacts c where c.id = v_contact_id;
+
+  if v_type = 'b2c' and v_stage in ('new', 'lost') and p_sent_at > v_stage_changed_at then
     update contacts set stage = 'inquiry' where id = v_contact_id;
     return query select v_contact_id, false, 'inquiry'::text;
     return;
@@ -316,9 +340,9 @@ begin
 end;
 $$;
 
-revoke execute on function public.record_messenger_inbound(text, text, text, text[], text[])
+revoke execute on function public.record_messenger_inbound(text, text, text, text[], text[], text, timestamptz)
   from public, anon, authenticated;
-grant execute on function public.record_messenger_inbound(text, text, text, text[], text[])
+grant execute on function public.record_messenger_inbound(text, text, text, text[], text[], text, timestamptz)
   to service_role;
 
 -- ============================================================================
@@ -440,3 +464,176 @@ $$;
 
 revoke execute on function public.unlink_messenger_thread(uuid) from public, anon;
 grant execute on function public.unlink_messenger_thread(uuid) to authenticated;
+
+-- ============================================================================
+-- (8) messenger_stage_phrases + record_messenger_staff_message()
+--
+-- Staff reuse Messenger saved replies at each step ("here po yung
+-- available namin..." with the prices). When a staff message in a linked
+-- chat contains one of these phrases, the B2C contact moves forward to the
+-- phrase's stage (never backwards; a Lost lead comes back). Matching
+-- ignores case and extra spaces. Managed at /admin/crm/messenger.
+-- ============================================================================
+create table messenger_stage_phrases (
+  id uuid primary key default gen_random_uuid(),
+  phrase text not null unique check (length(trim(phrase)) >= 10),
+  stage text not null check (stage in ('inquiry', 'quotation', 'confirmation')),
+  created_by_name text,
+  created_at timestamptz not null default now()
+);
+
+alter table messenger_stage_phrases enable row level security;
+
+create policy "authenticated staff can read stage phrases" on messenger_stage_phrases
+  for select to authenticated using (true);
+create policy "can_edit_crm can add stage phrases" on messenger_stage_phrases
+  for insert to authenticated
+  with check (public.has_permission(auth.uid(), 'can_edit_crm'));
+create policy "can_edit_crm can delete stage phrases" on messenger_stage_phrases
+  for delete to authenticated
+  using (public.has_permission(auth.uid(), 'can_edit_crm'));
+
+-- Starting rules, from the team's real replies. Editable in the admin.
+insert into messenger_stage_phrases (phrase, stage, created_by_name) values
+  ('here po yung available namin', 'quotation', 'Default'),
+  ('kindly send us the passport copies', 'quotation', 'Default');
+
+create function public.normalize_chat_text(p_text text)
+returns text
+language sql
+immutable
+as $$
+  select trim(regexp_replace(lower(coalesce(p_text, '')), '\s+', ' ', 'g'));
+$$;
+
+-- A staff (Page) message in a chat. Saves the chat's link/name, and applies
+-- a saved-reply phrase to a linked B2C contact. Returns the new stage, or
+-- null when nothing moved. Safe to call twice for the same message.
+create function public.record_messenger_staff_message(
+  p_psid text,
+  p_name text,
+  p_text text,
+  p_chat_link text default null,
+  p_sent_at timestamptz default now()
+)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_contact_id uuid;
+  v_stage text;
+  v_type text;
+  v_stage_changed_at timestamptz;
+  v_target text;
+  v_order constant text[] := array['new', 'inquiry', 'quotation', 'confirmation'];
+begin
+  insert into messenger_threads (psid, name, chat_link)
+  values (p_psid, nullif(trim(p_name), ''), p_chat_link)
+  on conflict (psid) do update
+  set name = coalesce(nullif(trim(excluded.name), ''), messenger_threads.name),
+      chat_link = coalesce(excluded.chat_link, messenger_threads.chat_link);
+
+  select c.id, c.stage, c.client_type, c.stage_changed_at
+  into v_contact_id, v_stage, v_type, v_stage_changed_at
+  from contacts c where c.messenger_psid = p_psid;
+
+  if v_contact_id is null or v_type <> 'b2c' or p_sent_at <= v_stage_changed_at then
+    return null;
+  end if;
+
+  -- The furthest stage any matching phrase points to.
+  select p.stage into v_target
+  from messenger_stage_phrases p
+  where position(public.normalize_chat_text(p.phrase) in public.normalize_chat_text(p_text)) > 0
+  order by array_position(v_order, p.stage) desc
+  limit 1;
+
+  if v_target is null then
+    return null;
+  end if;
+
+  if v_stage <> 'lost'
+     and array_position(v_order, v_stage) >= array_position(v_order, v_target) then
+    return null;
+  end if;
+
+  update contacts set stage = v_target where id = v_contact_id;
+  return v_target;
+end;
+$$;
+
+revoke execute on function public.record_messenger_staff_message(text, text, text, text, timestamptz)
+  from public, anon, authenticated;
+grant execute on function public.record_messenger_staff_message(text, text, text, text, timestamptz)
+  to service_role;
+
+-- ============================================================================
+-- (9) messenger_sync_state + the 15-minute schedule
+--
+-- Vercel's free plan runs crons once a day, so Supabase's own scheduler
+-- (pg_cron) calls /api/cron/messenger-sync every 15 minutes through pg_net.
+-- The app URL and CRON_SECRET live in Supabase Vault, set once per project:
+--   select vault.create_secret('https://travelsentro.com', 'app_url');
+--   select vault.create_secret('<CRON_SECRET>', 'cron_secret');
+-- Until both exist, the job does nothing. Side benefit: regular activity
+-- keeps a free Supabase project from pausing.
+-- ============================================================================
+create table messenger_sync_state (
+  id boolean primary key default true check (id),
+  last_synced_at timestamptz,
+  last_result jsonb,
+  updated_at timestamptz not null default now()
+);
+
+alter table messenger_sync_state enable row level security;
+
+create policy "authenticated staff can read messenger sync state" on messenger_sync_state
+  for select to authenticated using (true);
+
+insert into messenger_sync_state (id) values (true);
+
+create function public.trigger_messenger_sync()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_url text;
+  v_secret text;
+begin
+  begin
+    select decrypted_secret into v_url from vault.decrypted_secrets where name = 'app_url';
+    select decrypted_secret into v_secret from vault.decrypted_secrets where name = 'cron_secret';
+  exception when others then
+    return; -- Vault not available (local database)
+  end;
+
+  if v_url is null or v_secret is null then
+    return;
+  end if;
+
+  perform net.http_get(
+    url := rtrim(v_url, '/') || '/api/cron/messenger-sync',
+    headers := jsonb_build_object('Authorization', 'Bearer ' || v_secret),
+    timeout_milliseconds := 60000
+  );
+end;
+$$;
+
+revoke execute on function public.trigger_messenger_sync() from public, anon, authenticated;
+
+do $$
+begin
+  begin
+    create extension if not exists pg_net with schema extensions;
+    create extension if not exists pg_cron with schema pg_catalog;
+  exception when others then
+    raise notice 'pg_cron/pg_net unavailable (%): Messenger sync not scheduled', sqlerrm;
+    return;
+  end;
+  perform cron.schedule('messenger-sync', '*/15 * * * *', 'select public.trigger_messenger_sync()');
+end;
+$$;

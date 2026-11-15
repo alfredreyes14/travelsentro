@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { PlusIcon, SearchIcon } from "lucide-react";
+import { MessageCircleIcon, PlusIcon, SearchIcon } from "lucide-react";
 import type { RowSelectionState } from "@tanstack/react-table";
 
 import { ContactAddDialog } from "./contact-add-dialog";
@@ -162,6 +163,10 @@ export function CrmContactsView({
         {canEdit ? (
           <div className="flex flex-wrap items-center gap-2">
             <MetaLeadSyncButton enabled={metaLeadSyncEnabled} />
+            <Button variant="outline" nativeButton={false} render={<Link href="/admin/crm/messenger" />}>
+              <MessageCircleIcon className="size-4" />
+              Messenger settings
+            </Button>
             <Button onClick={() => setIsAddOpen(true)}>
               <PlusIcon className="size-4" />
               Add Contact

@@ -21,7 +21,7 @@ import { isStageLabel, metaStageName } from "./stages";
  * Safe to run from several places at once -- claim_meta_outbox() hands each
  * job to one sender. A job that fails is retried on later runs, up to 5
  * tries. A part that isn't set up (no dataset, no Page token, or
- * META_INBOX_LABELS_ENABLED=false) marks its jobs skipped.
+ * META_INBOX_LABELS_ENABLED not "true") marks its jobs skipped.
  */
 
 export type MetaSyncResult = {
@@ -41,8 +41,12 @@ type OutboxRow = {
 
 const BATCH = 200;
 
+/**
+ * Off until the Meta app has App Review (Advanced Access to
+ * pages_messaging): without it, Meta blocks labels on customers' chats.
+ */
 function inboxLabelsEnabled(): boolean {
-  return process.env.META_INBOX_LABELS_ENABLED !== "false";
+  return process.env.META_INBOX_LABELS_ENABLED === "true";
 }
 
 export async function flushMetaOutbox(): Promise<MetaSyncResult> {
