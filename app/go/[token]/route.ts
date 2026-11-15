@@ -5,6 +5,7 @@ import {
   toChatTarget,
   type ChatTarget,
 } from "@/lib/follow-ups/links";
+import { scheduleMetaSync } from "@/lib/meta-sync/schedule";
 import { createPublicClient } from "@/lib/supabase/public";
 
 /**
@@ -66,7 +67,10 @@ export async function GET(
     return redirectTo(buildChatUrl(target, {}));
   }
 
-  return redirectTo(buildChatUrl(target, await recordClick(token, target)));
+  const context = await recordClick(token, target);
+  // A recorded click can move the stage; send that on to Meta.
+  scheduleMetaSync();
+  return redirectTo(buildChatUrl(target, { ...context, followUpToken: token }));
 }
 
 /** Link checkers send HEAD: answer with the redirect, record nothing. */

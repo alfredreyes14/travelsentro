@@ -25,6 +25,7 @@ import {
   followUpEmailTemplate,
   followUpSmsTemplate,
 } from "@/lib/follow-ups/templates";
+import { scheduleMetaSync } from "@/lib/meta-sync/schedule";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -94,6 +95,7 @@ export async function sendFollowUpEmail(
     origin: await getSiteOrigin(),
   });
 
+  scheduleMetaSync();
   revalidatePath("/admin/crm");
   revalidatePath(`/admin/crm/${contact.id}`);
   return summary.sent === 1 ? { ok: true } : { ok: false, error: SEND_ERROR_MESSAGE };
@@ -154,6 +156,7 @@ export async function sendBulkFollowUpEmail(
     origin: await getSiteOrigin(),
   });
 
+  scheduleMetaSync();
   revalidatePath("/admin/crm");
   return toBulkResult(summary);
 }
@@ -194,6 +197,7 @@ export async function sendFollowUpText(
     origin: await getSiteOrigin(),
   });
 
+  scheduleMetaSync();
   revalidatePath("/admin/crm");
   revalidatePath(`/admin/crm/${contact.id}`);
   return summary.sent === 1 ? { ok: true } : { ok: false, error: SEND_ERROR_MESSAGE };
@@ -249,6 +253,7 @@ export async function sendBulkFollowUpText(
     origin: await getSiteOrigin(),
   });
 
+  scheduleMetaSync();
   revalidatePath("/admin/crm");
   return toBulkResult(summary);
 }

@@ -102,6 +102,7 @@ export type Database = {
           created_by_name: string | null;
           email: string | null;
           id: string;
+          messenger_psid: string | null;
           name: string;
           opted_out: boolean;
           other_emails: Json;
@@ -127,6 +128,7 @@ export type Database = {
           created_by_name?: string | null;
           email?: string | null;
           id?: string;
+          messenger_psid?: string | null;
           name: string;
           opted_out?: boolean;
           other_emails?: Json;
@@ -152,6 +154,7 @@ export type Database = {
           created_by_name?: string | null;
           email?: string | null;
           id?: string;
+          messenger_psid?: string | null;
           name?: string;
           opted_out?: boolean;
           other_emails?: Json;
@@ -676,6 +679,88 @@ export type Database = {
             columns: ["package_id"];
             isOneToOne: false;
             referencedRelation: "packages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      messenger_threads: {
+        Row: {
+          contact_id: string | null;
+          created_at: string;
+          last_inbound_at: string | null;
+          last_snippet: string | null;
+          name: string | null;
+          pending_stage: string | null;
+          psid: string;
+        };
+        Insert: {
+          contact_id?: string | null;
+          created_at?: string;
+          last_inbound_at?: string | null;
+          last_snippet?: string | null;
+          name?: string | null;
+          pending_stage?: string | null;
+          psid: string;
+        };
+        Update: {
+          contact_id?: string | null;
+          created_at?: string;
+          last_inbound_at?: string | null;
+          last_snippet?: string | null;
+          name?: string | null;
+          pending_stage?: string | null;
+          psid?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "messenger_threads_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      meta_outbox: {
+        Row: {
+          attempts: number;
+          claimed_at: string | null;
+          contact_id: string;
+          created_at: string;
+          id: number;
+          kind: string;
+          last_error: string | null;
+          payload: Json;
+          sent_at: string | null;
+        };
+        Insert: {
+          attempts?: number;
+          claimed_at?: string | null;
+          contact_id: string;
+          created_at?: string;
+          id?: never;
+          kind: string;
+          last_error?: string | null;
+          payload: Json;
+          sent_at?: string | null;
+        };
+        Update: {
+          attempts?: number;
+          claimed_at?: string | null;
+          contact_id?: string;
+          created_at?: string;
+          id?: never;
+          kind?: string;
+          last_error?: string | null;
+          payload?: Json;
+          sent_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "meta_outbox_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
             referencedColumns: ["id"];
           },
         ];
@@ -1264,6 +1349,11 @@ export type Database = {
       };
     };
     Functions: {
+      apply_inbox_stage: { Args: { p_psid: string; p_stage: string }; Returns: string | null };
+      claim_meta_outbox: {
+        Args: { p_limit: number };
+        Returns: Database["public"]["Tables"]["meta_outbox"]["Row"][];
+      };
       close_unconverted_follow_ups: {
         Args: { p_grace_days: number; p_step_count: number };
         Returns: number;
@@ -1275,6 +1365,11 @@ export type Database = {
         }[];
       };
       has_permission: { Args: { perm: string; uid: string }; Returns: boolean };
+      link_messenger_by_token: {
+        Args: { p_psid: string; p_token: string };
+        Returns: { contact_id: string; package_name: string | null }[];
+      };
+      link_messenger_thread: { Args: { p_contact_id: string; p_psid: string }; Returns: boolean };
       list_contact_tags: { Args: Record<PropertyKey, never>; Returns: string[] };
       list_due_follow_ups: {
         Args: { p_gap_days: number[]; p_limit: number; p_max_lead_age_days: number };
@@ -1327,7 +1422,18 @@ export type Database = {
           is_new: boolean;
         }[];
       };
+      record_messenger_inbound: {
+        Args: {
+          p_emails: string[];
+          p_name: string | null;
+          p_phone_keys: string[];
+          p_psid: string;
+          p_snippet: string;
+        };
+        Returns: { contact_id: string | null; linked_now: boolean; moved_to: string | null }[];
+      };
       set_contact_opted_out: { Args: { p_contact_id: string }; Returns: undefined };
+      unlink_messenger_thread: { Args: { p_contact_id: string }; Returns: undefined };
       write_package_children: {
         Args: { p_inclusions: Json; p_itinerary: Json; p_package_id: string; p_travel_dates: Json };
         Returns: undefined;

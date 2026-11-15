@@ -1,4 +1,5 @@
 import { isCronAuthorized } from "@/lib/cron/authorize";
+import { flushMetaOutbox } from "@/lib/meta-sync/flush";
 import { isMetaLeadSyncEnabled, runMetaLeadSync } from "@/lib/meta-leads/run-sync";
 
 /**
@@ -28,6 +29,8 @@ export async function GET(request: Request) {
 
   try {
     const result = await runMetaLeadSync();
+    // New Meta leads queue their first Conversions API event; send them.
+    await flushMetaOutbox().catch((err) => console.error("Meta stage sync failed", err));
     return Response.json(result, { status: result.failed > 0 ? 500 : 200 });
   } catch (err) {
     console.error("Meta lead sync failed", err);

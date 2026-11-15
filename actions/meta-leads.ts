@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requirePermission } from "@/lib/auth/dal";
+import { scheduleMetaSync } from "@/lib/meta-sync/schedule";
 import {
   isMetaLeadSyncEnabled,
   runMetaLeadSync,
@@ -27,6 +28,7 @@ export async function syncMetaLeadsNow(): Promise<MetaLeadSyncActionResult> {
 
   try {
     const result = await runMetaLeadSync();
+    scheduleMetaSync();
     revalidatePath("/admin/crm");
     return { ok: true, result };
   } catch (err) {

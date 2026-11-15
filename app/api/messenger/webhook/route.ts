@@ -1,6 +1,15 @@
 import { after } from "next/server";
 
-import { GENERAL_MESSENGER_REF } from "@/lib/messenger/link";
+import { FACEBOOK_PAGE_ID } from "@/lib/constants";
+import { FOLLOW_UP_REF_PREFIX, GENERAL_MESSENGER_REF } from "@/lib/messenger/link";
+import {
+  applyInboxStage,
+  linkFollowUpChat,
+  recordInboundMessage,
+  type MessengerWebhookPayload,
+} from "@/lib/meta-sync/messenger";
+import { flushMetaOutboxSafely } from "@/lib/meta-sync/schedule";
+import { isLabelRemoval, stageForLabel } from "@/lib/meta-sync/stages";
 import { buildGreeting, sendMessengerText, verifySignature } from "@/lib/messenger/webhook";
 import { createClient } from "@/lib/supabase/server";
 
@@ -40,21 +49,23 @@ async function lookupPackageName(slug: string): Promise<string | null> {
 }
 
 /**
- * Handles Messenger click/message events. Only ever reacts to the
- * referral itself -- the m.me click on a brand-new thread (delivered as a
- * bare `referral` event), the "Get Started" postback for a visitor's
- * very first-ever interaction (`postback.referral`), or, confirmed via
- * live testing, a regular message sent in an *already-existing*
- * conversation shortly after a fresh m.me click, which Meta delivers as
- * a normal message event carrying `message.referral` instead of a
- * standalone referral event. All three shapes are treated identically;
- * anything with no referral in any of these three locations is still
- * silently ignored, so a plain typed message with no referral context
- * never gets a reply, per this feature's "greeting only" scope decision.
- * Meta requires a 200 response within 5 seconds, so the actual send is
- * deferred via after() -- ack first, send second, matching
- * app/api/inquiries/route.ts's D-02 discipline of never blocking the
- * response on a side effect.
+ * Handles Messenger webhook events. Meta requires a 200 within 5 seconds,
+ * so everything that calls out (greeting, database, Meta) runs in after():
+ * ack first, work second.
+ *
+ * 1. Referrals -- the auto-greeting. Meta delivers an m.me click's ref as
+ *    a bare `referral` event (existing thread), inside the "Get Started"
+ *    `postback.referral` (brand-new thread), or as `message.referral` on a
+ *    message sent shortly after the click; all three are treated alike.
+ *    A ref of fu_<token> comes from a follow-up email's "Chat on
+ *    Messenger" button: it links the chat to that contact and greets them
+ *    with their package (lib/meta-sync).
+ * 2. Customer messages -- saved so staff can link the chat; auto-linked
+ *    when the message holds the contact's email or phone; a linked lead
+ *    who writes again moves from New/Lost to Inquiry.
+ * 3. inbox_labels changes -- a stage label staff put on a chat sets the
+ *    contact's CRM stage.
+ * Plain typed messages still never get a bot reply.
  */
 export async function POST(request: Request) {
   const rawBody = await request.text();
@@ -65,64 +76,88 @@ export async function POST(request: Request) {
     return new Response("Forbidden", { status: 403 });
   }
 
-  type WebhookPayload = {
-    entry?: Array<{
-      messaging?: Array<{
-        sender?: { id?: string };
-        referral?: { ref?: string };
-        postback?: { referral?: { ref?: string } };
-        message?: { referral?: { ref?: string } };
-      }>;
-    }>;
-  };
-
-  let payload: WebhookPayload;
+  let payload: MessengerWebhookPayload;
   try {
-    payload = JSON.parse(rawBody) as WebhookPayload;
+    payload = JSON.parse(rawBody) as MessengerWebhookPayload;
   } catch (err) {
     console.error("Messenger webhook: malformed JSON body", err);
     return Response.json({ ok: true });
   }
+
+  // Run in order after the response: CRM writes first, then the Meta sync
+  // that sends what they queued.
+  const tasks: Array<() => Promise<void>> = [];
+  let touchedCrm = false;
 
   for (const entry of payload.entry ?? []) {
     for (const event of entry.messaging ?? []) {
       const senderId = event.sender?.id;
       const referral =
         event.referral ?? event.postback?.referral ?? event.message?.referral;
+      const isCustomerMessage =
+        Boolean(event.message) && !event.message?.is_echo && senderId !== FACEBOOK_PAGE_ID;
 
       // Delivery-shape diagnostic. Deliberately PII-free: no sender PSID,
-      // no message text, no raw payload -- an earlier version logged the
-      // whole body and put real customers' PSIDs and message contents in
-      // Vercel logs. `ref` is safe to keep: it's an internal package slug,
-      // never customer data, and hasReferral is the single field that
-      // explains the common "clicked the button, got no greeting" report
-      // (a link built without a packageSlug carries no ref, so Meta sends
-      // no referral and the event is skipped just below).
+      // no message text, no raw payload. `ref` is safe to keep when it's
+      // an internal package slug; follow-up refs (fu_<token>) are logged
+      // only as "follow-up", since a token links to a contact.
       console.log("Messenger webhook event:", {
         hasReferral: Boolean(referral),
-        ref: referral?.ref,
+        ref: referral?.ref?.startsWith(FOLLOW_UP_REF_PREFIX) ? "follow-up" : referral?.ref,
         hasMessage: Boolean(event.message),
         hasPostback: Boolean(event.postback),
       });
 
-      if (!senderId || !referral) {
-        continue;
+      if (!senderId) continue;
+
+      if (isCustomerMessage && event.message?.text !== undefined) {
+        const text = event.message.text ?? "";
+        touchedCrm = true;
+        tasks.push(() => recordInboundMessage(senderId, text));
       }
 
-      const ref = referral.ref;
+      if (!referral) continue;
 
-      after(async () => {
+      const ref = referral.ref;
+      tasks.push(async () => {
         try {
-          const packageName =
-            ref && ref !== GENERAL_MESSENGER_REF
-              ? await lookupPackageName(ref)
-              : null;
+          let packageName: string | null = null;
+          if (ref?.startsWith(FOLLOW_UP_REF_PREFIX)) {
+            packageName = await linkFollowUpChat(senderId, ref.slice(FOLLOW_UP_REF_PREFIX.length));
+          } else if (ref && ref !== GENERAL_MESSENGER_REF) {
+            packageName = await lookupPackageName(ref);
+          }
           await sendMessengerText(senderId, buildGreeting(packageName));
         } catch (err) {
           console.error("Messenger auto-greeting failed", err);
         }
       });
+      if (ref?.startsWith(FOLLOW_UP_REF_PREFIX)) touchedCrm = true;
     }
+
+    for (const change of entry.changes ?? []) {
+      if (change.field !== "inbox_labels") continue;
+      const value = change.value ?? {};
+      const psid = value.user?.id;
+      const labelName = value.label?.page_label_name;
+      // Confirms the real action values in the logs (no PII).
+      console.log("Messenger inbox label change:", {
+        action: value.action,
+        isStageLabel: stageForLabel(labelName) !== null,
+      });
+      if (!psid || isLabelRemoval(value.action)) continue;
+      const stage = stageForLabel(labelName);
+      if (!stage) continue;
+      touchedCrm = true;
+      tasks.push(() => applyInboxStage(psid, stage));
+    }
+  }
+
+  if (tasks.length > 0) {
+    after(async () => {
+      for (const task of tasks) await task();
+      if (touchedCrm) await flushMetaOutboxSafely();
+    });
   }
 
   return Response.json({ ok: true });

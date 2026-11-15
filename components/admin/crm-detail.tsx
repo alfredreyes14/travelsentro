@@ -98,6 +98,7 @@ export function CrmDetail({
   followUp,
   followUpProgress,
   closures,
+  messengerSlot,
   canEdit,
   quotesSlot,
   documentsSlot,
@@ -114,6 +115,8 @@ export function CrmDetail({
   followUpProgress?: FollowUpProgress;
   /** Times the automation moved this contact to Lost. */
   closures: CrmDetailClosure[];
+  /** Linking the contact to their Messenger chat. */
+  messengerSlot?: ReactNode;
   canEdit: boolean;
   quotesSlot?: ReactNode;
   documentsSlot?: ReactNode;
@@ -281,6 +284,7 @@ export function CrmDetail({
             <span className="text-muted-foreground">Phone: </span>
             {contact.phone ?? "—"}
           </p>
+          {messengerSlot}
           {contact.tags.length > 0 ? (
             <div className="flex flex-wrap gap-1 pt-1">
               {contact.tags.map((tag) => (

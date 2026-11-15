@@ -1,4 +1,4 @@
-import { buildMessengerLink } from "@/lib/messenger/link";
+import { FOLLOW_UP_REF_PREFIX, buildMessengerLink } from "@/lib/messenger/link";
 import { WHATSAPP_NUMBER } from "@/lib/whatsapp";
 
 /**
@@ -53,12 +53,22 @@ export function isLikelyBot(userAgent: string | null): boolean {
 /** Where a click finally lands. */
 export function buildChatUrl(
   target: ChatTarget,
-  context: { name?: string | null; channel?: string | null; packageSlug?: string | null }
+  context: {
+    name?: string | null;
+    channel?: string | null;
+    packageSlug?: string | null;
+    followUpToken?: string | null;
+  }
 ): string {
   if (target === "messenger") {
-    // The package slug rides along as the m.me ref, so the Messenger bot's
-    // greeting names the package the lead asked about.
-    return buildMessengerLink(context.packageSlug ?? undefined);
+    // The follow-up's token rides along as the m.me ref, so the webhook can
+    // link the chat to the contact and greet them with their package
+    // (lib/meta-sync/messenger.ts). Without one, the package slug does.
+    return buildMessengerLink(
+      context.followUpToken
+        ? `${FOLLOW_UP_REF_PREFIX}${context.followUpToken}`
+        : (context.packageSlug ?? undefined)
+    );
   }
 
   const via = context.channel === "sms" ? "text" : "email";

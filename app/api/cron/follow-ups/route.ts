@@ -1,4 +1,5 @@
 import { isCronAuthorized } from "@/lib/cron/authorize";
+import { flushMetaOutbox } from "@/lib/meta-sync/flush";
 import {
   isFollowUpAutomationEnabled,
   runFollowUpAutomation,
@@ -25,7 +26,12 @@ export async function GET(request: Request) {
 
   try {
     const result = await runFollowUpAutomation();
-    return Response.json(result, { status: result.failed > 0 ? 500 : 200 });
+    // Sends stage changes queued for Meta (Lost moves, missed jobs).
+    const metaSync = await flushMetaOutbox().catch((err) => {
+      console.error("Meta stage sync failed", err);
+      return null;
+    });
+    return Response.json({ ...result, metaSync }, { status: result.failed > 0 ? 500 : 200 });
   } catch (err) {
     console.error("Follow-up automation failed", err);
     return Response.json({ error: "Run failed" }, { status: 500 });
