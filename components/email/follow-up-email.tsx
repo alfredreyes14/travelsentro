@@ -5,12 +5,18 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Section,
   Text,
 } from "react-email";
 
+import { SITE_URL } from "@/lib/constants";
 import { splitParagraphs } from "@/lib/text/split-paragraphs";
+
+// Always the production site: mail clients fetch the image long after the
+// send, and preview/staging URLs can sit behind Vercel's login.
+const LOGO_URL = `${SITE_URL}/logo.png`;
 
 /**
  * Lead follow-up email: the message plus two tracked chat buttons. Both
@@ -54,6 +60,13 @@ export function FollowUpEmail({
             borderRadius: "8px",
           }}
         >
+          <Img
+            src={LOGO_URL}
+            alt="TravelSentro"
+            width="200"
+            height="48"
+            style={{ display: "block", margin: "0 0 24px" }}
+          />
           <Heading style={{ color: "#021F4A", fontSize: "24px" }}>
             Hi {name},
           </Heading>
