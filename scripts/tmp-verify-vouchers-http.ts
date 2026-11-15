@@ -81,6 +81,9 @@ async function main() {
     }
     disposableUserId = created.user.id;
 
+    // New accounts start inactive (20261118120000_lead_data_hardening.sql).
+    await serviceRoleClient.from("profiles").update({ is_active: true }).eq("id", disposableUserId);
+
     const cookieHeader = await signInAndGetCookieHeader(disposableEmail, disposablePassword);
 
     // (1) + (2) Denied before granting the permission.

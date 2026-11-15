@@ -2,7 +2,7 @@ import { createElement } from "react";
 
 import { InternalNotificationEmail } from "@/components/email/internal-notification-email";
 import { FROM_EMAIL, resend } from "@/lib/resend";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 type NotifyStaffParams = {
   name: string;
@@ -16,9 +16,8 @@ type NotifyStaffParams = {
 /**
  * AUTO-02/D-06 fan-out: bcc's the internal notification email to every
  * active profile with role='admin' or can_message_customers=true, via
- * get_notification_recipients() (03-01's least-privilege, email-only
- * SECURITY DEFINER RPC) -- avoids needing a service-role client here
- * (03-RESEARCH.md Pitfall 5).
+ * get_notification_recipients() (email-only SECURITY DEFINER RPC). The RPC
+ * is service-role only so the public key can't list staff addresses.
  *
  * Best-effort only: called from a Route Handler's after() callback, so
  * every failure path logs and returns rather than throwing.
@@ -26,7 +25,7 @@ type NotifyStaffParams = {
 export async function sendInternalNotificationEmails(
   params: NotifyStaffParams
 ): Promise<void> {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
   const { data: recipients, error } = await supabase.rpc("get_notification_recipients");
 
   if (error || !recipients?.length) {

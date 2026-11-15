@@ -143,6 +143,9 @@ async function main() {
     }
     disposableUserId = created.user.id;
 
+    // New accounts start inactive (20261118120000_lead_data_hardening.sql).
+    await serviceRoleClient.from("profiles").update({ is_active: true }).eq("id", disposableUserId);
+
     const staffCookieHeader = await signInAndGetCookieHeader(
       disposableEmail,
       disposablePassword

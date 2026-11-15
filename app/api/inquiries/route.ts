@@ -6,7 +6,7 @@ import { inquiryRequestSchema } from "@/lib/crm/inquiry-schema";
 import { sendInternalNotificationEmails } from "@/lib/crm/notify-staff";
 import { submitToFormspree } from "@/lib/formspree";
 import { FROM_EMAIL, resend } from "@/lib/resend";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 
 /**
  * This project's first Route Handler (D-01) -- the single write path every
@@ -38,7 +38,9 @@ export async function POST(request: Request) {
     return Response.json({ ok: true });
   }
 
-  const supabase = await createClient();
+  // record_inquiry() is service-role only, so the validation and honeypot
+  // above can't be skipped by calling it with the public key.
+  const supabase = createServiceClient();
   const { data, error } = await supabase.rpc("record_inquiry", {
     p_request_id: parsed.data.requestId,
     p_email: parsed.data.email,
