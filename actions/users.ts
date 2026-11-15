@@ -36,6 +36,21 @@ type AccountInput = {
   canManageQuotes: boolean;
 };
 
+/**
+ * Admins always store every permission as on (they bypass the checks anyway,
+ * see lib/auth/dal.ts); staff store exactly what the form chose.
+ */
+function permissionColumns(values: AccountInput) {
+  const isAdmin = values.role === "admin";
+  return {
+    can_manage_packages: isAdmin || values.canManagePackages,
+    can_message_customers: isAdmin || values.canMessageCustomers,
+    can_edit_crm: isAdmin || values.canEditCrm,
+    can_manage_vouchers: isAdmin || values.canManageVouchers,
+    can_manage_quotes: isAdmin || values.canManageQuotes,
+  };
+}
+
 export async function createAccount(
   values: AccountInput & { email: string; password: string }
 ): Promise<ActionResult> {
@@ -83,11 +98,7 @@ export async function createAccount(
     .update({
       name: values.name,
       role: values.role,
-      can_manage_packages: values.canManagePackages,
-      can_message_customers: values.canMessageCustomers,
-      can_edit_crm: values.canEditCrm,
-      can_manage_vouchers: values.canManageVouchers,
-      can_manage_quotes: values.canManageQuotes,
+      ...permissionColumns(values),
     })
     .eq("id", created.user.id);
 
@@ -143,11 +154,7 @@ export async function updateAccount(
     .update({
       name: values.name,
       role: values.role,
-      can_manage_packages: values.canManagePackages,
-      can_message_customers: values.canMessageCustomers,
-      can_edit_crm: values.canEditCrm,
-      can_manage_vouchers: values.canManageVouchers,
-      can_manage_quotes: values.canManageQuotes,
+      ...permissionColumns(values),
     })
     .eq("id", id);
 

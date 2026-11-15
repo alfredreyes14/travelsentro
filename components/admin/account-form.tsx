@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch, type Control, type Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
@@ -26,6 +26,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -33,6 +34,10 @@ import {
   FormSection,
 } from "@/components/ui/form";
 import type { Profile } from "@/lib/auth/dal";
+import {
+  NO_PERMISSIONS,
+  PERMISSION_ITEMS,
+} from "@/components/admin/account-permissions";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -73,11 +78,7 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
       email: "",
       password: "",
       role: "staff",
-      canManagePackages: false,
-      canMessageCustomers: false,
-      canEditCrm: false,
-      canManageVouchers: false,
-      canManageQuotes: false,
+      ...NO_PERMISSIONS,
     },
   });
 
@@ -191,95 +192,7 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
           )}
         />
 
-        <FormSection title="Permissions">
-          <FormField
-            control={form.control}
-            name="canManagePackages"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Packages
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canMessageCustomers"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Message Customers
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canEditCrm"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">Edit CRM Data</FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canManageVouchers"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Vouchers
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canManageQuotes"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Quotes
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </FormSection>
+        <PermissionFields control={form.control} />
 
         <Button
           type="submit"
@@ -405,95 +318,7 @@ function EditAccountForm({
           )}
         />
 
-        <FormSection title="Permissions">
-          <FormField
-            control={form.control}
-            name="canManagePackages"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Packages
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canMessageCustomers"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Message Customers
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canEditCrm"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">Edit CRM Data</FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canManageVouchers"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Vouchers
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canManageQuotes"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Quotes
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </FormSection>
+        <PermissionFields control={form.control} />
 
         <Button
           type="submit"
@@ -505,5 +330,52 @@ function EditAccountForm({
         </Button>
       </form>
     </Form>
+  );
+}
+
+/**
+ * Permission switches shared by both forms. Admins always have every
+ * permission (lib/auth/dal.ts, has_permission()), so for the Admin role the
+ * switches show on and locked; actions/users.ts saves them all as true.
+ */
+function PermissionFields<T extends EditAccountFormValues>({
+  control,
+}: {
+  control: Control<T>;
+}) {
+  const isAdmin = useWatch({ control, name: "role" as Path<T> }) === "admin";
+
+  return (
+    <FormSection title="Permissions">
+      <p className="text-sm text-muted-foreground">
+        {isAdmin
+          ? "Admins have every permission, plus user management."
+          : "Staff can view Leads. Turn on only what this person needs."}
+      </p>
+      {PERMISSION_ITEMS.map((item) => (
+        <FormField
+          key={item.field}
+          control={control}
+          name={item.field as Path<T>}
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center justify-between gap-3 rounded-lg border border-input p-3">
+              <div className="flex flex-col gap-1">
+                <FormLabel className="cursor-pointer">{item.label}</FormLabel>
+                <FormDescription className="text-xs">
+                  {item.covers}
+                </FormDescription>
+              </div>
+              <FormControl>
+                <Switch
+                  checked={isAdmin || field.value === true}
+                  disabled={isAdmin}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+      ))}
+    </FormSection>
   );
 }

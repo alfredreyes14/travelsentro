@@ -44,6 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Profile } from "@/lib/auth/dal";
+import { PERMISSION_ITEMS } from "@/components/admin/account-permissions";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -181,23 +182,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
                         {profile.role === "admin" ? (
                           <Badge variant="outline">All</Badge>
                         ) : (
-                          <>
-                            {profile.can_manage_packages && (
-                              <Badge variant="outline">Packages</Badge>
-                            )}
-                            {profile.can_message_customers && (
-                              <Badge variant="outline">Messages</Badge>
-                            )}
-                            {profile.can_edit_crm && (
-                              <Badge variant="outline">CRM</Badge>
-                            )}
-                            {profile.can_manage_vouchers && (
-                              <Badge variant="outline">Vouchers</Badge>
-                            )}
-                            {profile.can_manage_quotes && (
-                              <Badge variant="outline">Quotes</Badge>
-                            )}
-                          </>
+                          <PermissionBadges profile={profile} />
                         )}
                       </div>
                     </TableCell>
@@ -284,23 +269,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
                   {profile.role === "admin" ? (
                     <Badge variant="outline">All</Badge>
                   ) : (
-                    <>
-                      {profile.can_manage_packages && (
-                        <Badge variant="outline">Packages</Badge>
-                      )}
-                      {profile.can_message_customers && (
-                        <Badge variant="outline">Messages</Badge>
-                      )}
-                      {profile.can_edit_crm && (
-                        <Badge variant="outline">CRM</Badge>
-                      )}
-                      {profile.can_manage_vouchers && (
-                        <Badge variant="outline">Vouchers</Badge>
-                      )}
-                      {profile.can_manage_quotes && (
-                        <Badge variant="outline">Quotes</Badge>
-                      )}
-                    </>
+                    <PermissionBadges profile={profile} />
                   )}
                   <Badge
                     variant={profile.is_active ? "secondary" : "destructive"}
@@ -359,4 +328,18 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
       </AlertDialog>
     </div>
   );
+}
+
+function PermissionBadges({ profile }: { profile: Profile }) {
+  const granted = PERMISSION_ITEMS.filter((item) => profile[item.column]);
+
+  if (granted.length === 0) {
+    return <span className="text-sm text-muted-foreground">View leads only</span>;
+  }
+
+  return granted.map((item) => (
+    <Badge key={item.column} variant="outline">
+      {item.badge}
+    </Badge>
+  ));
 }
