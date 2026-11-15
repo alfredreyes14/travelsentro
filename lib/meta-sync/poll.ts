@@ -17,15 +17,16 @@ import { extractEmails, extractPhoneKeys } from "./parse";
  * - Customer message: saves the chat for staff; links it to the contact
  *   whose email/phone it contains; a linked lead replying moves New/Lost ->
  *   Inquiry (record_messenger_inbound()).
- * - Staff message: a picture (staff quote with package posters) or a
- *   saved-reply phrase moves the lead forward to Quotation
- *   (record_messenger_staff_message()).
+ * - Staff message: a saved-reply phrase moves the lead forward; a picture
+ *   (staff quote with package posters) flags "Mark as Quotation?" for
+ *   staff to confirm (record_messenger_staff_message()).
  *
  * Reads chats updated since the last run, with 2 minutes of overlap; every
  * step is safe to repeat, so the overlap can't double-apply anything.
  */
 
-const GRAPH = "https://graph.facebook.com/v25.0";
+// META_GRAPH_URL points the sync at a fake Meta in end-to-end tests (e2e/).
+const GRAPH = `${process.env.META_GRAPH_URL || "https://graph.facebook.com"}/v25.0`;
 const FIRST_RUN_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 const OVERLAP_MS = 2 * 60 * 1000;
 const MAX_PAGES = 8; // 25 chats each; enough for any 15-minute window
@@ -37,6 +38,8 @@ export type MessengerSyncResult = {
   linked: number;
   movedToInquiry: number;
   movedBySavedReply: number;
+  /** Staff pictures flagged "Mark as Quotation?". */
+  quoteSuggestions: number;
   errors: number;
 };
 
@@ -86,6 +89,7 @@ export async function syncMessengerChats(): Promise<MessengerSyncResult> {
     linked: 0,
     movedToInquiry: 0,
     movedBySavedReply: 0,
+    quoteSuggestions: 0,
     errors: 0,
   };
 
@@ -126,7 +130,8 @@ export async function syncMessengerChats(): Promise<MessengerSyncResult> {
         console.error("record_messenger_staff_message failed:", error.message);
         continue;
       }
-      if (data) result.movedBySavedReply += 1;
+      if (data === "suggested") result.quoteSuggestions += 1;
+      else if (data) result.movedBySavedReply += 1;
     }
   }
 

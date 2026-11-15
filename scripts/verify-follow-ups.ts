@@ -26,8 +26,10 @@ import {
   LOST_AFTER_DAYS,
   followUpAngle,
   followUpEmailTemplate,
+  followUpMessengerTemplate,
   followUpSequenceFor,
   followUpSmsTemplate,
+  MESSENGER_FOLLOW_UP_GAP_DAYS,
   trackedLinkLength,
 } from "../lib/follow-ups/templates";
 import { followUpBadge } from "../lib/follow-ups/progress";
@@ -112,6 +114,7 @@ check("gaps: 1, 3, 5, 10 days", [...FOLLOW_UP_GAP_DAYS], [1, 3, 5, 10]);
 check("emails land on day 1, 4, 9, 19", FOLLOW_UP_GAP_DAYS.reduce<number[]>((acc, gap) => [...acc, (acc.at(-1) ?? 0) + gap], []), [1, 4, 9, 19]);
 check("4 steps", FOLLOW_UP_STEP_COUNT, 4);
 check("lost 3 days after the last email", LOST_AFTER_DAYS, 3);
+check("Messenger-only leads: day 1 and day 4 (Meta's 7-day limit)", [...MESSENGER_FOLLOW_UP_GAP_DAYS], [1, 3]);
 
 // ---------------------------------------------------------------- sequences
 check("New -> no_reply", followUpSequenceFor("b2c", "new"), "no_reply");
@@ -135,6 +138,10 @@ for (const sequence of FOLLOW_UP_SEQUENCES) {
   check(`${sequence}: extras rotate`, followUpAngle(sequence, 5).label, followUpAngle(sequence, 9).label);
   // Longest real name budget: 15 characters.
   check(`${sequence}: every SMS + link fits 2 segments`, smsTexts.every((t) => t.length + 15 + trackedLinkLength("https://travelsentro.com") <= 320), true);
+  const messengerTexts = Array.from({ length: 8 }, (_, i) => followUpMessengerTemplate(sequence, i + 1));
+  check(`${sequence}: 8 different Messenger messages`, new Set(messengerTexts).size, 8);
+  check(`${sequence}: Messenger messages have no links`, messengerTexts.some((t) => /https?:|tap below/i.test(t)), false);
+  check(`${sequence}: Messenger messages greet by name`, messengerTexts.every((t) => t.startsWith("Hi {{name}}")), true);
   check(`${sequence}: step 0 clamps to the first`, followUpEmailTemplate(sequence, 0).subject, followUpEmailTemplate(sequence, 1).subject);
 }
 

@@ -66,6 +66,8 @@ export type AdminContactListItem = {
   clientType: ClientType;
   stage: ContactStage;
   followUp?: FollowUpProgress;
+  /** Staff sent a picture in the lead's chat: "Mark as Quotation?". */
+  quoteSuggestedAt?: string | null;
   tags: string[];
   opted_out: boolean;
   servicesAvailed: ServiceKey[];
@@ -250,6 +252,11 @@ function StageCell({ contact }: { contact: AdminContactListItem }) {
         clientType={contact.clientType}
         stage={contact.stage}
       />
+      {contact.quoteSuggestedAt ? (
+        <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-800">
+          Quote sent? Check Messenger to-do
+        </Badge>
+      ) : null}
     </div>
   );
 }

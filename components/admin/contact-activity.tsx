@@ -287,7 +287,7 @@ export function ContactActivity({
                     <p className="text-base leading-[1.5] whitespace-pre-line">
                       {item.body}
                     </p>
-                    {item.followUp !== null && item.status === "sent" ? (
+                    {item.followUp !== null && item.status === "sent" && item.channel !== "messenger" ? (
                       <FollowUpClicks clicks={item.clicks} />
                     ) : null}
                     {item.status === "failed" ? (

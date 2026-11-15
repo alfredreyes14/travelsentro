@@ -46,6 +46,7 @@ export default async function MessengerSettingsPage() {
     linked?: number;
     movedToInquiry?: number;
     movedBySavedReply?: number;
+    quoteSuggestions?: number;
   } | null;
   const stale = isStale(lastSyncedAt);
 
@@ -74,8 +75,14 @@ export default async function MessengerSettingsPage() {
             </li>
             <li>When a linked lead writes to you, they move from New to Inquiry.</li>
             <li>
-              When staff send a picture in the chat (like a package poster), the lead moves
-              to Quotation. Creating a quote for the lead in the CRM does the same.
+              When staff send a picture in the chat (like a package poster), the Leads page
+              asks &ldquo;Mark as Quotation?&rdquo;. Creating a quote for the lead in the CRM
+              moves them to Quotation right away.
+            </li>
+            <li>
+              Chats that aren&apos;t matched to a lead, and Messenger follow-ups for leads
+              without an email, are listed in the Leads page&apos;s Messenger to-do. When a
+              lead types their email or phone in the chat, it&apos;s added to their lead.
             </li>
             <li>Optional: staff saved replies listed below move the lead to their stage.</li>
           </ul>
@@ -84,7 +91,7 @@ export default async function MessengerSettingsPage() {
               ? `Last checked ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}`
               : "Not checked yet"}
             {lastResult
-              ? ` · ${lastResult.linked ?? 0} linked, ${lastResult.movedToInquiry ?? 0} moved to Inquiry, ${lastResult.movedBySavedReply ?? 0} moved to Quotation`
+              ? ` · ${lastResult.linked ?? 0} linked, ${lastResult.movedToInquiry ?? 0} moved to Inquiry, ${lastResult.quoteSuggestions ?? 0} quote checks, ${lastResult.movedBySavedReply ?? 0} moved by saved replies`
               : ""}
             {stale
               ? " — the 15-minute check isn't running. It runs on the live site only; check Vercel → Crons."

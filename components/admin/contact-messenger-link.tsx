@@ -99,7 +99,8 @@ export function ContactMessengerLink({
         ) : null}
         <p className="w-full text-xs text-muted-foreground">
           When they reply there, they move to Inquiry. When staff send a
-          picture there (like a package poster), they move to Quotation.
+          picture there (like a package poster), you&apos;re asked to mark them
+          as Quotation.
         </p>
       </div>
     );

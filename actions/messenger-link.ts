@@ -47,6 +47,12 @@ export async function unlinkMessengerChat(contactId: string): Promise<ActionResu
 
   const supabase = await createClient();
   const { error } = await supabase.rpc("unlink_messenger_thread", { p_contact_id: contactId });
+  if (error?.code === "P0001") {
+    return {
+      ok: false,
+      error: "This lead has no email or phone. Add one before unlinking their only chat.",
+    };
+  }
   if (error) {
     console.error("unlink_messenger_thread failed:", error.message);
     return { ok: false, error: ERROR };

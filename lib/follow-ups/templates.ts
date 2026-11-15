@@ -48,6 +48,11 @@ export type FollowUpAngle = {
   email: (trip: string) => FollowUpTemplate;
   /** Text message. The tracked chat link is appended on send. */
   sms: string;
+  /**
+   * Messenger message for leads without an email, sent by staff from the
+   * Leads page's Messenger to-do (no link: they're already in the chat).
+   */
+  messenger: string;
 };
 
 /**
@@ -82,6 +87,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "Tap below to chat with us and we'll reply with available dates and prices.",
         }),
         sms: "Hi {{name}}! TravelSentro here. How many are traveling, and when? Chat with us for dates and prices:",
+        messenger:
+          "Hi {{name}}! Thanks for your interest in TravelSentro. To check the best options for you, how many people are traveling, and what are your preferred travel dates?",
       },
       {
         label: "Dates fill up",
@@ -92,6 +99,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             `Send us your preferred dates for ${trip} and we'll check what's still open, or suggest the closest available date.`,
         }),
         sms: "Hi {{name}}, popular tour dates fill up fast. Send us your preferred dates and we'll check slots:",
+        messenger:
+          "Hi {{name}}, just checking in. Popular tour dates fill up fast, so if you already have dates in mind, send them here and we'll check what's still available.",
       },
       {
         label: "Help choosing",
@@ -102,6 +111,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "It only takes a minute on chat.",
         }),
         sms: "Hi {{name}}, not sure which trip fits your budget? Tell us and we'll suggest options. Chat with us:",
+        messenger:
+          "Hi {{name}}, still deciding? Tell us your budget, your dates and who's coming along, and we'll suggest trips that fit.",
       },
       {
         label: "Last check-in",
@@ -112,6 +123,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "If now isn't the right time, no worries — we won't keep reminding you.",
         }),
         sms: "Hi {{name}}, our last check-in for now from TravelSentro. Still keen on your trip? Chat with us:",
+        messenger:
+          "Hi {{name}}, this is our last check-in for now. If you're still interested in your trip, just reply here and a travel consultant will take it from there.",
       },
     ],
     extras: [
@@ -124,6 +137,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "Ask us anything on chat. A travel consultant will walk you through it.",
         }),
         sms: "Hi {{name}}, questions about inclusions, payment or requirements? TravelSentro can help. Chat with us:",
+        messenger:
+          "Hi {{name}}, any questions we can answer? Happy to explain what's included, how payment works, or the documents you'll need.",
       },
       {
         label: "Group trip",
@@ -134,6 +149,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "Tell us who's coming and we'll put together options.",
         }),
         sms: "Hi {{name}}, traveling with family or friends? TravelSentro arranges group trips. Chat with us:",
+        messenger:
+          "Hi {{name}}, are you traveling with family or friends? We arrange group trips too. Tell us who's coming and we'll put together options.",
       },
       {
         label: "Visa help",
@@ -144,6 +161,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "Chat with us and we'll tell you exactly what you need.",
         }),
         sms: "Hi {{name}}, need a visa for your trip? TravelSentro also helps with visa applications. Chat with us:",
+        messenger:
+          "Hi {{name}}, if your trip needs a visa, we can help with that too. Just ask here and we'll tell you exactly what you need.",
       },
       {
         label: "Plan ahead",
@@ -154,6 +173,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "Chat with us and we'll check what's still open for your dates.",
         }),
         sms: "Hi {{name}}, planning for the next holiday or long weekend? Book early for more choices. Chat with us:",
+        messenger:
+          "Hi {{name}}, planning for the next holiday or long weekend? Booking early gives you more choice of flights and hotels. Send us your dates.",
       },
     ],
   },
@@ -168,6 +189,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "Tap below to send them on chat.",
         }),
         sms: "Hi {{name}}, ready to reserve your trip? Just send passport copies of all travelers on chat:",
+        messenger:
+          "Hi {{name}}! Ready to reserve your trip? Just send us a copy of the passport of everyone traveling here, and we'll secure your slots.",
       },
       {
         label: "Slots are limited",
@@ -178,6 +201,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "If your dates have changed, tell us — we can check other departures too.",
         }),
         sms: "Hi {{name}}, slots for your travel date are limited and can sell out. Chat with us to lock yours in:",
+        messenger:
+          "Hi {{name}}, slots for your travel date are limited and can sell out anytime. Let us know if you'd like to lock yours in. If your dates changed, we can check other departures too.",
       },
       {
         label: "Questions before booking",
@@ -188,6 +213,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "Ask us anything on chat and we'll walk you through it.",
         }),
         sms: "Hi {{name}}, questions about add-ons, surcharges or payment before booking? Chat with us:",
+        messenger:
+          "Hi {{name}}, any questions before you book? Ask us about optional add-ons, surcharges, inclusions or payment, and we'll walk you through it.",
       },
       {
         label: "Last check-in",
@@ -198,6 +225,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "If your plans have changed, no worries — we won't keep reminding you.",
         }),
         sms: "Hi {{name}}, last check-in on your TravelSentro quote. Still planning to go? Chat with us:",
+        messenger:
+          "Hi {{name}}, last check-in on your quote. If you'd still like to go, reply here and we'll check if slots are still available. If plans changed, no worries.",
       },
     ],
     extras: [
@@ -210,6 +239,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "Tell us what dates you're considering and we'll check slots for you.",
         }),
         sms: "Hi {{name}}, if your dates changed, we may have other departures. Chat with us to check:",
+        messenger:
+          "Hi {{name}}, if your original dates no longer work, we may have other departures that do. Tell us the dates you're considering.",
       },
       {
         label: "Travel documents",
@@ -220,6 +251,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "Chat with us and we'll tell you exactly what to prepare.",
         }),
         sms: "Hi {{name}}, unsure about visas or documents for your trip? TravelSentro can guide you. Chat with us:",
+        messenger:
+          "Hi {{name}}, not sure what documents or visa your trip needs? We can guide you through the requirements.",
       },
       {
         label: "Adding travelers",
@@ -230,6 +263,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "Chat with us with the updated number of travelers.",
         }),
         sms: "Hi {{name}}, more people joining your trip? Send us the updated headcount on chat:",
+        messenger:
+          "Hi {{name}}, are more family or friends joining the trip? Send us the updated number of travelers and we'll check slots for everyone.",
       },
       {
         label: "Plan ahead",
@@ -240,6 +275,8 @@ export const FOLLOW_UP_COPY: Record<FollowUpSequence, SequenceCopy> = {
             "Chat with us and we'll check what's open.",
         }),
         sms: "Hi {{name}}, planning for the next holiday or long weekend? Book early for more choices. Chat with us:",
+        messenger:
+          "Hi {{name}}, if now isn't the right time, we can plan ahead for an upcoming holiday or long weekend. Send us your dates anytime.",
       },
     ],
   },
@@ -273,6 +310,18 @@ export function followUpEmailTemplate(
 export function followUpSmsTemplate(sequence: FollowUpSequence, step: number): string {
   return followUpAngle(sequence, step).sms;
 }
+
+export function followUpMessengerTemplate(sequence: FollowUpSequence, step: number): string {
+  return followUpAngle(sequence, step).messenger;
+}
+
+/**
+ * Leads reached only on Messenger: Meta lets a Page message someone up to
+ * 7 days after their last message, so their sequence is 2 steps (day 1 and
+ * day 4) and they move to Lost after it (close_unconverted_follow_ups()).
+ */
+export const MESSENGER_FOLLOW_UP_GAP_DAYS = [1, 3] as const;
+export const MESSENGER_WINDOW_DAYS = 7;
 
 /** Characters the appended link adds: a space plus https://<host>/go/<16-char token>. */
 export function trackedLinkLength(origin: string): number {

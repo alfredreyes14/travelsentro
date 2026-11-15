@@ -7,6 +7,7 @@ import { MessageCircleReplyIcon, PhoneIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateStage } from "@/actions/crm";
+import { confirmQuoteSuggestion, dismissQuoteSuggestion } from "@/actions/messenger-todo";
 import { updateOptOut } from "@/actions/messages";
 import {
   ContactActivity,
@@ -78,6 +79,8 @@ export type CrmDetailContact = {
   otherPhones: LabeledValue[];
   contractStart: string | null;
   contractEnd: string | null;
+  /** Staff sent a picture in the lead's chat: "Mark as Quotation?". */
+  quoteSuggestedAt: string | null;
   created_at: string;
   created_by: string | null;
   created_by_name: string | null;
@@ -267,6 +270,45 @@ export function CrmDetail({
           ) : null}
         </div>
       </div>
+
+      {contact.quoteSuggestedAt && canEdit ? (
+        <div
+          data-testid="quote-suggestion-banner"
+          className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+        >
+          <span className="flex-1">
+            Staff sent a picture in this lead&apos;s Messenger chat{" "}
+            {formatDistanceToNow(new Date(contact.quoteSuggestedAt), { addSuffix: true })}. Was
+            it a quote?
+          </span>
+          <Button
+            size="sm"
+            disabled={isPending}
+            onClick={() =>
+              startTransition(async () => {
+                const result = await confirmQuoteSuggestion(contact.id);
+                if (result.ok) toast.success("Moved to Quotation.");
+                else toast.error(result.error);
+              })
+            }
+          >
+            Yes, Quotation
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={isPending}
+            onClick={() =>
+              startTransition(async () => {
+                const result = await dismissQuoteSuggestion(contact.id);
+                if (!result.ok) toast.error(result.error);
+              })
+            }
+          >
+            Not a quote
+          </Button>
+        </div>
+      ) : null}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">

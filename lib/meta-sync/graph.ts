@@ -8,7 +8,8 @@ import { getPageAccessToken } from "@/lib/meta-leads/graph";
  * API, needs pages_messaging on the Page token) and Conversions API events.
  */
 
-const GRAPH = "https://graph.facebook.com/v25.0";
+// META_GRAPH_URL points the sync at a fake Meta in end-to-end tests (e2e/).
+const GRAPH = `${process.env.META_GRAPH_URL || "https://graph.facebook.com"}/v25.0`;
 
 export class MetaApiError extends Error {
   constructor(

@@ -156,6 +156,7 @@ export type Database = {
           other_emails: Json;
           other_phones: Json;
           phone: string | null;
+          quote_suggested_at: string | null;
           rep_name: string | null;
           rep_position: string | null;
           services_availed: string[];
@@ -182,6 +183,7 @@ export type Database = {
           other_emails?: Json;
           other_phones?: Json;
           phone?: string | null;
+          quote_suggested_at?: string | null;
           rep_name?: string | null;
           rep_position?: string | null;
           services_availed?: string[];
@@ -208,6 +210,7 @@ export type Database = {
           other_emails?: Json;
           other_phones?: Json;
           phone?: string | null;
+          quote_suggested_at?: string | null;
           rep_name?: string | null;
           rep_position?: string | null;
           services_availed?: string[];
@@ -847,7 +850,9 @@ export type Database = {
           chat_link: string | null;
           contact_id: string | null;
           created_at: string;
+          ignored_at: string | null;
           last_inbound_at: string | null;
+          last_outbound_at: string | null;
           last_snippet: string | null;
           name: string | null;
           pending_stage: string | null;
@@ -857,7 +862,9 @@ export type Database = {
           chat_link?: string | null;
           contact_id?: string | null;
           created_at?: string;
+          ignored_at?: string | null;
           last_inbound_at?: string | null;
+          last_outbound_at?: string | null;
           last_snippet?: string | null;
           name?: string | null;
           pending_stage?: string | null;
@@ -867,7 +874,9 @@ export type Database = {
           chat_link?: string | null;
           contact_id?: string | null;
           created_at?: string;
+          ignored_at?: string | null;
           last_inbound_at?: string | null;
+          last_outbound_at?: string | null;
           last_snippet?: string | null;
           name?: string | null;
           pending_stage?: string | null;
@@ -1532,13 +1541,14 @@ export type Database = {
       };
     };
     Functions: {
+      add_lead_from_chat: { Args: { p_psid: string }; Returns: string | null };
       apply_inbox_stage: { Args: { p_psid: string; p_stage: string }; Returns: string | null };
       claim_meta_outbox: {
         Args: { p_limit: number };
         Returns: Database["public"]["Tables"]["meta_outbox"]["Row"][];
       };
       close_unconverted_follow_ups: {
-        Args: { p_grace_days: number; p_step_count: number };
+        Args: { p_grace_days: number; p_messenger_step_count?: number; p_step_count: number };
         Returns: number;
       };
       get_notification_recipients: {
@@ -1554,6 +1564,18 @@ export type Database = {
       };
       link_messenger_thread: { Args: { p_contact_id: string; p_psid: string }; Returns: boolean };
       list_contact_tags: { Args: Record<PropertyKey, never>; Returns: string[] };
+      list_due_messenger_follow_ups: {
+        Args: { p_gap_days: number[]; p_window_days?: number };
+        Returns: {
+          chat_link: string | null;
+          contact_id: string;
+          last_inbound_at: string;
+          name: string;
+          next_step: number;
+          package_name: string | null;
+          sequence: string;
+        }[];
+      };
       list_due_follow_ups: {
         Args: {
           p_backlog_days?: number;
@@ -1633,6 +1655,7 @@ export type Database = {
         };
         Returns: string | null;
       };
+      set_messenger_thread_ignored: { Args: { p_ignored: boolean; p_psid: string }; Returns: undefined };
       set_contact_opted_out: { Args: { p_contact_id: string }; Returns: undefined };
       unlink_messenger_thread: { Args: { p_contact_id: string }; Returns: undefined };
       write_package_children: {

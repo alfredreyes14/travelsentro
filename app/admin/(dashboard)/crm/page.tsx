@@ -8,6 +8,15 @@ import { toServiceKeys } from "@/lib/crm/services";
 import { isClientType, toClientType, toContactStage } from "@/lib/crm/stage";
 import { isMetaLeadSyncEnabled } from "@/lib/meta-leads/run-sync";
 import { toFollowUpProgress } from "@/lib/follow-ups/progress";
+import {
+  followUpMessengerTemplate,
+  MESSENGER_FOLLOW_UP_GAP_DAYS,
+  MESSENGER_WINDOW_DAYS,
+  toFollowUpSequence,
+} from "@/lib/follow-ups/templates";
+import { applyNameTemplate } from "@/lib/crm/messages";
+import { chatUrl } from "@/lib/meta-sync/chats";
+import { MessengerTodo } from "@/components/admin/messenger-todo";
 
 export const metadata: Metadata = {
   title: "Leads | TravelSentro Admin",
@@ -15,6 +24,14 @@ export const metadata: Metadata = {
 
 // Covers the "Sync Meta leads" Server Action (same limit as the cron route).
 export const maxDuration = 60;
+
+type MessengerDueRow = {
+  contact_id: string;
+  name: string;
+  sequence: string;
+  next_step: number;
+  chat_link: string | null;
+};
 
 export default async function AdminCrmPage({
   searchParams,
@@ -29,11 +46,11 @@ export default async function AdminCrmPage({
 
   const supabase = await createClient();
 
-  const [contactsResult, activityResult, progressResult] = await Promise.all([
+  const [contactsResult, activityResult, progressResult, chatsResult, messengerDueResult] = await Promise.all([
     supabase
       .from("contacts")
       .select(
-        "id, name, email, phone, client_type, stage, tags, opted_out, services_availed, services_other, rep_name, contract_end, created_at"
+        "id, name, email, phone, client_type, stage, tags, opted_out, services_availed, services_other, rep_name, contract_end, created_at, quote_suggested_at"
       )
       .order("created_at", { ascending: false }),
     // Latest inquiry and latest contact per lead (a view; see
@@ -46,7 +63,25 @@ export default async function AdminCrmPage({
       .from("follow_up_progress")
       .select("contact_id, sequence, sent_count, clicked")
       .gt("sent_count", 0),
+    // Messenger to-do: chats nobody matched to a lead yet...
+    supabase
+      .from("messenger_threads")
+      .select("psid, name, last_snippet, last_inbound_at, chat_link")
+      .is("contact_id", null)
+      .is("ignored_at", null)
+      .not("last_inbound_at", "is", null)
+      .order("last_inbound_at", { ascending: false })
+      .limit(30),
+    // ...and leads without an email whose Messenger follow-up is due.
+    supabase.rpc("list_due_messenger_follow_ups", {
+      p_gap_days: [...MESSENGER_FOLLOW_UP_GAP_DAYS],
+      p_window_days: MESSENGER_WINDOW_DAYS,
+    }),
   ]);
+  if (chatsResult.error) console.error("Failed to load Messenger chats:", chatsResult.error.message);
+  if (messengerDueResult.error) {
+    console.error("Failed to load Messenger follow-ups:", messengerDueResult.error.message);
+  }
   const { data: contacts, error } = contactsResult;
 
   if (error) {
@@ -85,14 +120,46 @@ export default async function AdminCrmPage({
       createdAt: contact.created_at,
       lastInquiryAt: activity?.last_inquiry_at ?? null,
       lastContactedAt: activity?.last_contacted_at ?? null,
+      quoteSuggestedAt: contact.quote_suggested_at,
     };
   });
+
+  const canEdit = profile.role === "admin" || profile.can_edit_crm;
+  const todo = (
+    <MessengerTodo
+      suggestions={items
+        .filter((c) => c.quoteSuggestedAt)
+        .map((c) => ({ contactId: c.id, name: c.name, at: c.quoteSuggestedAt! }))}
+      chats={(chatsResult.data ?? []).map((row) => ({
+        psid: row.psid,
+        name: row.name,
+        snippet: row.last_snippet,
+        lastInboundAt: row.last_inbound_at,
+        chatUrl: chatUrl(row.chat_link),
+      }))}
+      followUps={((messengerDueResult.data ?? []) as MessengerDueRow[]).map((row) => {
+        const sequence = toFollowUpSequence(row.sequence);
+        return {
+          contactId: row.contact_id,
+          name: row.name,
+          sequence,
+          step: row.next_step,
+          message: applyNameTemplate(followUpMessengerTemplate(sequence, row.next_step), row.name),
+          chatUrl: chatUrl(row.chat_link),
+        };
+      })}
+      leads={items.map((c) => ({ id: c.id, name: c.name, detail: c.email ?? c.phone }))}
+      canEdit={canEdit}
+      canMessage={profile.role === "admin" || profile.can_message_customers}
+    />
+  );
 
   return (
     <CrmContactsView
       contacts={items}
       initialType={isClientType(type) ? type : "b2c"}
-      canEdit={profile.role === "admin" || profile.can_edit_crm}
+      canEdit={canEdit}
+      todoSlot={todo}
       metaLeadSyncEnabled={isMetaLeadSyncEnabled()}
     />
   );

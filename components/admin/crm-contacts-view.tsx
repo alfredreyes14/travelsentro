@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { HistoryIcon, MessageCircleIcon, PlusIcon, SearchIcon } from "lucide-react";
@@ -65,12 +65,15 @@ export function CrmContactsView({
   initialType,
   canEdit,
   metaLeadSyncEnabled,
+  todoSlot,
 }: {
   contacts: AdminContactListItem[];
   initialType: ClientType;
   canEdit: boolean;
   /** Production only; see lib/meta-leads/run-sync.ts. */
   metaLeadSyncEnabled: boolean;
+  /** The Messenger to-do panel (components/admin/messenger-todo.tsx). */
+  todoSlot?: ReactNode;
 }) {
   const router = useRouter();
   const [type, setType] = useState<ClientType>(initialType);
@@ -199,6 +202,8 @@ export function CrmContactsView({
           ) : null}
         </div>
       </div>
+
+      {todoSlot}
 
       <Tabs
         value={type}

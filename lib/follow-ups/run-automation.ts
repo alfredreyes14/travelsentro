@@ -9,6 +9,7 @@ import {
   FOLLOW_UP_GAP_DAYS,
   FOLLOW_UP_STEP_COUNT,
   LOST_AFTER_DAYS,
+  MESSENGER_FOLLOW_UP_GAP_DAYS,
   followUpEmailTemplate,
   toFollowUpSequence,
 } from "./templates";
@@ -67,7 +68,11 @@ export async function runFollowUpAutomation(): Promise<FollowUpRunResult> {
 
   const { data: closedAsLost, error: closeError } = await supabase.rpc(
     "close_unconverted_follow_ups",
-    { p_step_count: FOLLOW_UP_STEP_COUNT, p_grace_days: LOST_AFTER_DAYS }
+    {
+      p_step_count: FOLLOW_UP_STEP_COUNT,
+      p_grace_days: LOST_AFTER_DAYS,
+      p_messenger_step_count: MESSENGER_FOLLOW_UP_GAP_DAYS.length,
+    }
   );
   if (closeError) throw new Error(`close_unconverted_follow_ups failed: ${closeError.message}`);
 

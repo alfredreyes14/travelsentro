@@ -46,3 +46,8 @@ next-env.d.ts
 
 # superpowers scratch workspace (SDD ledgers, briefs, review packages)
 .superpowers
+
+# end-to-end tests (playwright)
+/e2e/.auth/
+/test-results/
+/playwright-report/

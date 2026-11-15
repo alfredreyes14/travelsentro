@@ -145,6 +145,7 @@ export default async function CrmContactPage({
     otherPhones: parseLabeledList(contact.other_phones),
     contractStart: contact.contract_start,
     contractEnd: contact.contract_end,
+    quoteSuggestedAt: contact.quote_suggested_at,
     created_at: contact.created_at,
     created_by: contact.created_by,
     created_by_name: contact.created_by_name,
@@ -258,7 +259,7 @@ export default async function CrmContactPage({
   const lastContact =
     lastSent &&
     (!lastLog || new Date(lastSent.created_at).getTime() > new Date(lastLog.created_at).getTime())
-      ? { at: lastSent.created_at, via: lastSent.channel === "email" ? "email" : "SMS" }
+      ? { at: lastSent.created_at, via: { email: "email", sms: "SMS", messenger: "Messenger" }[lastSent.channel] }
       : lastLog
         ? { at: lastLog.created_at, via: CONTACT_LOG_CHANNEL_LABELS[lastLog.channel] }
         : null;
