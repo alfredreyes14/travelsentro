@@ -34,7 +34,7 @@ test("staff send a follow-up email, and tapping its button moves the lead to Inq
   const email = (await sentEmails()).find((e) => e.to === lead.email);
   expect(email, "email reached the (fake) email service").toBeTruthy();
   expect(email!.subject).toContain(lead.name);
-  expect(email!.html).toContain("Chat with us on");
+  expect(email!.html).toContain("Chat with us on Messenger");
   expect(email!.from).toMatch(/^"[^"]+ from TravelSentro" </);
   expect(email!.html).toMatch(/\/go\/[A-Za-z0-9_-]{16}\?to=messenger/);
   expect(email!.html).toMatch(/\/go\/[A-Za-z0-9_-]{16}\?to=whatsapp/);

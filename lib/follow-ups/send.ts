@@ -205,10 +205,10 @@ export async function sendFollowUpEmails({
 }): Promise<FollowUpSummary> {
   if (items.length === 0) return { sent: 0, failed: 0, total: 0 };
 
-  // A staff send reads as a note from that person; the daily automation
-  // (no sender id) signs as the business.
-  const signature = sender.id && sender.name?.trim() ? sender.name.trim() : null;
-  const from = fromWithName(signature ? `${signature} from TravelSentro` : "TravelSentro");
+  // A staff send shows as "<name> from TravelSentro"; the daily automation
+  // (no sender id) as "TravelSentro".
+  const staffName = sender.id ? sender.name?.trim() : null;
+  const from = fromWithName(staffName ? `${staffName} from TravelSentro` : "TravelSentro");
 
   const batchId = items.length > 1 ? randomUUID() : null;
   const prepared = items.map((item) => ({
@@ -228,7 +228,6 @@ export async function sendFollowUpEmails({
         react: createElement(FollowUpEmail, {
           name: p.name,
           body: p.body,
-          signature,
           messengerUrl: buildTrackedUrl(origin, p.token, "messenger"),
           whatsappUrl: buildTrackedUrl(origin, p.token, "whatsapp"),
           unsubscribeUrl: `${origin}/unsubscribe?cid=${p.contactId}&sig=${signContactId(p.contactId)}`,
