@@ -25,7 +25,13 @@ import { toFollowUpSequence, type FollowUpSequence } from "./templates";
 
 export type FollowUpSender = { id: string | null; name: string | null };
 
-export type FollowUpSummary = { sent: number; failed: number; total: number };
+export type FollowUpSummary = {
+  sent: number;
+  failed: number;
+  total: number;
+  /** Why the first failed send failed, for staff-facing errors. */
+  error?: string;
+};
 
 export type FollowUpEmailItem = {
   contactId: string;
@@ -50,6 +56,9 @@ export type FollowUpSmsItem = {
 };
 
 type MessageRow = {
+  /** Not stored: why the send failed, for logs and the summary. */
+  failure_reason?: string;
+
   contact_id: string;
   channel: "email" | "sms";
   subject: string | null;
@@ -131,20 +140,35 @@ export async function latestPackageNames(
   return names;
 }
 
+function toStoredRow(row: MessageRow): Omit<MessageRow, "failure_reason"> {
+  const stored = { ...row };
+  delete stored.failure_reason;
+  return stored;
+}
+
 async function logAndAdvance(
   supabase: SupabaseClient,
   rows: MessageRow[]
 ): Promise<FollowUpSummary> {
-  const summary = {
-    sent: rows.filter((r) => r.status === "sent").length,
-    failed: rows.filter((r) => r.status === "failed").length,
+  const failures = rows.filter((r) => r.status === "failed");
+  const summary: FollowUpSummary = {
+    sent: rows.length - failures.length,
+    failed: failures.length,
     total: rows.length,
+    error: failures.find((r) => r.failure_reason)?.failure_reason,
   };
   if (rows.length === 0) return summary;
 
+  for (const row of failures) {
+    console.error(
+      `Follow-up ${row.channel} to contact ${row.contact_id} failed:`,
+      row.failure_reason ?? "unknown reason"
+    );
+  }
+
   const { data, error } = await supabase
     .from("messages")
-    .insert(rows)
+    .insert(rows.map(toStoredRow))
     .select("id, status");
   if (error) {
     // The messages went out; only the log failed. Clicks on their links
@@ -205,8 +229,10 @@ export async function sendFollowUpEmails({
       }))
     );
   } catch (error) {
-    console.error("Follow-up email send failed:", error);
-    results = prepared.map(() => ({ id: null, error: "send threw" }));
+    // e.g. UNSUBSCRIBE_TOKEN_SECRET unset (signContactId throws in
+    // production) or a render failure: nothing went out.
+    const reason = error instanceof Error ? error.message : String(error);
+    results = prepared.map(() => ({ id: null, error: reason }));
   }
 
   return logAndAdvance(
@@ -217,6 +243,7 @@ export async function sendFollowUpEmails({
       subject: p.subject,
       body: p.body,
       status: results[i]?.error || !results[i] ? "failed" : "sent",
+      failure_reason: results[i] ? (results[i].error ?? undefined) : "no result from Resend",
       provider_message_id: results[i]?.id ?? null,
       batch_id: batchId,
       sent_by: sender.id,
@@ -260,6 +287,7 @@ export async function sendFollowUpSms({
 
       let status: "sent" | "failed" = "failed";
       let providerId: string | null = null;
+      let failureReason: string | undefined;
       try {
         const result = await sendSingleSms(item.phone, text);
         status =
@@ -267,8 +295,9 @@ export async function sendFollowUpSms({
             ? "failed"
             : "sent";
         providerId = result?.message_id ?? null;
+        if (status === "failed") failureReason = `Semaphore status ${result?.status}`;
       } catch (error) {
-        console.error("Follow-up SMS send failed:", error);
+        failureReason = error instanceof Error ? error.message : String(error);
       }
 
       rows[i] = {
@@ -285,6 +314,7 @@ export async function sendFollowUpSms({
         follow_up_sequence: item.sequence,
         follow_up_step: item.step,
         tracking_token: token,
+        failure_reason: failureReason,
       };
     }
   }

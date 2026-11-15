@@ -51,8 +51,19 @@ const NO_ELIGIBLE_RECIPIENTS_MESSAGE =
 // are capped to keep one action inside the function time limit.
 const MAX_BULK_SMS = 100;
 
-function toBulkResult(summary: FollowUpSummary): BulkSendResult {
-  return { ok: true, ...summary };
+function toBulkResult({ sent, failed, total }: FollowUpSummary): BulkSendResult {
+  return { ok: true, sent, failed, total };
+}
+
+/** An individual send's result, with the provider's reason on failure. */
+function toIndividualResult(summary: FollowUpSummary): ActionResult {
+  if (summary.sent === 1) return { ok: true };
+  return {
+    ok: false,
+    error: summary.error
+      ? `Couldn't send the follow-up: ${summary.error}`
+      : SEND_ERROR_MESSAGE,
+  };
 }
 
 export async function sendFollowUpEmail(
@@ -98,7 +109,7 @@ export async function sendFollowUpEmail(
   scheduleMetaSync();
   revalidatePath("/admin/crm");
   revalidatePath(`/admin/crm/${contact.id}`);
-  return summary.sent === 1 ? { ok: true } : { ok: false, error: SEND_ERROR_MESSAGE };
+  return toIndividualResult(summary);
 }
 
 export async function sendBulkFollowUpEmail(
@@ -200,7 +211,7 @@ export async function sendFollowUpText(
   scheduleMetaSync();
   revalidatePath("/admin/crm");
   revalidatePath(`/admin/crm/${contact.id}`);
-  return summary.sent === 1 ? { ok: true } : { ok: false, error: SEND_ERROR_MESSAGE };
+  return toIndividualResult(summary);
 }
 
 export async function sendBulkFollowUpText(
