@@ -15,10 +15,15 @@ import {
 } from "@/lib/crm/message-schema";
 import {
   countSentFollowUps,
+  latestPackageNames,
   sendFollowUpEmails,
   sendFollowUpSms,
   type FollowUpSummary,
 } from "@/lib/follow-ups/send";
+import {
+  followUpEmailTemplate,
+  followUpSmsTemplate,
+} from "@/lib/follow-ups/templates";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -29,6 +34,10 @@ import { createClient } from "@/lib/supabase/server";
  *
  * Like other individual sends, an individual follow-up ignores opted_out;
  * bulk follow-ups skip opted-out contacts.
+ *
+ * Bulk sends take `values: null` to give each lead their own next
+ * follow-up message (lib/follow-ups/templates.ts), so leads at different
+ * steps never get a repeat; or one custom message for everyone.
  */
 
 const SEND_ERROR_MESSAGE = "Couldn't send the follow-up. Please try again.";
@@ -94,15 +103,16 @@ export async function sendFollowUpEmail(
 
 export async function sendBulkFollowUpEmail(
   contactIds: string[],
-  values: { subject: string; body: string }
+  values: { subject: string; body: string } | null
 ): Promise<BulkSendResult> {
   const profile = await requirePermission("can_message_customers");
 
   const parsedIds = recipientIdsSchema.safeParse(contactIds);
-  const parsedValues = emailComposeSchema.safeParse(values);
-  if (!parsedIds.success || !parsedValues.success) {
+  const parsedValues = values === null ? null : emailComposeSchema.safeParse(values);
+  if (!parsedIds.success || (parsedValues && !parsedValues.success)) {
     return { ok: false, error: SEND_ERROR_MESSAGE };
   }
+  const custom = parsedValues?.data ?? null;
 
   const supabase = await createClient();
   const { data: rows, error } = await supabase
@@ -124,19 +134,23 @@ export async function sendBulkFollowUpEmail(
     };
   }
 
-  const counts = await countSentFollowUps(
-    supabase,
-    contacts.map((c) => c.id)
-  );
+  const ids = contacts.map((c) => c.id);
+  const [counts, packageNames] = await Promise.all([
+    countSentFollowUps(supabase, ids),
+    custom ? Promise.resolve(new Map<string, string>()) : latestPackageNames(supabase, ids),
+  ]);
   const summary = await sendFollowUpEmails({
     supabase,
-    items: contacts.map((c) => ({
-      contactId: c.id,
-      name: c.name,
-      email: c.email,
-      step: (counts.get(c.id) ?? 0) + 1,
-      ...parsedValues.data,
-    })),
+    items: contacts.map((c) => {
+      const step = (counts.get(c.id) ?? 0) + 1;
+      return {
+        contactId: c.id,
+        name: c.name,
+        email: c.email,
+        step,
+        ...(custom ?? followUpEmailTemplate(step, packageNames.get(c.id))),
+      };
+    }),
     sender: { id: profile.id, name: profile.name },
     origin: await getSiteOrigin(),
   });
@@ -187,15 +201,16 @@ export async function sendFollowUpText(
 
 export async function sendBulkFollowUpText(
   contactIds: string[],
-  values: { body: string }
+  values: { body: string } | null
 ): Promise<BulkSendResult> {
   const profile = await requirePermission("can_message_customers");
 
   const parsedIds = recipientIdsSchema.safeParse(contactIds);
-  const parsedValues = smsComposeSchema.safeParse(values);
-  if (!parsedIds.success || !parsedValues.success) {
+  const parsedValues = values === null ? null : smsComposeSchema.safeParse(values);
+  if (!parsedIds.success || (parsedValues && !parsedValues.success)) {
     return { ok: false, error: SEND_ERROR_MESSAGE };
   }
+  const customBody = parsedValues?.data?.body ?? null;
 
   const supabase = await createClient();
   const { data: contacts, error } = await supabase
@@ -220,13 +235,16 @@ export async function sendBulkFollowUpText(
   );
   const summary = await sendFollowUpSms({
     supabase,
-    items: contacts.map((c) => ({
-      contactId: c.id,
-      name: c.name,
-      phone: c.phone!,
-      step: (counts.get(c.id) ?? 0) + 1,
-      body: parsedValues.data.body,
-    })),
+    items: contacts.map((c) => {
+      const step = (counts.get(c.id) ?? 0) + 1;
+      return {
+        contactId: c.id,
+        name: c.name,
+        phone: c.phone!,
+        step,
+        body: customBody ?? followUpSmsTemplate(step),
+      };
+    }),
     sender: { id: profile.id, name: profile.name },
     origin: await getSiteOrigin(),
   });

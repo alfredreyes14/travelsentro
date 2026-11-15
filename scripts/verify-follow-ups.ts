@@ -20,8 +20,10 @@ import {
 } from "../lib/follow-ups/links";
 import {
   FOLLOW_UP_GAP_DAYS,
-  FOLLOW_UP_SMS_TEMPLATE,
+  EXTRA_ANGLES,
   FOLLOW_UP_STEP_COUNT,
+  followUpAngle,
+  followUpSmsTemplate,
   LOST_AFTER_DAYS,
   followUpEmailTemplate,
   trackedLinkLength,
@@ -112,13 +114,17 @@ const step1 = followUpEmailTemplate(1, "Palawan Escape");
 check("step 1 names the package", step1.body.includes("your Palawan Escape trip"), true);
 check("step 1 subject has the name tag", applyNameTemplate(step1.subject, "Ana"), "Ana, let's plan your Palawan Escape trip");
 check("no package -> generic trip", followUpEmailTemplate(2, null).body.includes("your next trip"), true);
-check("step past the end reuses the last", followUpEmailTemplate(9).subject, followUpEmailTemplate(4).subject);
+// Every follow-up has its own angle: no two in a row share a subject or SMS,
+// and the first 8 (4 automatic + 4 extra) are all different.
+const subjects = Array.from({ length: 12 }, (_, i) => followUpEmailTemplate(i + 1).subject);
+const smsTexts = Array.from({ length: 12 }, (_, i) => followUpSmsTemplate(i + 1));
+check("first 8 email subjects all different", new Set(subjects.slice(0, 8)).size, 8);
+check("first 8 SMS texts all different", new Set(smsTexts.slice(0, 8)).size, 8);
+check("no two follow-ups in a row repeat", subjects.every((s, i) => i === 0 || s !== subjects[i - 1]), true);
+check("follow-up 5 is the first extra angle", followUpAngle(5).label, EXTRA_ANGLES[0].label);
+check("extras rotate after the last", followUpAngle(5 + EXTRA_ANGLES.length).label, EXTRA_ANGLES[0].label);
+check("every SMS + link fits 2 segments", smsTexts.every((t) => t.length + 15 + trackedLinkLength("https://travelsentro.com") <= 320), true);
 check("step 0 clamps to the first", followUpEmailTemplate(0).subject, followUpEmailTemplate(1).subject);
-check(
-  "SMS draft + link fits 2 segments",
-  FOLLOW_UP_SMS_TEMPLATE.length + trackedLinkLength("https://travelsentro.com") <= 320,
-  true
-);
 
 // ---------------------------------------------------------------- funnel
 check("B2C has a Follow-up stage after New", B2C_STAGES.indexOf("follow_up"), B2C_STAGES.indexOf("new") + 1);

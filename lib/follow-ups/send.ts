@@ -89,6 +89,33 @@ export async function countSentFollowUps(
   return counts;
 }
 
+/** Each contact's most recent inquired package name, if any. */
+export async function latestPackageNames(
+  supabase: SupabaseClient,
+  contactIds: string[]
+): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  if (contactIds.length === 0) return names;
+
+  const { data, error } = await supabase
+    .from("inquiries")
+    .select("contact_id, created_at, packages(name)")
+    .in("contact_id", contactIds)
+    .not("package_id", "is", null)
+    .order("created_at", { ascending: false });
+
+  if (error) console.error("latestPackageNames failed:", error.message);
+  for (const row of (data ?? []) as unknown as {
+    contact_id: string;
+    packages: { name: string } | null;
+  }[]) {
+    if (!names.has(row.contact_id) && row.packages?.name) {
+      names.set(row.contact_id, row.packages.name);
+    }
+  }
+  return names;
+}
+
 async function logAndAdvance(
   supabase: SupabaseClient,
   rows: MessageRow[]

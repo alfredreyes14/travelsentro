@@ -71,6 +71,11 @@ Follow-ups nudge leads into a chat and move them through the funnel.
   lead. Stages only move forward; Confirmation/Won are never touched.
 - **By hand:** "Follow Up" on a contact, or "Follow Up Selected" in the CRM
   list. Drafts come pre-filled and are editable.
+- **Angles:** every follow-up has its own message (email and SMS): 1 plan
+  your trip, 2 travel dates, 3 help choosing, 4 last check-in; follow-ups
+  staff send after that rotate through questions answered, group trip, visa
+  help and plan ahead. Bulk follow-ups give each lead their own next message
+  unless staff switch to one custom message.
 - **Automatic:** a daily cron (01:07 UTC = 9:07 AM Manila) emails B2C leads
   with an inquiry that are still at New/Follow-up and haven't clicked. Gaps
   are 1, 3, 5 and 10 days from the previous follow-up (day 1, 4, 9, 19).
