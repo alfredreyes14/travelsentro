@@ -1,5 +1,7 @@
 import { isCronAuthorized } from "@/lib/cron/authorize";
+import { isMetaLeadSyncEnabled } from "@/lib/meta-leads/run-sync";
 import { flushMetaOutbox } from "@/lib/meta-sync/flush";
+import { syncMessengerChats } from "@/lib/meta-sync/poll";
 import {
   isFollowUpAutomationEnabled,
   runFollowUpAutomation,
@@ -10,7 +12,7 @@ import {
  * 9:07 AM Asia/Manila, so leads get them in business hours). Uses the same
  * CRON_SECRET as the Meta lead sync; FOLLOW_UPS_ENABLED=false turns it off.
  */
-export const maxDuration = 60;
+export const maxDuration = 180;
 
 export async function GET(request: Request) {
   if (!process.env.CRON_SECRET) {
@@ -25,6 +27,10 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Read Messenger first, so a lead who just replied isn't emailed.
+    if (isMetaLeadSyncEnabled()) {
+      await syncMessengerChats().catch((err) => console.error("Messenger sync before follow-ups failed", err));
+    }
     const result = await runFollowUpAutomation();
     // Sends stage changes queued for Meta (Lost moves, missed jobs).
     const metaSync = await flushMetaOutbox().catch((err) => {

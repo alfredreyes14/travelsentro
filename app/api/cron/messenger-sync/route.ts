@@ -5,10 +5,10 @@ import { syncMessengerChats } from "@/lib/meta-sync/poll";
 
 /**
  * Reads new Messenger messages into the CRM every 15 minutes
- * (lib/meta-sync/poll.ts). Called by Supabase pg_cron, not Vercel Cron --
- * Vercel's free plan allows only one run a day (see the meta_stage_sync
- * migration). Same CRON_SECRET as the other crons; production only, so the
- * staging database never receives real customers' chats.
+ * (lib/meta-sync/poll.ts), run by Vercel Cron (vercel.json; needs Vercel
+ * Pro -- Hobby allows only daily crons). Same CRON_SECRET as the other
+ * crons; production only, so the staging database never receives real
+ * customers' chats.
  */
 export const maxDuration = 60;
 

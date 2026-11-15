@@ -117,15 +117,9 @@ Conversations API (`lib/meta-sync/poll.ts`).
   the lead forward (e.g. the prices message → **Quotation**). Rules are set
   in Messenger settings.
 
-**Schedule:** Supabase pg_cron calls `/api/cron/messenger-sync` every 15
-minutes (Vercel's free plan only runs crons once a day). It's production
-only. One-time setup in the production Supabase SQL editor:
-
-```sql
-select vault.create_secret('https://travelsentro.com', 'app_url');
-select vault.create_secret('<the CRON_SECRET value from Vercel>', 'cron_secret');
-```
-
+**Schedule:** Vercel Cron calls `/api/cron/messenger-sync` every 15
+minutes (needs Vercel Pro; Hobby only runs crons once a day). It runs on
+production only, and once more right before the daily follow-up emails.
 Messenger settings shows when it last ran, so you can tell it's working.
 
 **Inbox labels ↔ stage:** built, but Meta blocks labels on customers' chats

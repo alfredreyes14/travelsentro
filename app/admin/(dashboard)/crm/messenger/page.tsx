@@ -82,7 +82,9 @@ export default async function MessengerSettingsPage() {
             {lastResult
               ? ` · ${lastResult.linked ?? 0} linked, ${lastResult.movedToInquiry ?? 0} moved to Inquiry, ${lastResult.movedBySavedReply ?? 0} moved by saved replies`
               : ""}
-            {stale ? " — the 15-minute check isn't running. See the setup steps in the README." : ""}
+            {stale
+              ? " — the 15-minute check isn't running. It runs on the live site only; check Vercel → Crons."
+              : ""}
           </p>
         </CardContent>
       </Card>

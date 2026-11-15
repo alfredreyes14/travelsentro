@@ -2,8 +2,8 @@
 --
 --   A. Messenger chats -> CRM stage. Each Messenger chat (a PSID, Meta's
 --      page-scoped id for the person) can be linked to a contact. Chats are
---      read every 15 minutes (lib/meta-sync/poll.ts, scheduled below with
---      pg_cron) and, when Meta delivers them, through the webhook:
+--      read every 15 minutes (lib/meta-sync/poll.ts, run by Vercel Cron)
+--      and, when Meta delivers them, through the webhook:
 --        - a linked lead who writes to us again moves New/Lost -> Inquiry;
 --        - a staff message containing a saved-reply phrase
 --          (messenger_stage_phrases) moves the lead forward, e.g. sending
@@ -27,7 +27,7 @@
 -- (6) apply_inbox_stage() -- webhook: staff put a stage label on a chat
 -- (7) link_messenger_thread() / unlink_messenger_thread() -- staff, by hand
 -- (8) messenger_stage_phrases + record_messenger_staff_message()
--- (9) messenger_sync_state + the 15-minute pg_cron schedule
+-- (9) messenger_sync_state
 
 -- ============================================================================
 -- (1) Messenger chats
@@ -570,15 +570,9 @@ grant execute on function public.record_messenger_staff_message(text, text, text
   to service_role;
 
 -- ============================================================================
--- (9) messenger_sync_state + the 15-minute schedule
---
--- Vercel's free plan runs crons once a day, so Supabase's own scheduler
--- (pg_cron) calls /api/cron/messenger-sync every 15 minutes through pg_net.
--- The app URL and CRON_SECRET live in Supabase Vault, set once per project:
---   select vault.create_secret('https://travelsentro.com', 'app_url');
---   select vault.create_secret('<CRON_SECRET>', 'cron_secret');
--- Until both exist, the job does nothing. Side benefit: regular activity
--- keeps a free Supabase project from pausing.
+-- (9) messenger_sync_state -- when the 15-minute Messenger check (Vercel
+-- Cron -> /api/cron/messenger-sync) last ran, and what it did. Shown on
+-- the Messenger settings page.
 -- ============================================================================
 create table messenger_sync_state (
   id boolean primary key default true check (id),
@@ -593,47 +587,3 @@ create policy "authenticated staff can read messenger sync state" on messenger_s
   for select to authenticated using (true);
 
 insert into messenger_sync_state (id) values (true);
-
-create function public.trigger_messenger_sync()
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_url text;
-  v_secret text;
-begin
-  begin
-    select decrypted_secret into v_url from vault.decrypted_secrets where name = 'app_url';
-    select decrypted_secret into v_secret from vault.decrypted_secrets where name = 'cron_secret';
-  exception when others then
-    return; -- Vault not available (local database)
-  end;
-
-  if v_url is null or v_secret is null then
-    return;
-  end if;
-
-  perform net.http_get(
-    url := rtrim(v_url, '/') || '/api/cron/messenger-sync',
-    headers := jsonb_build_object('Authorization', 'Bearer ' || v_secret),
-    timeout_milliseconds := 60000
-  );
-end;
-$$;
-
-revoke execute on function public.trigger_messenger_sync() from public, anon, authenticated;
-
-do $$
-begin
-  begin
-    create extension if not exists pg_net with schema extensions;
-    create extension if not exists pg_cron with schema pg_catalog;
-  exception when others then
-    raise notice 'pg_cron/pg_net unavailable (%): Messenger sync not scheduled', sqlerrm;
-    return;
-  end;
-  perform cron.schedule('messenger-sync', '*/15 * * * *', 'select public.trigger_messenger_sync()');
-end;
-$$;

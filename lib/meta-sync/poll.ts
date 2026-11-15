@@ -10,9 +10,9 @@ import { extractEmails, extractPhoneKeys } from "./parse";
 /**
  * Reads new Messenger messages and applies them to the CRM, the no-App-Review
  * way: with the Page token the app can read the Page's own chats (the
- * Conversations API), just not label them. Run every 15 minutes by Supabase
- * pg_cron through /api/cron/messenger-sync (see the meta_stage_sync
- * migration).
+ * Conversations API), just not label them. Run every 15 minutes by Vercel
+ * Cron through /api/cron/messenger-sync, and once more right before the
+ * daily follow-up emails.
  *
  * - Customer message: saves the chat for staff; links it to the contact
  *   whose email/phone it contains; a linked lead replying moves New/Lost ->
