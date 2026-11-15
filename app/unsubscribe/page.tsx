@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { verifyContactId } from "@/lib/unsubscribe-token";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { buildWhatsAppLink } from "@/lib/whatsapp";
 import { FACEBOOK_URL } from "@/lib/constants";
 
@@ -18,7 +18,8 @@ export const metadata: Metadata = {
  * ONLY the root layout's fonts/Toaster/TooltipProvider, with no site
  * header/nav/footer and no admin chrome. verifyContactId() (04-02's HMAC
  * pair) is checked BEFORE any Supabase call -- an invalid/missing/tampered
- * signature never reaches set_contact_opted_out(), closing Pitfall 5.
+ * signature never reaches set_contact_opted_out(), closing Pitfall 5. The RPC
+ * is service-role only, so this signed link is the only way to call it.
  */
 export default async function UnsubscribePage({
   searchParams,
@@ -30,7 +31,7 @@ export default async function UnsubscribePage({
   const isValid = Boolean(cid && sig && verifyContactId(cid, sig));
 
   if (isValid) {
-    const supabase = await createClient();
+    const supabase = createServiceClient();
     await supabase.rpc("set_contact_opted_out", { p_contact_id: cid });
   }
 

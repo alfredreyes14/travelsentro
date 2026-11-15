@@ -179,6 +179,9 @@ async function differentialRedirectCheck(
     }
     disposableUserId = created.user.id;
 
+    // New accounts start inactive (20261118120000_lead_data_hardening.sql).
+    await serviceRoleClient.from("profiles").update({ is_active: true }).eq("id", disposableUserId);
+
     const { data: linkData, error: linkError } =
       await serviceRoleClient.auth.admin.generateLink({
         type: "recovery",

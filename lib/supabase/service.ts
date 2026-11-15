@@ -4,11 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 
 /**
  * Service-role Supabase client: bypasses RLS. Only for server code that has
- * already authenticated its caller some other way -- today just the Meta
- * lead sync (lib/meta-leads/run-sync.ts), reached from the cron route
- * after its CRON_SECRET check or the "Sync Meta leads" Server Action after
- * requirePermission("can_edit_crm"). Never use
- * it to serve a request on behalf of a staff member or visitor.
+ * already checked its caller some other way:
+ * - cron jobs and the Meta lead sync, after CRON_SECRET or requirePermission(),
+ * - the public inquiry route, after Zod validation and the honeypot, and only
+ *   to call record_inquiry() / get_notification_recipients(),
+ * - the unsubscribe page, after the HMAC link check, and only to call
+ *   set_contact_opted_out().
+ * Never use it to read or write data on behalf of a staff member or visitor.
  */
 export function createServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

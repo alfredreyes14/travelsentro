@@ -188,8 +188,8 @@ async function main() {
 
   try {
     // (1) Disposable zero-permission Staff account. The on_auth_user_created
-    // trigger (02-01) auto-creates a role='staff', is_active=true,
-    // all-three-permissions-false profiles row -- no separate update needed.
+    // trigger auto-creates a role='staff', all-permissions-false profiles row
+    // that starts inactive; it is activated right after creation below.
     const { data: created, error: createError } =
       await serviceRoleClient.auth.admin.createUser({
         email: disposableEmail,
@@ -203,6 +203,9 @@ async function main() {
       );
     }
     disposableUserId = created.user.id;
+
+    // New accounts start inactive (20261118120000_lead_data_hardening.sql).
+    await serviceRoleClient.from("profiles").update({ is_active: true }).eq("id", disposableUserId);
 
     // (2) Real session cookies for both the disposable Staff account and the
     // bootstrap Admin account (positive control).

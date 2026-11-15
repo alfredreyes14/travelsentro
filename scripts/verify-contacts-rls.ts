@@ -233,6 +233,8 @@ async function main() {
       });
       if (error || !data.user) throw new Error(`createUser(${label}) failed: ${error?.message}`);
       userIds.push(data.user.id);
+      // New accounts start inactive (20261118120000_lead_data_hardening.sql).
+      await service.from("profiles").update({ is_active: true }).eq("id", data.user.id);
       return { id: data.user.id, email };
     };
 
