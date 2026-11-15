@@ -6,7 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { FollowUpEmail } from "@/components/email/follow-up-email";
 import { applyNameTemplate } from "@/lib/crm/messages";
-import { sendBatchEmails, type BatchEmailResult } from "@/lib/resend";
+import { fromWithName, sendBatchEmails, type BatchEmailResult } from "@/lib/resend";
 import { sendSingleSms } from "@/lib/sms/semaphore";
 import { signContactId } from "@/lib/unsubscribe-token";
 
@@ -205,6 +205,11 @@ export async function sendFollowUpEmails({
 }): Promise<FollowUpSummary> {
   if (items.length === 0) return { sent: 0, failed: 0, total: 0 };
 
+  // A staff send reads as a note from that person; the daily automation
+  // (no sender id) signs as the business.
+  const signature = sender.id && sender.name?.trim() ? sender.name.trim() : null;
+  const from = fromWithName(signature ? `${signature} from TravelSentro` : "TravelSentro");
+
   const batchId = items.length > 1 ? randomUUID() : null;
   const prepared = items.map((item) => ({
     ...item,
@@ -217,11 +222,13 @@ export async function sendFollowUpEmails({
   try {
     results = await sendBatchEmails(
       prepared.map((p) => ({
+        from,
         to: p.email,
         subject: p.subject,
         react: createElement(FollowUpEmail, {
           name: p.name,
           body: p.body,
+          signature,
           messengerUrl: buildTrackedUrl(origin, p.token, "messenger"),
           whatsappUrl: buildTrackedUrl(origin, p.token, "whatsapp"),
           unsubscribeUrl: `${origin}/unsubscribe?cid=${p.contactId}&sig=${signContactId(p.contactId)}`,

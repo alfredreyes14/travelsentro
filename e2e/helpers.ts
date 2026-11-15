@@ -34,12 +34,19 @@ export async function mockRequests(): Promise<MockRequest[]> {
 }
 
 /** Emails the app sent through the fake Resend (batch sends, flattened). */
-export async function sentEmails(): Promise<{ to: string; subject: string; html: string }[]> {
-  const out: { to: string; subject: string; html: string }[] = [];
+type SentEmail = { from: string; to: string; subject: string; html: string };
+
+export async function sentEmails(): Promise<SentEmail[]> {
+  const out: SentEmail[] = [];
   for (const r of await mockRequests()) {
     if (r.path.startsWith("/resend/emails/batch") && Array.isArray(r.body)) {
-      for (const e of r.body as { to: string | string[]; subject: string; html: string }[]) {
-        out.push({ to: String(Array.isArray(e.to) ? e.to[0] : e.to), subject: e.subject, html: e.html });
+      for (const e of r.body as (Omit<SentEmail, "to"> & { to: string | string[] })[]) {
+        out.push({
+          from: e.from,
+          to: String(Array.isArray(e.to) ? e.to[0] : e.to),
+          subject: e.subject,
+          html: e.html,
+        });
       }
     }
   }

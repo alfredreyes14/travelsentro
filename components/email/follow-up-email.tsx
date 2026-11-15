@@ -1,13 +1,11 @@
 import {
   Body,
-  Button,
   Container,
   Head,
-  Heading,
   Html,
   Img,
+  Link,
   Preview,
-  Section,
   Text,
 } from "react-email";
 
@@ -19,82 +17,81 @@ import { splitParagraphs } from "@/lib/text/split-paragraphs";
 const LOGO_URL = `${SITE_URL}/logo.png`;
 
 /**
- * Lead follow-up email: the message plus two tracked chat buttons. Both
- * button URLs go through /go/<token> (lib/follow-ups/links.ts), which logs
- * the click and moves the lead in the funnel before opening the chat.
- * Same brand tokens as customer-message-email.tsx.
+ * Lead follow-up email, styled as a personal note rather than a newsletter
+ * so Gmail is more likely to file it under Primary than Promotions: plain
+ * paragraphs, text links instead of coloured buttons, no card or banner,
+ * and a sign-off with only a small logo. Both chat links go through
+ * /go/<token> (lib/follow-ups/links.ts), which logs the click and moves the
+ * lead in the funnel before opening the chat.
  */
 export function FollowUpEmail({
   name,
   body,
+  signature,
   messengerUrl,
   whatsappUrl,
   unsubscribeUrl,
 }: {
   name: string;
   body: string;
+  /** The staff member who sent it; null signs as the business. */
+  signature?: string | null;
   messengerUrl: string;
   whatsappUrl: string;
   unsubscribeUrl: string;
 }) {
-  const buttonStyle = {
-    display: "inline-block",
-    borderRadius: "8px",
-    padding: "12px 20px",
-    fontSize: "16px",
-    fontWeight: 600,
-    color: "#FFFFFF",
-    textDecoration: "none",
-    margin: "0 8px 8px 0",
-  };
+  const text = { color: "#1F2937", fontSize: "15px", lineHeight: "1.6", margin: "0 0 16px" };
+  const link = { color: "#1A56DB", textDecoration: "underline" };
 
   return (
     <Html>
       <Head />
       <Preview>{body.slice(0, 100)}</Preview>
-      <Body style={{ backgroundColor: "#FAF7F2", fontFamily: "sans-serif" }}>
-        <Container
-          style={{
-            backgroundColor: "#FFFFFF",
-            padding: "32px",
-            borderRadius: "8px",
-          }}
-        >
-          <Img
-            src={LOGO_URL}
-            alt="TravelSentro"
-            width="200"
-            height="48"
-            style={{ display: "block", margin: "0 0 24px" }}
-          />
-          <Heading style={{ color: "#021F4A", fontSize: "24px" }}>
-            Hi {name},
-          </Heading>
+      <Body style={{ backgroundColor: "#FFFFFF", fontFamily: "Arial, sans-serif" }}>
+        <Container style={{ maxWidth: "560px", padding: "8px 0", margin: "0" }}>
+          <Text style={text}>Hi {name},</Text>
           {splitParagraphs(body).map((paragraph, i) => (
-            <Text key={i} style={{ color: "#021F4A", fontSize: "16px" }}>
+            <Text key={i} style={text}>
               {paragraph}
             </Text>
           ))}
-          <Section style={{ padding: "8px 0 16px" }}>
-            <Button
-              href={messengerUrl}
-              style={{ ...buttonStyle, backgroundColor: "#021F4A" }}
-            >
-              Chat with us on Messenger
-            </Button>
-            <Button
-              href={whatsappUrl}
-              style={{ ...buttonStyle, backgroundColor: "#F49314" }}
-            >
-              Chat on WhatsApp
-            </Button>
-          </Section>
-          <Text style={{ color: "#6B7280", fontSize: "12px" }}>
+          <Text style={text}>
+            Chat with us on{" "}
+            <Link href={messengerUrl} style={link}>
+              Messenger
+            </Link>{" "}
+            or{" "}
+            <Link href={whatsappUrl} style={link}>
+              WhatsApp
+            </Link>
+            .
+          </Text>
+          <Text style={{ ...text, margin: "0 0 8px" }}>
+            Thanks,
+            <br />
+            {signature ? (
+              <>
+                {signature}
+                <br />
+                TravelSentro
+              </>
+            ) : (
+              "The TravelSentro team"
+            )}
+          </Text>
+          <Img
+            src={LOGO_URL}
+            alt="TravelSentro"
+            width="120"
+            height="29"
+            style={{ display: "block", margin: "0 0 24px" }}
+          />
+          <Text style={{ color: "#9CA3AF", fontSize: "12px", lineHeight: "1.5", margin: "0" }}>
             You&apos;re receiving this because you asked TravelSentro about a
             trip.{" "}
-            <a href={unsubscribeUrl} style={{ color: "#6B7280" }}>
+            <Link href={unsubscribeUrl} style={{ color: "#9CA3AF" }}>
               Unsubscribe
-            </a>
+            </Link>
           </Text>
         </Container>
       </Body>
