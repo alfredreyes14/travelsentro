@@ -17,8 +17,9 @@ import { extractEmails, extractPhoneKeys } from "./parse";
  * - Customer message: saves the chat for staff; links it to the contact
  *   whose email/phone it contains; a linked lead replying moves New/Lost ->
  *   Inquiry (record_messenger_inbound()).
- * - Staff message: a saved-reply phrase moves the lead forward, e.g. the
- *   prices message -> Quotation (record_messenger_staff_message()).
+ * - Staff message: a picture (staff quote with package posters) or a
+ *   saved-reply phrase moves the lead forward to Quotation
+ *   (record_messenger_staff_message()).
  *
  * Reads chats updated since the last run, with 2 minutes of overlap; every
  * step is safe to repeat, so the overlap can't double-apply anything.
@@ -41,7 +42,7 @@ export type MessengerSyncResult = {
 
 async function fetchConversations(token: string, since: Date): Promise<GraphConversation[]> {
   const fields =
-    "id,link,updated_time,participants,messages.limit(25){id,message,created_time,from}";
+    "id,link,updated_time,participants,messages.limit(25){id,message,created_time,from,attachments{mime_type}}";
   let url: string | null =
     `${GRAPH}/${FACEBOOK_PAGE_ID}/conversations?platform=messenger&limit=25&fields=${encodeURIComponent(fields)}`;
   const all: GraphConversation[] = [];
@@ -94,7 +95,10 @@ export async function syncMessengerChats(): Promise<MessengerSyncResult> {
       const { data, error } = await supabase.rpc("record_messenger_inbound", {
         p_psid: m.psid,
         p_name: m.name,
-        p_snippet: m.text.replace(/\s+/g, " ").trim().slice(0, 100),
+        p_snippet: (m.text || (m.hasImage ? "[photo]" : "[attachment]"))
+          .replace(/\s+/g, " ")
+          .trim()
+          .slice(0, 100),
         p_emails: extractEmails(m.text),
         p_phone_keys: extractPhoneKeys(m.text),
         p_chat_link: m.chatLink,
@@ -115,6 +119,7 @@ export async function syncMessengerChats(): Promise<MessengerSyncResult> {
         p_text: m.text,
         p_chat_link: m.chatLink,
         p_sent_at: m.sentAt,
+        p_has_image: m.hasImage,
       });
       if (error) {
         result.errors += 1;

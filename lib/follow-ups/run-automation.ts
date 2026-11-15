@@ -30,6 +30,9 @@ export const AUTOMATED_SENDER_NAME = "Automated follow-up";
 
 const DEFAULT_DAILY_LIMIT = 30;
 const DEFAULT_MAX_LEAD_AGE_DAYS = 60;
+// First run only: leads already waiting when follow-ups went live are
+// emailed only if they came in during the last 3 weeks.
+const DEFAULT_BACKLOG_DAYS = 21;
 // Left free for website auto-replies, staff alerts and staff's own sends.
 const QUOTA_RESERVE = 30;
 
@@ -80,6 +83,7 @@ export async function runFollowUpAutomation(): Promise<FollowUpRunResult> {
     p_gap_days: FOLLOW_UP_GAP_DAYS,
     p_max_lead_age_days: envNumber("FOLLOW_UP_MAX_LEAD_AGE_DAYS", DEFAULT_MAX_LEAD_AGE_DAYS),
     p_limit: limit,
+    p_backlog_days: envNumber("FOLLOW_UP_BACKLOG_DAYS", DEFAULT_BACKLOG_DAYS),
   });
   if (error) throw new Error(`list_due_follow_ups failed: ${error.message}`);
 

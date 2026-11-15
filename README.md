@@ -87,7 +87,10 @@ New → Inquiry → Quotation → Confirmation / Lost.
   Staff can follow up B2B contacts too (New/Contacted → Follow-up, a tap →
   Discovery); there's no automation for B2B.
 - **Automatic:** daily cron at 01:07 UTC (9:07 AM Manila), B2C only, emails
-  only. On by default; `FOLLOW_UPS_ENABLED=false` stops it. Limits:
+  only. On the first run, leads already waiting at New/Quotation are emailed
+  only if they came in during the 3 weeks before launch
+  (`FOLLOW_UP_BACKLOG_DAYS`, default 21); after that, every lead that reaches
+  New/Quotation is followed up as usual. On by default; `FOLLOW_UPS_ENABLED=false` stops it. Limits:
   `.env.local.example`. Copy and cadence: `lib/follow-ups/templates.ts`.
 - **Keep stages current:** the CRM can't see Messenger chats. A lead staff
   are chatting with but left at New still gets "No reply yet" emails.
@@ -113,9 +116,10 @@ Conversations API (`lib/meta-sync/poll.ts`).
   **Open chat** button.
 - **Replies:** a linked lead who writes again moves from New/Lost to
   **Inquiry**.
-- **Saved replies:** a staff message containing a saved-reply phrase moves
-  the lead forward (e.g. the prices message → **Quotation**). Rules are set
-  in Messenger settings.
+- **Quotes:** staff sending a picture in a linked chat (they quote with
+  package posters) moves the lead to **Quotation**. So does creating or
+  linking a quote for the lead in the CRM. Saved-reply phrases (Messenger
+  settings) are an optional extra.
 
 **Schedule:** Vercel Cron calls `/api/cron/messenger-sync` every 15
 minutes (needs Vercel Pro; Hobby only runs crons once a day). It runs on

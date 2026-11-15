@@ -400,6 +400,12 @@ export type Database = {
         };
         Relationships: [];
       };
+      follow_up_settings: {
+        Row: { id: boolean; launched_at: string };
+        Insert: { id?: boolean; launched_at?: string };
+        Update: { id?: boolean; launched_at?: string };
+        Relationships: [];
+      };
       follow_up_closures: {
         Row: {
           contact_id: string;
@@ -1549,7 +1555,12 @@ export type Database = {
       link_messenger_thread: { Args: { p_contact_id: string; p_psid: string }; Returns: boolean };
       list_contact_tags: { Args: Record<PropertyKey, never>; Returns: string[] };
       list_due_follow_ups: {
-        Args: { p_gap_days: number[]; p_limit: number; p_max_lead_age_days: number };
+        Args: {
+          p_backlog_days?: number;
+          p_gap_days: number[];
+          p_limit: number;
+          p_max_lead_age_days: number;
+        };
         Returns: {
           contact_id: string;
           email: string;
@@ -1614,6 +1625,7 @@ export type Database = {
       record_messenger_staff_message: {
         Args: {
           p_chat_link?: string | null;
+          p_has_image?: boolean;
           p_name: string | null;
           p_psid: string;
           p_sent_at?: string;

@@ -99,7 +99,8 @@ const chats = [
       data: [
         // Newest first, as Meta returns them.
         { id: "m4", message: "Morning. 4 pax.", created_time: "2026-11-14T10:00:00Z", from: { id: "CUST1" } },
-        { id: "m3", message: "", created_time: "2026-11-13T09:00:00Z", from: { id: PAGE } },
+        { id: "m3b", message: "", created_time: "2026-11-13T09:00:00Z", from: { id: PAGE } },
+        { id: "m3", created_time: "2026-11-13T08:30:00Z", from: { id: PAGE }, attachments: { data: [{ mime_type: "image/jpeg" }] } },
         { id: "m2", message: "Hello po! How many pax?", created_time: "2026-11-13T08:00:00Z", from: { id: PAGE } },
         { id: "m1", message: "Hello! I filled out your form", created_time: "2026-11-12T08:00:00Z", from: { id: "CUST1" } },
         { id: "m0", message: "old", created_time: "2026-11-01T08:00:00Z", from: { id: "CUST1" } },
@@ -111,10 +112,12 @@ const read = newMessages(chats, PAGE, since);
 check("only messages after the last run, no empty ones", read.map((m) => m.text), [
   "Hello! I filled out your form",
   "Hello po! How many pax?",
+  "",
   "Morning. 4 pax.",
 ]);
+check("staff poster (picture only) kept and flagged", read.map((m) => m.hasImage), [false, false, true, false]);
 check("oldest first", read.map((m) => m.sentAt), [...read.map((m) => m.sentAt)].sort());
-check("customer vs staff", read.map((m) => m.fromCustomer), [true, false, true]);
+check("customer vs staff", read.map((m) => m.fromCustomer), [true, false, false, true]);
 check("customer id + name on every message", read.every((m) => m.psid === "CUST1" && m.name === "Juan"), true);
 check("chat link kept", read[0].chatLink, "/446521218543410/inbox/123/?section=messages");
 check("chat URL", chatUrl(read[0].chatLink), "https://www.facebook.com/446521218543410/inbox/123/?section=messages");

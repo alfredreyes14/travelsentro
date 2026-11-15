@@ -98,8 +98,8 @@ export function ContactMessengerLink({
           </Button>
         ) : null}
         <p className="w-full text-xs text-muted-foreground">
-          When they reply there, they move to Inquiry. Staff saved replies set
-          in Messenger settings move them further.
+          When they reply there, they move to Inquiry. When staff send a
+          picture there (like a package poster), they move to Quotation.
         </p>
       </div>
     );

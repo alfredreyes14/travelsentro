@@ -73,14 +73,18 @@ export default async function MessengerSettingsPage() {
               linked by hand on the contact page.
             </li>
             <li>When a linked lead writes to you, they move from New to Inquiry.</li>
-            <li>When staff send a saved reply listed below, the lead moves to that stage.</li>
+            <li>
+              When staff send a picture in the chat (like a package poster), the lead moves
+              to Quotation. Creating a quote for the lead in the CRM does the same.
+            </li>
+            <li>Optional: staff saved replies listed below move the lead to their stage.</li>
           </ul>
           <p className={stale ? "text-destructive" : "text-muted-foreground"}>
             {lastSyncedAt
               ? `Last checked ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}`
               : "Not checked yet"}
             {lastResult
-              ? ` · ${lastResult.linked ?? 0} linked, ${lastResult.movedToInquiry ?? 0} moved to Inquiry, ${lastResult.movedBySavedReply ?? 0} moved by saved replies`
+              ? ` · ${lastResult.linked ?? 0} linked, ${lastResult.movedToInquiry ?? 0} moved to Inquiry, ${lastResult.movedBySavedReply ?? 0} moved to Quotation`
               : ""}
             {stale
               ? " — the 15-minute check isn't running. It runs on the live site only; check Vercel → Crons."
@@ -91,7 +95,7 @@ export default async function MessengerSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Saved replies that move the stage</CardTitle>
+          <CardTitle>Saved replies that move the stage (optional)</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-sm">
           <p className="text-muted-foreground">

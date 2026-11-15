@@ -23,6 +23,9 @@
 -- (10) list_due_follow_ups() -- the daily automation's work list.
 -- (11) close_unconverted_follow_ups() -- no reply after the whole sequence
 --      -> Lost.
+-- (12) follow_up_settings -- when follow-ups went live, for the one-time
+--      backlog limit in list_due_follow_ups().
+-- (13) A CRM quote linked to a contact moves it to Quotation.
 
 -- ============================================================================
 -- (1) contacts.stage_changed_at
@@ -341,6 +344,22 @@ grant select on public.follow_up_progress to authenticated, service_role;
 revoke select on public.follow_up_progress from anon;
 
 -- ============================================================================
+-- (12) follow_up_settings -- one row. launched_at is when this migration ran,
+-- i.e. when follow-ups went live on this database.
+-- ============================================================================
+create table follow_up_settings (
+  id boolean primary key default true check (id),
+  launched_at timestamptz not null default now()
+);
+
+alter table follow_up_settings enable row level security;
+
+create policy "authenticated staff can read follow-up settings" on follow_up_settings
+  for select to authenticated using (true);
+
+insert into follow_up_settings (id) values (true);
+
+-- ============================================================================
 -- (10) list_due_follow_ups()
 --
 -- B2C contacts with an email, not opted out, at New (with an inquiry --
@@ -349,14 +368,21 @@ revoke select on public.follow_up_progress from anon;
 -- wait before step n, counted from the previous follow-up (or from
 -- entering the stage, for step 1). Half a day of slack lets a once-a-day
 -- run catch contacts that arrived later in the day.
--- p_max_lead_age_days only limits who STARTS a sequence; a contact already
--- in one finishes it. Skips contacts staff messaged or logged contact with
--- in the last day, and gives up after 3 failed sends. Newest first.
+-- Who may START a sequence (a contact already in one always finishes it):
+--   - reached its stage after follow-ups went live: within
+--     p_max_lead_age_days of reaching it (the usual rule);
+--   - already at its stage when follow-ups went live (the backlog): only if
+--     the lead came in (latest inquiry, else when added) within
+--     p_backlog_days before launch -- so the first run reaches the last few
+--     weeks of leads, not every old one.
+-- Skips contacts staff messaged or logged contact with in the last day, and
+-- gives up after 3 failed sends. Newest first.
 -- ============================================================================
 create function public.list_due_follow_ups(
   p_gap_days integer[],
   p_max_lead_age_days integer,
-  p_limit integer
+  p_limit integer,
+  p_backlog_days integer default 21
 )
 returns table (
   contact_id uuid,
@@ -387,6 +413,7 @@ as $$
     )
   from contacts c
   join follow_up_progress fp on fp.contact_id = c.id
+  cross join follow_up_settings s
   where c.client_type = 'b2c'
     and (
       c.stage = 'quotation'
@@ -396,7 +423,17 @@ as $$
     and nullif(trim(coalesce(c.email, '')), '') is not null
     and (
       fp.sent_count > 0
-      or c.stage_changed_at >= now() - make_interval(days => p_max_lead_age_days)
+      or (
+        c.stage_changed_at > s.launched_at
+        and c.stage_changed_at >= now() - make_interval(days => p_max_lead_age_days)
+      )
+      or (
+        c.stage_changed_at <= s.launched_at
+        and coalesce(
+          (select max(i.created_at) from inquiries i where i.contact_id = c.id),
+          c.created_at
+        ) >= s.launched_at - make_interval(days => p_backlog_days)
+      )
     )
     and fp.clicked = false
     and fp.failed_count < 3
@@ -419,9 +456,9 @@ as $$
   limit p_limit;
 $$;
 
-revoke execute on function public.list_due_follow_ups(integer[], integer, integer)
+revoke execute on function public.list_due_follow_ups(integer[], integer, integer, integer)
   from public, anon, authenticated;
-grant execute on function public.list_due_follow_ups(integer[], integer, integer)
+grant execute on function public.list_due_follow_ups(integer[], integer, integer, integer)
   to service_role;
 
 -- ============================================================================
@@ -476,3 +513,31 @@ revoke execute on function public.close_unconverted_follow_ups(integer, integer)
   from public, anon, authenticated;
 grant execute on function public.close_unconverted_follow_ups(integer, integer)
   to service_role;
+
+-- ============================================================================
+-- (13) A CRM quote linked to a contact moves it to Quotation: creating or
+-- linking a quote is the clearest sign one went out. B2C, forward only (a
+-- Lost lead comes back). The quote sequence then follows up on it.
+-- ============================================================================
+create function public.advance_stage_on_quote()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if new.contact_id is not null
+     and (tg_op = 'INSERT' or new.contact_id is distinct from old.contact_id) then
+    update contacts
+    set stage = 'quotation'
+    where id = new.contact_id
+      and client_type = 'b2c'
+      and stage in ('new', 'inquiry', 'lost');
+  end if;
+  return new;
+end;
+$$;
+
+create trigger quotes_advance_contact_stage
+  after insert or update of contact_id on quotes
+  for each row execute function public.advance_stage_on_quote();

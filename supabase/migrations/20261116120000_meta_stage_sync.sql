@@ -5,9 +5,9 @@
 --      read every 15 minutes (lib/meta-sync/poll.ts, run by Vercel Cron)
 --      and, when Meta delivers them, through the webhook:
 --        - a linked lead who writes to us again moves New/Lost -> Inquiry;
---        - a staff message containing a saved-reply phrase
---          (messenger_stage_phrases) moves the lead forward, e.g. sending
---          the prices -> Quotation.
+--        - staff sending a picture (the package posters they quote with)
+--          moves the lead to Quotation, and so does a staff message with a
+--          saved-reply phrase (messenger_stage_phrases, optional).
 --      Inbox labels <-> stage also work once the Meta app has App Review
 --      (Advanced Access to pages_messaging); off until then.
 --   B. CRM stage -> Meta Ads (Conversions API for CRM). Every stage change
@@ -468,11 +468,12 @@ grant execute on function public.unlink_messenger_thread(uuid) to authenticated;
 -- ============================================================================
 -- (8) messenger_stage_phrases + record_messenger_staff_message()
 --
--- Staff reuse Messenger saved replies at each step ("here po yung
--- available namin..." with the prices). When a staff message in a linked
--- chat contains one of these phrases, the B2C contact moves forward to the
--- phrase's stage (never backwards; a Lost lead comes back). Matching
--- ignores case and extra spaces. Managed at /admin/crm/messenger.
+-- Staff quote by sending package posters, so a picture from staff in a
+-- linked chat moves a B2C contact to Quotation. Saved-reply phrases are an
+-- optional extra: when a staff message contains one, the contact moves to
+-- the phrase's stage. Either way only forward (a Lost lead comes back).
+-- Phrase matching ignores case and extra spaces. Managed at
+-- /admin/crm/messenger.
 -- ============================================================================
 create table messenger_stage_phrases (
   id uuid primary key default gen_random_uuid(),
@@ -506,15 +507,17 @@ as $$
   select trim(regexp_replace(lower(coalesce(p_text, '')), '\s+', ' ', 'g'));
 $$;
 
--- A staff (Page) message in a chat. Saves the chat's link/name, and applies
--- a saved-reply phrase to a linked B2C contact. Returns the new stage, or
--- null when nothing moved. Safe to call twice for the same message.
+-- A staff (Page) message in a chat. Saves the chat's link/name, and moves a
+-- linked B2C contact forward for a picture (-> Quotation) or a saved-reply
+-- phrase. Returns the new stage, or null when nothing moved. Safe to call
+-- twice for the same message.
 create function public.record_messenger_staff_message(
   p_psid text,
   p_name text,
   p_text text,
   p_chat_link text default null,
-  p_sent_at timestamptz default now()
+  p_sent_at timestamptz default now(),
+  p_has_image boolean default false
 )
 returns text
 language plpgsql
@@ -550,6 +553,12 @@ begin
   order by array_position(v_order, p.stage) desc
   limit 1;
 
+  -- A poster/picture means a quote went out.
+  if p_has_image and (v_target is null
+      or array_position(v_order, v_target) < array_position(v_order, 'quotation')) then
+    v_target := 'quotation';
+  end if;
+
   if v_target is null then
     return null;
   end if;
@@ -564,9 +573,9 @@ begin
 end;
 $$;
 
-revoke execute on function public.record_messenger_staff_message(text, text, text, text, timestamptz)
+revoke execute on function public.record_messenger_staff_message(text, text, text, text, timestamptz, boolean)
   from public, anon, authenticated;
-grant execute on function public.record_messenger_staff_message(text, text, text, text, timestamptz)
+grant execute on function public.record_messenger_staff_message(text, text, text, text, timestamptz, boolean)
   to service_role;
 
 -- ============================================================================
