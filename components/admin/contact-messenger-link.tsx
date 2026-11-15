@@ -7,7 +7,7 @@ import { ExternalLinkIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { linkMessengerChat, unlinkMessengerChat } from "@/actions/messenger-link";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -77,15 +77,15 @@ export function ContactMessengerLink({
         <span className="text-muted-foreground">Messenger chat: </span>
         <span>{linkedChat.name ?? "Linked"}</span>
         {linkedChat.chatUrl ? (
-          <Button
-            variant="outline"
-            size="sm"
-            nativeButton={false}
-            render={<a href={linkedChat.chatUrl} target="_blank" rel="noopener noreferrer" />}
+          <a
+            href={linkedChat.chatUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonVariants({ variant: "outline", size: "sm" })}
           >
             <ExternalLinkIcon className="size-4" />
             Open chat
-          </Button>
+          </a>
         ) : null}
         {canEdit ? (
           <Button

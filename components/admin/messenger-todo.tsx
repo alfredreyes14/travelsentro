@@ -17,7 +17,7 @@ import {
   type MessengerFollowUpItem,
 } from "@/actions/messenger-todo";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Combobox,
@@ -156,15 +156,15 @@ export function MessengerTodo({
                       Copy message
                     </Button>
                     {item.chatUrl ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        nativeButton={false}
-                        render={<a href={item.chatUrl} target="_blank" rel="noopener noreferrer" />}
+                      <a
+                        href={item.chatUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={buttonVariants({ variant: "outline", size: "sm" })}
                       >
                         <ExternalLinkIcon className="size-4" />
                         Open chat
-                      </Button>
+                      </a>
                     ) : null}
                     {canMessage ? (
                       <Button

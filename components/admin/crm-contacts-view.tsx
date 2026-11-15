@@ -11,7 +11,7 @@ import { CrmTable, type AdminContactListItem } from "./crm-table";
 import { MessageComposeDialog } from "./message-compose-dialog";
 import { MetaLeadSyncButton } from "./meta-lead-sync-button";
 import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -183,14 +183,11 @@ export function CrmContactsView({
             <HistoryIcon className="size-4" />
             Sync log
           </Button>
-          <Button
-            variant="ghost"
-            nativeButton={false}
-            render={<Link href="/admin/crm/messenger" />}
-          >
+          {/* A real link styled as a button (Button render={<Link>} is announced as a button). */}
+          <Link href="/admin/crm/messenger" className={buttonVariants({ variant: "ghost" })}>
             <MessageCircleIcon className="size-4" />
             Messenger settings
-          </Button>
+          </Link>
           {canEdit ? (
             <>
               <MetaLeadSyncButton enabled={metaLeadSyncEnabled} />
