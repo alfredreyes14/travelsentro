@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -26,7 +26,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -35,9 +34,16 @@ import {
 } from "@/components/ui/form";
 import type { Profile } from "@/lib/auth/dal";
 import {
-  NO_PERMISSIONS,
-  PERMISSION_ITEMS,
+  permissionGrid,
+  toggleGridCell,
+  type PermissionGrid,
 } from "@/components/admin/account-permissions";
+import {
+  ACTIONS,
+  ACTION_LABELS,
+  MODULES,
+  type Action,
+} from "@/lib/auth/permissions";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -78,7 +84,7 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
       email: "",
       password: "",
       role: "staff",
-      ...NO_PERMISSIONS,
+      permissions: permissionGrid(),
     },
   });
 
@@ -192,7 +198,12 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
           )}
         />
 
-        <PermissionFields control={form.control} />
+        <PermissionFields
+          control={form.control}
+          setPermissions={(grid) =>
+            form.setValue("permissions", grid, { shouldDirty: true })
+          }
+        />
 
         <Button
           type="submit"
@@ -221,11 +232,7 @@ function EditAccountForm({
     defaultValues: {
       name: account.name ?? "",
       role: account.role === "admin" ? "admin" : "staff",
-      canManagePackages: account.can_manage_packages,
-      canMessageCustomers: account.can_message_customers,
-      canEditCrm: account.can_edit_crm,
-      canManageVouchers: account.can_manage_vouchers,
-      canManageQuotes: account.can_manage_quotes,
+      permissions: permissionGrid(account.permissions),
     },
   });
 
@@ -318,7 +325,12 @@ function EditAccountForm({
           )}
         />
 
-        <PermissionFields control={form.control} />
+        <PermissionFields
+          control={form.control}
+          setPermissions={(grid) =>
+            form.setValue("permissions", grid, { shouldDirty: true })
+          }
+        />
 
         <Button
           type="submit"
@@ -334,48 +346,88 @@ function EditAccountForm({
 }
 
 /**
- * Permission switches shared by both forms. Admins always have every
- * permission (lib/auth/dal.ts, has_permission()), so for the Admin role the
- * switches show on and locked; actions/users.ts saves them all as true.
+ * Module x View/Create/Edit/Delete grid shared by both forms. Admins have
+ * every permission (lib/auth/permissions.ts, has_module_permission()), so
+ * for the Admin role every box shows checked and locked, and nothing is
+ * stored. Ticking Create/Edit/Delete also ticks View; unticking View clears
+ * the row.
  */
 function PermissionFields<T extends EditAccountFormValues>({
   control,
+  setPermissions,
 }: {
   control: Control<T>;
+  setPermissions: (grid: PermissionGrid) => void;
 }) {
   const isAdmin = useWatch({ control, name: "role" as Path<T> }) === "admin";
+  const grid = useWatch({ control, name: "permissions" as Path<T> }) as PermissionGrid;
+
+  function toggle(module: (typeof MODULES)[number]["key"], action: Action, checked: boolean) {
+    setPermissions({ ...grid, [module]: toggleGridCell(grid[module] ?? {}, action, checked) });
+  }
 
   return (
     <FormSection title="Permissions">
       <p className="text-sm text-muted-foreground">
         {isAdmin
-          ? "Admins have every permission, plus user management."
-          : "Staff can view Leads. Turn on only what this person needs."}
+          ? "Admins can do everything, including managing users."
+          : "New staff start with nothing. Tick only what this person needs. Create, Edit and Delete also turn on View."}
       </p>
-      {PERMISSION_ITEMS.map((item) => (
-        <FormField
-          key={item.field}
-          control={control}
-          name={item.field as Path<T>}
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between gap-3 rounded-lg border border-input p-3">
-              <div className="flex flex-col gap-1">
-                <FormLabel className="cursor-pointer">{item.label}</FormLabel>
-                <FormDescription className="text-xs">
-                  {item.covers}
-                </FormDescription>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={isAdmin || field.value === true}
-                  disabled={isAdmin}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-      ))}
+      <div className="overflow-x-auto rounded-lg border border-input">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-input bg-muted/50">
+              <th scope="col" className="px-3 py-2 text-left font-medium">
+                Module
+              </th>
+              {ACTIONS.map((action) => (
+                <th key={action} scope="col" className="w-16 px-1 py-2 text-center font-medium">
+                  {ACTION_LABELS[action]}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {MODULES.map((module) => {
+              const supported = module.actions as readonly Action[];
+              const help = ACTIONS.flatMap((a) =>
+                supported.includes(a) && module.help[a as keyof typeof module.help]
+                  ? [`${ACTION_LABELS[a]}: ${module.help[a as keyof typeof module.help]}`]
+                  : []
+              );
+              return (
+                <tr key={module.key} className="border-b border-input last:border-b-0">
+                  <th scope="row" className="px-3 py-2 text-left align-top font-normal">
+                    <span className="font-medium">{module.label}</span>
+                    {help.map((line) => (
+                      <span key={line} className="block text-xs text-muted-foreground">
+                        {line}
+                      </span>
+                    ))}
+                  </th>
+                  {ACTIONS.map((action) => (
+                    <td key={action} className="px-1 py-2 text-center align-top">
+                      {supported.includes(action) ? (
+                        <Checkbox
+                          className="mx-auto"
+                          aria-label={`${module.label}: ${ACTION_LABELS[action]}`}
+                          checked={isAdmin || grid?.[module.key]?.[action] === true}
+                          disabled={isAdmin}
+                          onCheckedChange={(checked) => toggle(module.key, action, checked === true)}
+                        />
+                      ) : (
+                        <span className="text-muted-foreground" aria-hidden>
+                          —
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </FormSection>
   );
 }

@@ -6,7 +6,7 @@ import type { Database, Tables } from "@/types/database";
 
 /**
  * Fetches one quote by id through the caller's client -- RLS
- * (can_manage_quotes) decides visibility, so an unauthorized caller simply
+ * (Quotes View) decides visibility, so an unauthorized caller simply
  * gets null.
  */
 export async function fetchQuoteForPdf(

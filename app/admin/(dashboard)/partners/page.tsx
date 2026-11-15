@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/admin/page-header";
 import { PartnersList } from "@/components/admin/partners/partners-list";
@@ -24,7 +24,7 @@ export default async function AdminPartnersPage() {
   // AUTH-05 -- gate independent of nav hiding; RLS is the second,
   // independent enforcement layer (mirrors every other admin page). Reuses
   // can_manage_packages, the same permission that gates /admin/content.
-  await requirePermissionOrRedirect("can_manage_packages");
+  await requireModuleOrRedirect("partners");
 
   const supabase = await createClient();
 

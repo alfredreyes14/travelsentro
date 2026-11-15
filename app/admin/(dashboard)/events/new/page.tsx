@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { PageHeader } from "@/components/admin/page-header";
 import { EventForm } from "@/components/admin/events/event-form";
 import { Card } from "@/components/ui/card";
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function NewEventPage() {
-  await requirePermissionOrRedirect("can_manage_packages");
+  await requireModuleOrRedirect("events", "create");
 
   return (
     <div className="flex flex-col gap-6">

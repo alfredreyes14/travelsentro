@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { toSoaKind } from "@/lib/soa/soa-row";
 import { formatPeso } from "@/lib/soa/totals";
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 
 export default async function AdminSoaPage() {
   // Gate independent of nav hiding; RLS is the second layer.
-  await requirePermissionOrRedirect("can_manage_quotes");
+  const profile = await requireModuleOrRedirect("soa");
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -70,14 +71,16 @@ export default async function AdminSoaPage() {
         title="Statements of Account"
         description="Bill a customer with any line items, discounts, vouchers and payments — or record an SOA issued before this system."
       >
-        <div className="flex flex-wrap gap-3">
-          <Button size="lg" variant="outline" nativeButton={false} render={<Link href="/admin/soa/new?kind=previous" />}>
-            Add Previous SOA
-          </Button>
-          <Button size="lg" nativeButton={false} render={<Link href="/admin/soa/new" />}>
-            New SOA
-          </Button>
-        </div>
+        {can(profile, "soa", "create") ? (
+          <div className="flex flex-wrap gap-3">
+            <Button size="lg" variant="outline" nativeButton={false} render={<Link href="/admin/soa/new?kind=previous" />}>
+              Add Previous SOA
+            </Button>
+            <Button size="lg" nativeButton={false} render={<Link href="/admin/soa/new" />}>
+              New SOA
+            </Button>
+          </div>
+        ) : null}
       </PageHeader>
 
       {statements.length > 0 ? (

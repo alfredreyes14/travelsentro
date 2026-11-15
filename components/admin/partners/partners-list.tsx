@@ -58,6 +58,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -76,6 +77,7 @@ export function PartnersList({
   partnerType: PartnerType;
   initialItems: PartnerRecord[];
 }) {
+  const canCreate = useCan("partners", "create");
   const labels = PARTNER_TYPE_LABELS[partnerType];
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
@@ -167,20 +169,22 @@ export function PartnersList({
           reorder; hidden logos stay saved here. A logo with a website link
           opens that site in a new tab when clicked.
         </p>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger render={<Button size="lg" className="shrink-0" />}>
-            Add {labels.singular}
-          </DialogTrigger>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Add {labels.singular}</DialogTitle>
-            </DialogHeader>
-            <PartnerForm
-              partnerType={partnerType}
-              onSuccess={handleMutationSuccess}
-            />
-          </DialogContent>
-        </Dialog>
+        {canCreate ? (
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger render={<Button size="lg" className="shrink-0" />}>
+              Add {labels.singular}
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add {labels.singular}</DialogTitle>
+              </DialogHeader>
+              <PartnerForm
+                partnerType={partnerType}
+                onSuccess={handleMutationSuccess}
+              />
+            </DialogContent>
+          </Dialog>
+        ) : null}
       </div>
 
       {items.length === 0 ? (
@@ -283,6 +287,8 @@ function PartnerRow({
   onDelete: () => void;
   onPublishedChange: (id: string, isPublished: boolean) => void;
 }) {
+  const canUpdate = useCan("partners", "update");
+  const canDelete = useCan("partners", "delete");
   const [isPending, startTransition] = useTransition();
   const {
     attributes,
@@ -291,7 +297,7 @@ function PartnerRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: item.id });
+  } = useSortable({ id: item.id, disabled: !canUpdate });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -364,16 +370,20 @@ function PartnerRow({
           <Switch
             checked={item.isPublished}
             onCheckedChange={handlePublishedChange}
-            disabled={isPending}
+            disabled={isPending || !canUpdate}
           />
           Visible
         </label>
-        <Button variant="outline" size="sm" onClick={onEdit}>
-          Edit
-        </Button>
-        <Button variant="destructive" size="sm" onClick={onDelete}>
-          Delete
-        </Button>
+        {canUpdate ? (
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            Edit
+          </Button>
+        ) : null}
+        {canDelete ? (
+          <Button variant="destructive" size="sm" onClick={onDelete}>
+            Delete
+          </Button>
+        ) : null}
       </div>
     </div>
   );

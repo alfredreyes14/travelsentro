@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 import {
@@ -42,7 +42,7 @@ export async function createDocumentUpload(
   contactId: string,
   file: { name: string; type: string; size: number }
 ): Promise<DocumentUploadStart> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "update");
 
   if (!idSchema.safeParse(contactId).success) {
     return { ok: false, error: UPLOAD_ERROR_MESSAGE };
@@ -90,7 +90,7 @@ export async function confirmDocumentUpload(
   key: string,
   fileName: string
 ): Promise<ActionResult> {
-  const profile = await requirePermission("can_edit_crm");
+  const profile = await requireModule("leads", "update");
 
   if (
     !idSchema.safeParse(contactId).success ||
@@ -151,7 +151,7 @@ export async function confirmDocumentUpload(
 
 /** Removes the document's row, then its file. */
 export async function deleteDocument(documentId: string): Promise<ActionResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "delete");
 
   if (!idSchema.safeParse(documentId).success) {
     return { ok: false, error: DELETE_ERROR_MESSAGE };

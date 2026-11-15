@@ -36,6 +36,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -56,6 +57,9 @@ export function TestimonialsList({
 }: {
   initialItems: TestimonialRecord[];
 }) {
+  const canCreate = useCan("content", "create");
+  const canUpdate = useCan("content", "update");
+  const canDelete = useCan("content", "delete");
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
   // Adjusts `items` when fresh props arrive after router.refresh() (Next.js
@@ -108,20 +112,22 @@ export function TestimonialsList({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger render={<Button size="lg" />}>
-            Add Testimonial
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add Testimonial</DialogTitle>
-            </DialogHeader>
-            <TestimonialForm
-              mode="create"
-              onSuccess={handleMutationSuccess}
-            />
-          </DialogContent>
-        </Dialog>
+        {canCreate ? (
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger render={<Button size="lg" />}>
+              Add Testimonial
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Testimonial</DialogTitle>
+              </DialogHeader>
+              <TestimonialForm
+                mode="create"
+                onSuccess={handleMutationSuccess}
+              />
+            </DialogContent>
+          </Dialog>
+        ) : null}
       </div>
 
       {items.length === 0 ? (
@@ -163,20 +169,24 @@ export function TestimonialsList({
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditingItem(item)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setDeletingItem(item)}
-                        >
-                          Delete
-                        </Button>
+                        {canUpdate ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingItem(item)}
+                          >
+                            Edit
+                          </Button>
+                        ) : null}
+                        {canDelete ? (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setDeletingItem(item)}
+                          >
+                            Delete
+                          </Button>
+                        ) : null}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -199,20 +209,24 @@ export function TestimonialsList({
                   </p>
                 </div>
                 <div className="mt-3 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditingItem(item)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setDeletingItem(item)}
-                  >
-                    Delete
-                  </Button>
+                  {canUpdate ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingItem(item)}
+                    >
+                      Edit
+                    </Button>
+                  ) : null}
+                  {canDelete ? (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeletingItem(item)}
+                    >
+                      Delete
+                    </Button>
+                  ) : null}
                 </div>
               </Card>
             ))}

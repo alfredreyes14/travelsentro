@@ -40,6 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -84,6 +85,8 @@ export function UpsellItemsList({
   initialItems: UpsellItemListItem[];
   packageOptions: UpsellPackageOption[];
 }) {
+  const canCreate = useCan("content", "create");
+  const canDelete = useCan("content", "delete");
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
   // Adjusts `items` when fresh props arrive after router.refresh() -- see
@@ -128,18 +131,20 @@ export function UpsellItemsList({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
-        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-          <DialogTrigger render={<Button size="lg" />}>Add Item</DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add Upsell Item</DialogTitle>
-            </DialogHeader>
-            <AddUpsellItemForm
-              packageOptions={packageOptions}
-              onSuccess={handleAddSuccess}
-            />
-          </DialogContent>
-        </Dialog>
+        {canCreate ? (
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+            <DialogTrigger render={<Button size="lg" />}>Add Item</DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Upsell Item</DialogTitle>
+              </DialogHeader>
+              <AddUpsellItemForm
+                packageOptions={packageOptions}
+                onSuccess={handleAddSuccess}
+              />
+            </DialogContent>
+          </Dialog>
+        ) : null}
       </div>
 
       {items.length === 0 ? (
@@ -188,13 +193,15 @@ export function UpsellItemsList({
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => setDeletingItem(item)}
-                        >
-                          Remove
-                        </Button>
+                        {canDelete ? (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setDeletingItem(item)}
+                          >
+                            Remove
+                          </Button>
+                        ) : null}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -223,13 +230,15 @@ export function UpsellItemsList({
                   </p>
                 </div>
                 <div className="mt-3 flex gap-2">
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setDeletingItem(item)}
-                  >
-                    Remove
-                  </Button>
+                  {canDelete ? (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setDeletingItem(item)}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
                 </div>
               </Card>
             ))}

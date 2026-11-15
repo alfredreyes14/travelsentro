@@ -41,6 +41,7 @@ import {
   FOLLOW_UP_STEP_COUNT,
   type FollowUpSequence,
 } from "@/lib/follow-ups/templates";
+import { useCan } from "@/components/admin/permissions-provider";
 
 export type CrmDetailInquiry = {
   id: string;
@@ -119,14 +120,13 @@ export function ContactActivity({
   inquiries,
   messages,
   contactLogs,
-  canEdit,
 }: {
   contactId: string;
   inquiries: CrmDetailInquiry[];
   messages: CrmDetailMessage[];
   contactLogs: CrmDetailContactLog[];
-  canEdit: boolean;
 }) {
+  const canDelete = useCan("leads", "delete");
   const activity: ActivityItem[] = [
     ...inquiries.map((i) => ({ kind: "inquiry" as const, ...i })),
     ...messages.map((m) => ({ kind: "message" as const, ...m })),
@@ -218,7 +218,7 @@ export function ContactActivity({
                       <span className="text-sm text-muted-foreground">
                         Contacted via {CONTACT_LOG_CHANNEL_LABELS[item.channel]}
                       </span>
-                      {canEdit ? (
+                      {canDelete ? (
                         <DeleteLogButton contactId={contactId} logId={item.id} />
                       ) : null}
                     </div>

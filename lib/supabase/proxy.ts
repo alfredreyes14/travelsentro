@@ -14,7 +14,7 @@ const UNGATED_ADMIN_PATHS = [
  * cookie on every request and redirects obviously-unauthenticated /admin/* visits.
  *
  * This is an OPTIMISTIC check only — never the sole authorization boundary. Real
- * enforcement happens in lib/auth/dal.ts (getProfile()/requirePermission()) and RLS.
+ * enforcement happens in lib/auth/dal.ts (getProfile()/requireModule()) and RLS.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });

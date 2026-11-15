@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { formatPackagePrice } from "@/lib/packages/format-price";
@@ -58,7 +58,7 @@ type UpsellItemRow = Database["public"]["Tables"]["upsell_items"]["Row"] & {
 export default async function AdminContentPage() {
   // AUTH-05 (T-06-21) -- gate independent of Task 2's nav hiding; RLS is the
   // second, independent enforcement layer.
-  await requirePermissionOrRedirect("can_manage_packages");
+  await requireModuleOrRedirect("content");
 
   const supabase = await createClient();
 

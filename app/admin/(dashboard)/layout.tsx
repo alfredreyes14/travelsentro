@@ -1,5 +1,7 @@
 import { getProfile } from "@/lib/auth/dal";
+import { normalizePermissions } from "@/lib/auth/permissions";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { PermissionsProvider } from "@/components/admin/permissions-provider";
 import { AdminSidebarHeader } from "@/components/admin/admin-sidebar-header";
 import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { AdminUserFooter } from "@/components/admin/admin-user-footer";
@@ -23,35 +25,32 @@ export default async function AdminDashboardLayout({
   // pages outside this gate.
   const profile = await getProfile();
 
-  const canManagePackages = profile.role === "admin" || profile.can_manage_packages;
-  const canManageUsers = profile.role === "admin";
-  const canManageVouchers = profile.role === "admin" || profile.can_manage_vouchers;
-  const canManageQuotes = profile.role === "admin" || profile.can_manage_quotes;
+  const subject = {
+    role: profile.role,
+    permissions: normalizePermissions(profile.permissions),
+  };
 
   return (
-    <NavigationGuardProvider>
-      <SidebarProvider>
-        <Sidebar collapsible="icon">
-          <SidebarHeader>
-            <AdminSidebarHeader />
-          </SidebarHeader>
-          <SidebarContent>
-            <AdminNav
-              canManagePackages={canManagePackages}
-              canManageUsers={canManageUsers}
-              canManageVouchers={canManageVouchers}
-              canManageQuotes={canManageQuotes}
-            />
-          </SidebarContent>
-          <SidebarFooter>
-            <AdminUserFooter name={profile.name} email={profile.email} />
-          </SidebarFooter>
-        </Sidebar>
-        <SidebarInset>
-          <AdminTopbar name={profile.name} email={profile.email} />
-          <div className="flex-1 p-6">{children}</div>
-        </SidebarInset>
-      </SidebarProvider>
-    </NavigationGuardProvider>
+    <PermissionsProvider subject={subject}>
+      <NavigationGuardProvider>
+        <SidebarProvider>
+          <Sidebar collapsible="icon">
+            <SidebarHeader>
+              <AdminSidebarHeader />
+            </SidebarHeader>
+            <SidebarContent>
+              <AdminNav subject={subject} />
+            </SidebarContent>
+            <SidebarFooter>
+              <AdminUserFooter name={profile.name} email={profile.email} />
+            </SidebarFooter>
+          </Sidebar>
+          <SidebarInset>
+            <AdminTopbar name={profile.name} email={profile.email} />
+            <div className="flex-1 p-6">{children}</div>
+          </SidebarInset>
+        </SidebarProvider>
+      </NavigationGuardProvider>
+    </PermissionsProvider>
   );
 }

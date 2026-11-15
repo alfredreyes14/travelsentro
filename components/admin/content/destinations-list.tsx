@@ -32,6 +32,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -52,6 +53,7 @@ export function DestinationsList({
 }: {
   initialDestinations: DestinationListItem[];
 }) {
+  const canCreate = useCan("destinations", "create");
   const router = useRouter();
   const [items, setItems] = useState(initialDestinations);
   const [prevInitialDestinations, setPrevInitialDestinations] = useState(
@@ -119,17 +121,19 @@ export function DestinationsList({
             className="pl-8"
           />
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger render={<Button />}>
-            Add Destination
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add Destination</DialogTitle>
-            </DialogHeader>
-            <DestinationForm mode="create" onSuccess={handleMutationSuccess} />
-          </DialogContent>
-        </Dialog>
+        {canCreate ? (
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger render={<Button />}>
+              Add Destination
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Destination</DialogTitle>
+              </DialogHeader>
+              <DestinationForm mode="create" onSuccess={handleMutationSuccess} />
+            </DialogContent>
+          </Dialog>
+        ) : null}
       </DataTableToolbar>
 
       {!hasItems ? (
@@ -226,6 +230,8 @@ function DestinationRow({
   onDelete: () => void;
   onMutated: () => void;
 }) {
+  const canUpdate = useCan("destinations", "update");
+  const canDelete = useCan("destinations", "delete");
   const [isActive, setIsActive] = useState(item.isActive);
   const [isPending, startTransition] = useTransition();
 
@@ -276,17 +282,21 @@ function DestinationRow({
         <Switch
           checked={isActive}
           onCheckedChange={handleActiveChange}
-          disabled={isPending}
+          disabled={isPending || !canUpdate}
         />
         <span className="text-sm text-muted-foreground">Active</span>
       </div>
 
-      <Button variant="outline" size="sm" onClick={onEdit}>
-        Edit
-      </Button>
-      <Button variant="destructive" size="sm" onClick={onDelete}>
-        Delete
-      </Button>
+      {canUpdate ? (
+        <Button variant="outline" size="sm" onClick={onEdit}>
+          Edit
+        </Button>
+      ) : null}
+      {canDelete ? (
+        <Button variant="destructive" size="sm" onClick={onDelete}>
+          Delete
+        </Button>
+      ) : null}
     </div>
   );
 }

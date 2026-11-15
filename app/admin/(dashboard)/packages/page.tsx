@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { createDraftPackage } from "@/actions/packages";
@@ -81,7 +82,8 @@ function formatTravelWindow(dates: AdminPackageTravelDate[]): string {
 export default async function AdminPackagesPage() {
   // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
   // second independent layer.
-  await requirePermissionOrRedirect("can_manage_packages");
+  const profile = await requireModuleOrRedirect("packages");
+  const canCreate = can(profile, "packages", "create");
 
   const supabase = await createClient();
 
@@ -150,11 +152,13 @@ export default async function AdminPackagesPage() {
         title="Packages"
         description="Toggle Published/Featured — changes go live on the public site immediately."
       >
-        <form action={createDraftPackage}>
-          <Button type="submit" size="lg">
-            Add Package
-          </Button>
-        </form>
+        {canCreate ? (
+          <form action={createDraftPackage}>
+            <Button type="submit" size="lg">
+              Add Package
+            </Button>
+          </form>
+        ) : null}
       </PageHeader>
 
       {items.length === 0 ? (
@@ -165,9 +169,11 @@ export default async function AdminPackagesPage() {
           <p className="text-base leading-[1.5] text-muted-foreground">
             Create your first tour package to get it live on the public site.
           </p>
-          <form action={createDraftPackage}>
-            <Button type="submit">Add Package</Button>
-          </form>
+          {canCreate ? (
+            <form action={createDraftPackage}>
+              <Button type="submit">Add Package</Button>
+            </form>
+          ) : null}
         </div>
       ) : (
         <PackageTable

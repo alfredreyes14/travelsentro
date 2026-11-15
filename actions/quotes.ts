@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 import {
@@ -25,7 +25,7 @@ export async function createQuote(
   values: QuoteFormValues,
   origin: { source: QuoteSource; sourcePackageId: string | null }
 ): Promise<ActionResult & { id?: string }> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("quotes", "create");
 
   const parsed = quoteFormSchema.safeParse(values);
   if (!parsed.success) return { ok: false, error: INVALID_MESSAGE };
@@ -56,7 +56,7 @@ export async function updateQuote(
   id: string,
   values: QuoteFormValues
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("quotes", "update");
 
   const parsed = quoteFormSchema.safeParse(values);
   if (!parsed.success) return { ok: false, error: INVALID_MESSAGE };
@@ -85,7 +85,7 @@ export async function updateQuote(
 }
 
 export async function deleteQuote(id: string): Promise<ActionResult> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("quotes", "delete");
 
   const supabase = await createClient();
   const { error } = await supabase.from("quotes").delete().eq("id", id);
@@ -103,12 +103,12 @@ export async function deleteQuote(id: string): Promise<ActionResult> {
  * A published package's content as quote form values, for "Copy from a
  * package". Reads through the caller's client: published packages and their
  * child rows are publicly readable, so this works for staff who have
- * can_manage_quotes but not can_manage_packages.
+ * Quotes permissions but not Packages View.
  */
 export async function getPackageQuoteValues(
   packageId: string
 ): Promise<ActionResult & { values?: Partial<QuoteFormValues> }> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("quotes", ["create", "update"]);
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -147,7 +147,7 @@ export async function linkQuoteToContact(
   quoteId: string,
   contactId: string
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("quotes", "update");
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -179,7 +179,7 @@ export async function unlinkQuoteFromContact(
   quoteId: string,
   contactId: string
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("quotes", "update");
 
   const supabase = await createClient();
   const { error } = await supabase

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/admin/page-header";
 import { QuoteTable, type QuoteListItem } from "@/components/admin/quote-table";
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 
 export default async function AdminQuotesPage() {
   // AUTH-05 — gate independent of nav hiding; RLS is the second layer.
-  await requirePermissionOrRedirect("can_manage_quotes");
+  const profile = await requireModuleOrRedirect("quotes");
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -47,9 +48,11 @@ export default async function AdminQuotesPage() {
         title="Quotes"
         description="Build a customer quote by hand, from a flyer, or by copying a package, then download it as a PDF."
       >
-        <Button size="lg" render={<Link href="/admin/quotes/new" />}>
-          New Quote
-        </Button>
+        {can(profile, "quotes", "create") ? (
+          <Button size="lg" render={<Link href="/admin/quotes/new" />}>
+            New Quote
+          </Button>
+        ) : null}
       </PageHeader>
 
       <QuoteTable quotes={quotes} />

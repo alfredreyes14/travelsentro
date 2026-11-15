@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/admin/page-header";
 import { EventForm } from "@/components/admin/events/event-form";
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 /** Fetches by id with no published filter, so drafts can be edited. */
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
-  await requirePermissionOrRedirect("can_manage_packages");
+  await requireModuleOrRedirect("events");
 
   const { id } = await params;
   const supabase = await createClient();

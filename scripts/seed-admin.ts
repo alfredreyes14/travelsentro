@@ -138,9 +138,6 @@ async function seedAdmin() {
     .update({
       role: 'admin',
       is_active: true,
-      can_manage_packages: true,
-      can_message_customers: true,
-      can_edit_crm: true,
       name: 'Admin',
     })
     .eq('id', userId)

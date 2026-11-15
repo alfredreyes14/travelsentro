@@ -39,6 +39,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -111,6 +112,7 @@ export function PreviousSoaForm({
   canCreateContact: boolean;
   emailDefaults?: SoaEmailDefaults;
 }) {
+  const canSave = useCan("soa", soaId ? "update" : "create");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -199,108 +201,110 @@ export function PreviousSoaForm({
         className="flex flex-col gap-6"
         noValidate
       >
-        <SoaSection title="Bill to">
-          <SoaBillToFields
-            contacts={contacts}
-            quotes={quotes}
-            existingTags={existingTags}
-            canCreateContact={canCreateContact}
-          />
-        </SoaSection>
+        <fieldset disabled={!canSave} className="contents">
+          <SoaSection title="Bill to">
+            <SoaBillToFields
+              contacts={contacts}
+              quotes={quotes}
+              existingTags={existingTags}
+              canCreateContact={canCreateContact}
+            />
+          </SoaSection>
 
-        <SoaSection title="Amounts">
-          <FormField
-            control={form.control}
-            name="originalNo"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Original SOA no. (optional)</FormLabel>
-                <FormControl>
-                  <Input {...field} value={field.value ?? ""} type="text" placeholder="e.g. 2025-0142" />
-                </FormControl>
-                <FormDescription>The number printed on the original statement.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="grid grid-cols-2 gap-4">
+          <SoaSection title="Amounts">
             <FormField
               control={form.control}
-              name="totalAmount"
+              name="originalNo"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Total amount</FormLabel>
+                  <FormLabel>Original SOA no. (optional)</FormLabel>
                   <FormControl>
-                    <Input {...moneyInputProps(field)} />
+                    <Input {...field} value={field.value ?? ""} type="text" placeholder="e.g. 2025-0142" />
                   </FormControl>
+                  <FormDescription>The number printed on the original statement.</FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="amountPaid"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Amount paid</FormLabel>
-                  <FormControl>
-                    <Input {...moneyInputProps(field)} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <div className="flex items-baseline justify-between rounded-lg bg-primary px-3 py-2 font-semibold text-primary-foreground">
-            <span>{balance < 0 ? "Credit balance" : "Balance due"}</span>
-            <span className="tabular-nums">{formatPeso(Math.abs(balance))}</span>
-          </div>
-        </SoaSection>
-
-        <SoaSection
-          title="Original document (optional)"
-          description="Attach the original SOA — PDF, image, Word or Excel, up to 20 MB. It's what View, Download and Email use; without one, a PDF is made from the amounts above."
-        >
-          {shownFile ? (
-            <div className="flex items-center gap-3 rounded-lg border border-input bg-muted/30 p-3 text-sm">
-              <FileTextIcon className="size-5 shrink-0 text-muted-foreground" />
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{shownFile.name}</p>
-                <p className="text-muted-foreground">
-                  {formatBytes(shownFile.sizeBytes)}
-                  {pickedFile ? " · uploads when you save" : ""}
-                </p>
-              </div>
-              <Button type="button" variant="ghost" size="sm" onClick={clearFile} aria-label="Remove file">
-                <XIcon className="size-4" />
-                Remove
-              </Button>
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="totalAmount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Total amount</FormLabel>
+                    <FormControl>
+                      <Input {...moneyInputProps(field)} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="amountPaid"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Amount paid</FormLabel>
+                    <FormControl>
+                      <Input {...moneyInputProps(field)} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
-          ) : null}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={DOCUMENT_ACCEPT}
-            className="hidden"
-            onChange={(event) => pickFile(event.target.files?.[0])}
-          />
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="self-start"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {shownFile ? "Replace file" : "Attach file"}
-          </Button>
-          {removeSaved && !pickedFile ? (
-            <p className="text-sm text-muted-foreground">The attached file is removed when you save.</p>
-          ) : null}
-        </SoaSection>
+            <div className="flex items-baseline justify-between rounded-lg bg-primary px-3 py-2 font-semibold text-primary-foreground">
+              <span>{balance < 0 ? "Credit balance" : "Balance due"}</span>
+              <span className="tabular-nums">{formatPeso(Math.abs(balance))}</span>
+            </div>
+          </SoaSection>
 
-        <SoaSection title="Remarks (optional)">
-          <SoaRemarksField />
-        </SoaSection>
+          <SoaSection
+            title="Original document (optional)"
+            description="Attach the original SOA — PDF, image, Word or Excel, up to 20 MB. It's what View, Download and Email use; without one, a PDF is made from the amounts above."
+          >
+            {shownFile ? (
+              <div className="flex items-center gap-3 rounded-lg border border-input bg-muted/30 p-3 text-sm">
+                <FileTextIcon className="size-5 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{shownFile.name}</p>
+                  <p className="text-muted-foreground">
+                    {formatBytes(shownFile.sizeBytes)}
+                    {pickedFile ? " · uploads when you save" : ""}
+                  </p>
+                </div>
+                <Button type="button" variant="ghost" size="sm" onClick={clearFile} aria-label="Remove file">
+                  <XIcon className="size-4" />
+                  Remove
+                </Button>
+              </div>
+            ) : null}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={DOCUMENT_ACCEPT}
+              className="hidden"
+              onChange={(event) => pickFile(event.target.files?.[0])}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="self-start"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {shownFile ? "Replace file" : "Attach file"}
+            </Button>
+            {removeSaved && !pickedFile ? (
+              <p className="text-sm text-muted-foreground">The attached file is removed when you save.</p>
+            ) : null}
+          </SoaSection>
+
+          <SoaSection title="Remarks (optional)">
+            <SoaRemarksField />
+          </SoaSection>
+        </fieldset>
 
         <SoaActionBar
           soaId={soaId}

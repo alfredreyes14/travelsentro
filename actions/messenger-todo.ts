@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { linkMessengerChat } from "@/actions/messenger-link";
 import type { ActionResult } from "@/lib/action-result";
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { nextFollowUps } from "@/lib/follow-ups/send";
 import {
   followUpMessengerTemplate,
@@ -33,7 +33,7 @@ function done(path = "/admin/crm") {
 // ------------------------------------------------ Mark as Quotation?
 
 export async function confirmQuoteSuggestion(contactId: string): Promise<ActionResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "update");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("contacts")
@@ -56,7 +56,7 @@ export async function confirmQuoteSuggestion(contactId: string): Promise<ActionR
 }
 
 export async function dismissQuoteSuggestion(contactId: string): Promise<ActionResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "update");
   const supabase = await createClient();
   const { error } = await supabase
     .from("contacts")
@@ -81,7 +81,7 @@ export async function matchChatToLead(psid: string, contactId: string): Promise<
 export type AddLeadResult = { ok: true; id: string } | { ok: false; error: string };
 
 export async function addLeadFromChat(psid: string): Promise<AddLeadResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "create");
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("add_lead_from_chat", { p_psid: psid });
   if (error) {
@@ -97,7 +97,7 @@ export async function addLeadFromChat(psid: string): Promise<AddLeadResult> {
 }
 
 export async function markChatNotALead(psid: string): Promise<ActionResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "update");
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_messenger_thread_ignored", {
     p_psid: psid,
@@ -128,7 +128,7 @@ export type MessengerFollowUpItem = {
  * two staff clicking at once can't log the same step twice.
  */
 export async function markMessengerFollowUpSent(contactId: string): Promise<ActionResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
   const supabase = await createClient();
 
   const { data: contact, error: contactError } = await supabase

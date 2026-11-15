@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { getProfile } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { ContactDocumentsCard } from "@/components/admin/contact-documents-card";
 import { ContactQuotesCard } from "@/components/admin/contact-quotes-card";
@@ -71,17 +72,15 @@ type ContactDetail = ContactRow & {
 };
 
 /**
- * CRM-03: universal-read guard (getProfile() session validation only, no
- * redirect-based permission gate) — every authenticated Staff/Admin can view
- * a contact's page regardless of can_edit_crm; only the edit affordances
- * are permission-gated inside CrmDetail.
+ * Needs Leads View. Edit affordances are gated by Leads Edit (canEdit) and,
+ * for deleting notes/documents, Leads Delete inside the cards (useCan).
  */
 export default async function CrmContactPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const profile = await getProfile();
+  const profile = await requireModuleOrRedirect("leads");
 
   const { id } = await params;
   const supabase = await createClient();
@@ -118,7 +117,7 @@ export default async function CrmContactPage({
   }
 
   const contact = contactResult.data as unknown as ContactDetail;
-  const canEdit = profile.role === "admin" || profile.can_edit_crm;
+  const canEdit = can(profile, "leads", "update");
   const clientType = toClientType(contact.client_type);
 
   const detailContact: CrmDetailContact = {
@@ -251,11 +250,10 @@ export default async function CrmContactPage({
         ? { at: lastLog.created_at, via: CONTACT_LOG_CHANNEL_LABELS[lastLog.channel] }
         : null;
 
-  // Quotes are readable only with can_manage_quotes (RLS), so the card is
-  // not rendered at all for anyone else. B2C only, per the spec.
-  const canManageQuotes = profile.role === "admin" || profile.can_manage_quotes;
+  // Quotes are readable only with Quotes View (RLS), so the card is not
+  // rendered at all for anyone else. B2C only, per the spec.
   let quotesSlot: React.ReactNode = null;
-  if (clientType === "b2c" && canManageQuotes) {
+  if (clientType === "b2c" && can(profile, "quotes", "read")) {
     const [linkedResult, unlinkedResult] = await Promise.all([
       supabase
         .from("quotes")
@@ -295,9 +293,9 @@ export default async function CrmContactPage({
     );
   }
 
-  // Statements of Account, for B2C and B2B alike. Same permission as quotes.
+  // Statements of Account, for B2C and B2B alike. Needs SOA View.
   let soaSlot: React.ReactNode = null;
-  if (canManageQuotes) {
+  if (can(profile, "soa", "read")) {
     const [linkedResult, unlinkedResult] = await Promise.all([
       supabase
         .from("statements")

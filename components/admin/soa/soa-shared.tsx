@@ -35,6 +35,7 @@ import {
   ComboboxList,
   ComboboxItem,
 } from "@/components/ui/combobox";
+import { useCan } from "@/components/admin/permissions-provider";
 
 /** The fields both kinds of SOA share. */
 type SoaHeaderValues = {
@@ -345,6 +346,9 @@ export function SoaActionBar({
   emailDefaults?: SoaEmailDefaults;
 }) {
   const [isSendOpen, setIsSendOpen] = useState(false);
+  const canCreate = useCan("soa", "create");
+  const canUpdate = useCan("soa", "update");
+  const canSave = soaId ? canUpdate : canCreate;
   const pdfHref = soaId ? `/admin/soa/${soaId}/pdf` : "";
 
   return (
@@ -372,7 +376,7 @@ export function SoaActionBar({
             >
               Download
             </Button>
-            {emailDefaults ? (
+            {emailDefaults && canUpdate ? (
               <Button
                 type="button"
                 variant="outline"
@@ -385,9 +389,11 @@ export function SoaActionBar({
           </>
         )
       ) : null}
-      <Button type="submit" size="lg" disabled={isSubmitting}>
-        {isSubmitting ? "Saving..." : soaId ? "Save Changes" : createLabel}
-      </Button>
+      {canSave ? (
+        <Button type="submit" size="lg" disabled={isSubmitting}>
+          {isSubmitting ? "Saving..." : soaId ? "Save Changes" : createLabel}
+        </Button>
+      ) : null}
 
       {soaId && emailDefaults ? (
         <StopSubmit>

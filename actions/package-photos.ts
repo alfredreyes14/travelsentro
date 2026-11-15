@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { packagePath } from "@/lib/packages/package-url";
 import { uploadObject, deleteObject } from "@/lib/storage/r2-client";
@@ -54,7 +54,7 @@ export async function uploadPhotos(
   // there is no second independent layer (the storage.objects RLS policies
   // this used to pair with were dropped when Supabase Storage buckets were
   // removed in favor of R2).
-  await requirePermission("can_manage_packages");
+  await requireModule("packages", ["create", "update"]);
 
   if (files.length === 0) {
     return { ok: true, photos: [] };
@@ -151,7 +151,7 @@ export async function uploadPhotos(
  * side) — server-side this is still fully permission-gated (T-02-21).
  */
 export async function deletePhoto(photoId: string): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("packages", ["create", "update"]);
 
   const supabase = await createClient();
 
@@ -202,7 +202,7 @@ export async function reorderPhotos(
   packageId: string,
   order: { id: string; displayOrder: number }[]
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("packages", ["create", "update"]);
 
   const supabase = await createClient();
 

@@ -1,4 +1,4 @@
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { fetchPackageForPdf, renderPackagePdf } from "@/lib/pdf/package-pdf";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,7 +14,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await requirePermissionOrRedirect("can_manage_packages");
+  await requireModuleOrRedirect("packages");
 
   const { id } = await params;
   const supabase = await createClient();

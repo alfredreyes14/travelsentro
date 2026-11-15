@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { loadSoaFormOptions } from "@/lib/soa/soa-options";
 import { PageHeader } from "@/components/admin/page-header";
@@ -24,13 +25,13 @@ export default async function NewSoaPage({
 }: {
   searchParams: Promise<{ contactId?: string; kind?: string }>;
 }) {
-  const profile = await requirePermissionOrRedirect("can_manage_quotes");
+  const profile = await requireModuleOrRedirect("soa", "create");
   const { contactId, kind } = await searchParams;
   const isPrevious = kind === "previous";
 
   const supabase = await createClient();
   const { contacts, vouchers, quotes, existingTags } = await loadSoaFormOptions(supabase);
-  const canCreateContact = profile.role === "admin" || profile.can_edit_crm;
+  const canCreateContact = can(profile, "leads", "create");
 
   // Only a contact that really exists is preset.
   const preset = contactId ? contacts.find((c) => c.id === contactId) : undefined;

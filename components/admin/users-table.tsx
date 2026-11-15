@@ -44,7 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Profile } from "@/lib/auth/dal";
-import { PERMISSION_ITEMS } from "@/components/admin/account-permissions";
+import { permissionSummary } from "@/components/admin/account-permissions";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -117,7 +117,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
           <DialogTrigger render={<Button />}>
             Add Staff Account
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add Staff Account</DialogTitle>
             </DialogHeader>
@@ -287,7 +287,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
         open={editingAccount !== null}
         onOpenChange={(open) => !open && setEditingAccount(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Account</DialogTitle>
           </DialogHeader>
@@ -331,15 +331,15 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
 }
 
 function PermissionBadges({ profile }: { profile: Profile }) {
-  const granted = PERMISSION_ITEMS.filter((item) => profile[item.column]);
+  const summary = permissionSummary(profile);
 
-  if (granted.length === 0) {
-    return <span className="text-sm text-muted-foreground">View leads only</span>;
+  if (summary.length === 0) {
+    return <span className="text-sm text-muted-foreground">No access</span>;
   }
 
-  return granted.map((item) => (
-    <Badge key={item.column} variant="outline">
-      {item.badge}
+  return summary.map((label) => (
+    <Badge key={label} variant="outline">
+      {label}
     </Badge>
   ));
 }

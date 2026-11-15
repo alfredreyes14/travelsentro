@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { extractQuoteFromPoster } from "@/actions/quote-poster";
 import { PageHeader } from "@/components/admin/page-header";
@@ -24,7 +24,7 @@ export default async function NewQuotePage({
 }: {
   searchParams: Promise<{ contactId?: string }>;
 }) {
-  await requirePermissionOrRedirect("can_manage_quotes");
+  await requireModuleOrRedirect("quotes", "create");
   const { contactId } = await searchParams;
 
   const supabase = await createClient();

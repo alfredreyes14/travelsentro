@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getSiteOrigin } from "@/actions/auth";
 import type { BulkSendResult } from "@/actions/messages";
 import type { ActionResult } from "@/lib/action-result";
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { withEmail } from "@/lib/crm/contact-label";
 import { remainingEmailQuota } from "@/lib/crm/email-quota";
 import {
@@ -72,7 +72,7 @@ export async function sendFollowUpEmail(
   contactId: string,
   values: { subject: string; body: string }
 ): Promise<ActionResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsed = emailComposeSchema.safeParse(values);
   if (!parsed.success) return { ok: false, error: SEND_ERROR_MESSAGE };
@@ -119,7 +119,7 @@ export async function sendBulkFollowUpEmail(
   contactIds: string[],
   values: { subject: string; body: string } | null
 ): Promise<BulkSendResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsedIds = recipientIdsSchema.safeParse(contactIds);
   const parsedValues = values === null ? null : emailComposeSchema.safeParse(values);
@@ -179,7 +179,7 @@ export async function sendFollowUpText(
   contactId: string,
   values: { body: string }
 ): Promise<ActionResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsed = smsComposeSchema.safeParse(values);
   if (!parsed.success) return { ok: false, error: SEND_ERROR_MESSAGE };
@@ -222,7 +222,7 @@ export async function sendBulkFollowUpText(
   contactIds: string[],
   values: { body: string } | null
 ): Promise<BulkSendResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsedIds = recipientIdsSchema.safeParse(contactIds);
   const parsedValues = values === null ? null : smsComposeSchema.safeParse(values);

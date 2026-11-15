@@ -55,6 +55,7 @@ import {
 } from "@/lib/crm/stage";
 import type { FollowUpProgress } from "@/lib/follow-ups/progress";
 import { cn } from "@/lib/utils";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const STAGE_ERROR_MESSAGE =
   "Something went wrong updating the stage. Please try again.";
@@ -141,6 +142,7 @@ export function CrmDetail({
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
   const [isLogOpen, setIsLogOpen] = useState(false);
+  const canMessage = useCan("messages", "create");
 
   const isB2b = contact.clientType === "b2b";
   const composeContact = {
@@ -224,23 +226,27 @@ export function CrmDetail({
             stage={contact.stage}
             optedOut={optedOut}
           />
-          <Button
-            onClick={() => setIsMessageOpen(true)}
-            disabled={optedOut}
-            title={optedOut ? "This lead unsubscribed, so they can't be messaged." : undefined}
-          >
-            <SendIcon className="size-4" />
-            Message
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setIsFollowUpOpen(true)}
-            disabled={optedOut}
-            title={optedOut ? "This lead unsubscribed, so follow-ups have stopped." : undefined}
-          >
-            <MessageCircleReplyIcon className="size-4" />
-            Follow Up
-          </Button>
+          {canMessage ? (
+            <>
+              <Button
+                onClick={() => setIsMessageOpen(true)}
+                disabled={optedOut}
+                title={optedOut ? "This lead unsubscribed, so they can't be messaged." : undefined}
+              >
+                <SendIcon className="size-4" />
+                Message
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsFollowUpOpen(true)}
+                disabled={optedOut}
+                title={optedOut ? "This lead unsubscribed, so follow-ups have stopped." : undefined}
+              >
+                <MessageCircleReplyIcon className="size-4" />
+                Follow Up
+              </Button>
+            </>
+          ) : null}
           {canEdit ? (
             <Button variant="outline" onClick={() => setIsLogOpen(true)}>
               <PhoneIcon className="size-4" />
@@ -439,7 +445,6 @@ export function CrmDetail({
         inquiries={inquiries}
         messages={messages}
         contactLogs={contactLogs}
-        canEdit={canEdit}
       />
 
       <MessageComposeDialog

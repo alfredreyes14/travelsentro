@@ -1,7 +1,7 @@
 /**
- * Proves quotes' RLS is fully can_manage_quotes-gated and that quote_no is
+ * Proves quotes' RLS is fully gated by the Quotes module permissions and that quote_no is
  * always database-assigned. Creates two disposable staff accounts (one
- * without, one with can_manage_quotes), signs each in through the anon key
+ * without, one with full Quotes permissions), signs each in through the anon key
  * exactly like the browser would, and exercises select/insert/update/delete.
  * Always deletes its disposable rows and accounts in a finally block.
  *
@@ -83,9 +83,9 @@ async function main() {
     // handle_new_user() creates both profiles with every permission false.
     const { error: grantError } = await service
       .from("profiles")
-      .update({ can_manage_quotes: true })
+      .update({ permissions: { quotes: { read: true, create: true, update: true, delete: true } } })
       .eq("id", allowed.id);
-    if (grantError) throw new Error(`grant can_manage_quotes failed: ${grantError.message}`);
+    if (grantError) throw new Error(`grant quotes permissions failed: ${grantError.message}`);
 
     // A row the denied user must not be able to see/update/delete.
     const { data: seeded, error: seedError } = await service
@@ -110,14 +110,14 @@ async function main() {
       .select("id")
       .eq("id", seeded.id);
     results.push({
-      name: "staff without can_manage_quotes cannot read quotes",
+      name: "staff without Quotes permissions cannot read quotes",
       pass: !deniedSelectError && (deniedRows ?? []).length === 0,
       detail: `rows=${deniedRows?.length ?? "n/a"} error=${deniedSelectError?.message ?? "none"}`,
     });
 
     const { error: deniedInsertError } = await deniedClient.from("quotes").insert(QUOTE_FIXTURE);
     results.push({
-      name: "staff without can_manage_quotes cannot insert quotes",
+      name: "staff without Quotes permissions cannot insert quotes",
       pass: !!deniedInsertError,
       detail: deniedInsertError ? `rejected: ${deniedInsertError.message}` : "insert unexpectedly succeeded",
     });
@@ -128,7 +128,7 @@ async function main() {
       .eq("id", seeded.id)
       .select("id");
     results.push({
-      name: "staff without can_manage_quotes cannot update quotes",
+      name: "staff without Quotes permissions cannot update quotes",
       pass: (deniedUpdated ?? []).length === 0,
       detail: `updated rows=${deniedUpdated?.length ?? 0}`,
     });
@@ -139,7 +139,7 @@ async function main() {
       .eq("id", seeded.id)
       .select("id");
     results.push({
-      name: "staff without can_manage_quotes cannot delete quotes",
+      name: "staff without Quotes permissions cannot delete quotes",
       pass: (deniedDeleted ?? []).length === 0,
       detail: `deleted rows=${deniedDeleted?.length ?? 0}`,
     });
@@ -151,7 +151,7 @@ async function main() {
       .single();
     if (allowedInsert) quoteIds.push(allowedInsert.id);
     results.push({
-      name: "staff with can_manage_quotes can insert, and created_by defaults to them",
+      name: "staff with full Quotes permissions can insert, and created_by defaults to them",
       pass: !allowedInsertError && allowedInsert?.created_by === allowed.id,
       detail: allowedInsertError
         ? `error: ${allowedInsertError.message}`
@@ -160,7 +160,7 @@ async function main() {
 
     const { data: allowedRows } = await allowedClient.from("quotes").select("id").eq("id", seeded.id);
     results.push({
-      name: "staff with can_manage_quotes can read quotes",
+      name: "staff with full Quotes permissions can read quotes",
       pass: (allowedRows ?? []).length === 1,
       detail: `rows=${allowedRows?.length ?? 0}`,
     });
@@ -171,7 +171,7 @@ async function main() {
       .eq("id", seeded.id)
       .select("id");
     results.push({
-      name: "staff with can_manage_quotes can update quotes",
+      name: "staff with full Quotes permissions can update quotes",
       pass: (allowedUpdated ?? []).length === 1,
       detail: `updated rows=${allowedUpdated?.length ?? 0}`,
     });
@@ -182,7 +182,7 @@ async function main() {
       .eq("id", seeded.id)
       .select("id");
     results.push({
-      name: "staff with can_manage_quotes can delete quotes",
+      name: "staff with full Quotes permissions can delete quotes",
       pass: (allowedDeleted ?? []).length === 1,
       detail: `deleted rows=${allowedDeleted?.length ?? 0}`,
     });

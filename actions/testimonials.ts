@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -27,7 +27,7 @@ export type TestimonialValues = {
 export async function createTestimonial(
   values: TestimonialValues
 ): Promise<ActionResult & { id?: string }> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "create");
 
   const supabase = await createClient();
 
@@ -60,7 +60,7 @@ export async function updateTestimonial(
   id: string,
   values: TestimonialValues
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "update");
 
   const supabase = await createClient();
 
@@ -86,7 +86,7 @@ export async function updateTestimonial(
 }
 
 export async function deleteTestimonial(id: string): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "delete");
 
   const supabase = await createClient();
 

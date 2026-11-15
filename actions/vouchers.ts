@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 import type { VoucherFormValues } from "@/components/admin/vouchers/voucher-form-schema";
@@ -27,7 +27,7 @@ function toPatch(values: VoucherFormValues) {
 export async function createVoucher(
   values: VoucherFormValues
 ): Promise<ActionResult & { id?: string }> {
-  await requirePermission("can_manage_vouchers");
+  await requireModule("vouchers", "create");
 
   const supabase = await createClient();
 
@@ -68,7 +68,7 @@ export async function updateVoucher(
   id: string,
   values: VoucherFormValues
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_vouchers");
+  await requireModule("vouchers", "update");
 
   const supabase = await createClient();
 

@@ -1,68 +1,65 @@
-import type { Permission } from "@/lib/auth/dal";
-
-export type PermissionFieldName =
-  | "canManagePackages"
-  | "canMessageCustomers"
-  | "canEditCrm"
-  | "canManageVouchers"
-  | "canManageQuotes";
+import {
+  ACTIONS,
+  ACTION_LABELS,
+  MODULES,
+  normalizePermissions,
+  type Action,
+  type Module,
+  type PermissionMap,
+  type PermissionSubject,
+} from "@/lib/auth/permissions";
 
 /**
- * Every staff permission toggle, in display order. `covers` lists the admin
- * pages and actions each toggle unlocks -- newer features reuse an existing
- * toggle instead of adding a new one, so keep this in sync with the
- * requirePermission() calls in actions/ and app/admin/.
+ * The account form's permission grid: every module with every action it
+ * supports, each true/false. Unsupported actions are left out.
  */
-export const PERMISSION_ITEMS: {
-  field: PermissionFieldName;
-  column: Permission;
-  label: string;
-  badge: string;
-  covers: string;
-}[] = [
-  {
-    field: "canEditCrm",
-    column: "can_edit_crm",
-    label: "Edit Leads",
-    badge: "Leads",
-    covers:
-      "Add and edit leads, notes, documents, Messenger chats and saved replies, Meta lead sync",
-  },
-  {
-    field: "canMessageCustomers",
-    column: "can_message_customers",
-    label: "Message Customers",
-    badge: "Messages",
-    covers: "Send emails and SMS, bulk sends, follow-ups, Messenger to-dos",
-  },
-  {
-    field: "canManageQuotes",
-    column: "can_manage_quotes",
-    label: "Manage Quotes & SOA",
-    badge: "Quotes & SOA",
-    covers: "Quotes and Statements of Account",
-  },
-  {
-    field: "canManageVouchers",
-    column: "can_manage_vouchers",
-    label: "Manage Vouchers",
-    badge: "Vouchers",
-    covers: "Vouchers and voucher partners",
-  },
-  {
-    field: "canManagePackages",
-    column: "can_manage_packages",
-    label: "Manage Tours & Website",
-    badge: "Tours & Website",
-    covers:
-      "Packages, Destinations, Site Content (hero slides, testimonials, FAQs, visa services, add-ons, booking terms), Events, Partners",
-  },
-];
+export type PermissionGrid = Record<Module, Partial<Record<Action, boolean>>>;
 
-export const NO_PERMISSIONS: Record<PermissionFieldName, boolean> = {
-  canManagePackages: false,
-  canMessageCustomers: false,
-  canEditCrm: false,
-  canManageVouchers: false,
-  canManageQuotes: false,
-};
+export function permissionGrid(raw: unknown = {}): PermissionGrid {
+  const granted = normalizePermissions(raw);
+  return Object.fromEntries(
+    MODULES.map((m) => [
+      m.key,
+      Object.fromEntries(
+        (m.actions as readonly Action[]).map((a) => [a, granted[m.key]?.[a] === true])
+      ),
+    ])
+  ) as PermissionGrid;
+}
+
+/** Grid -> what gets stored in profiles.permissions (only granted actions). */
+export function gridToPermissions(grid: unknown): PermissionMap {
+  return normalizePermissions(grid);
+}
+
+/**
+ * Applies one checkbox change and keeps the row consistent: turning on
+ * Create/Edit/Delete also turns on View, and turning View off turns the
+ * whole row off.
+ */
+export function toggleGridCell(
+  row: Partial<Record<Action, boolean>>,
+  action: Action,
+  checked: boolean
+): Partial<Record<Action, boolean>> {
+  const next = { ...row, [action]: checked };
+  if (action === "read" && !checked) {
+    for (const a of ACTIONS) if (a in next) next[a] = false;
+  }
+  if (action !== "read" && checked && "read" in next) next.read = true;
+  return next;
+}
+
+/** One short label per module the account can use, for the users table. */
+export function permissionSummary(subject: PermissionSubject): string[] {
+  const granted = normalizePermissions(subject.permissions);
+  return MODULES.flatMap((m) => {
+    const actions = (m.actions as readonly Action[]).filter((a) => granted[m.key]?.[a]);
+    if (actions.length === 0) return [];
+    if (actions.length === m.actions.length && m.actions.length > 1) {
+      return [`${m.label}: All`];
+    }
+    if (m.key === "messages") return ["Send messages"];
+    return [`${m.label}: ${actions.map((a) => ACTION_LABELS[a]).join(", ")}`];
+  });
+}

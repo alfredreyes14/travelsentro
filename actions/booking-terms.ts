@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -17,7 +17,7 @@ const GENERIC_ERROR_MESSAGE =
 export async function updateBookingTerms(
   content: string
 ): Promise<ActionResult & { updatedAt?: string }> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "update");
 
   const supabase = await createClient();
 

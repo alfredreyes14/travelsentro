@@ -50,6 +50,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -61,6 +62,7 @@ const GENERIC_ERROR_MESSAGE =
  * optimistic toggle) and AlertDialog-confirmed delete.
  */
 export function FaqsList({ initialItems }: { initialItems: FaqRecord[] }) {
+  const canCreate = useCan("content", "create");
   const router = useRouter();
   const [items, setItems] = useState(initialItems);
   // Adjusts `items` when fresh props arrive after router.refresh() (Next.js
@@ -160,17 +162,19 @@ export function FaqsList({ initialItems }: { initialItems: FaqRecord[] }) {
           </Link>{" "}
           in this order. Drag to reorder; hidden FAQs stay saved here.
         </p>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger render={<Button size="lg" className="shrink-0" />}>
-            Add FAQ
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Add FAQ</DialogTitle>
-            </DialogHeader>
-            <FaqForm mode="create" onSuccess={handleMutationSuccess} />
-          </DialogContent>
-        </Dialog>
+        {canCreate ? (
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger render={<Button size="lg" className="shrink-0" />}>
+              Add FAQ
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add FAQ</DialogTitle>
+              </DialogHeader>
+              <FaqForm mode="create" onSuccess={handleMutationSuccess} />
+            </DialogContent>
+          </Dialog>
+        ) : null}
       </div>
 
       {items.length === 0 ? (
@@ -265,6 +269,8 @@ function FaqRow({
   onDelete: () => void;
   onPublishedChange: (id: string, isPublished: boolean) => void;
 }) {
+  const canUpdate = useCan("content", "update");
+  const canDelete = useCan("content", "delete");
   const [isPending, startTransition] = useTransition();
   const {
     attributes,
@@ -273,7 +279,7 @@ function FaqRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: item.id });
+  } = useSortable({ id: item.id, disabled: !canUpdate });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -337,16 +343,20 @@ function FaqRow({
           <Switch
             checked={item.isPublished}
             onCheckedChange={handlePublishedChange}
-            disabled={isPending}
+            disabled={isPending || !canUpdate}
           />
           Visible
         </label>
-        <Button variant="outline" size="sm" onClick={onEdit}>
-          Edit
-        </Button>
-        <Button variant="destructive" size="sm" onClick={onDelete}>
-          Delete
-        </Button>
+        {canUpdate ? (
+          <Button variant="outline" size="sm" onClick={onEdit}>
+            Edit
+          </Button>
+        ) : null}
+        {canDelete ? (
+          <Button variant="destructive" size="sm" onClick={onDelete}>
+            Delete
+          </Button>
+        ) : null}
       </div>
     </div>
   );

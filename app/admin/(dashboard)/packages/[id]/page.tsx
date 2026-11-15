@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { packageRowToContentValues } from "@/lib/packages/package-content";
 import { PackageForm } from "@/components/admin/package-form";
@@ -46,7 +47,7 @@ export default async function EditPackagePage({
 }) {
   // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
   // second independent layer (T-02-18).
-  await requirePermissionOrRedirect("can_manage_packages");
+  const profile = await requireModuleOrRedirect("packages");
 
   const { id } = await params;
   const supabase = await createClient();
@@ -125,7 +126,9 @@ export default async function EditPackagePage({
           description={`${pkg.name} · ${pkg.slug}`}
         >
           <div className="flex flex-wrap items-center gap-3">
-            {isUnsavedDraft ? <PosterImportButton /> : null}
+            {isUnsavedDraft && can(profile, "packages", ["create", "update"]) ? (
+              <PosterImportButton />
+            ) : null}
             <Button
               variant="outline"
               size="lg"

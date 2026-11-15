@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 import { normalizePartnerLink } from "@/lib/partners/link";
@@ -52,7 +52,7 @@ export async function createPartner(
   partnerType: PartnerType,
   values: PartnerFormValues
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("partners", "create");
 
   const columns = toColumns(values);
   if (!isPartnerType(partnerType) || !columns) {
@@ -91,7 +91,7 @@ export async function updatePartner(
   id: string,
   values: PartnerFormValues
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("partners", "update");
 
   const columns = toColumns(values);
   if (!columns) {
@@ -119,7 +119,7 @@ export async function togglePartnerPublished(
   id: string,
   isPublished: boolean
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("partners", "update");
 
   if (typeof isPublished !== "boolean") {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
@@ -143,7 +143,7 @@ export async function togglePartnerPublished(
 }
 
 export async function deletePartner(id: string): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("partners", "delete");
 
   const supabase = await createClient();
 
@@ -164,7 +164,7 @@ export async function deletePartner(id: string): Promise<ActionResult> {
 export async function reorderPartners(
   order: { id: string; sortOrder: number }[]
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("partners", "update");
 
   const isValidOrder =
     Array.isArray(order) &&
