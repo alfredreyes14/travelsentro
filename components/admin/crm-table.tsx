@@ -251,6 +251,7 @@ function StageCell({ contact }: { contact: AdminContactListItem }) {
         progress={contact.followUp}
         clientType={contact.clientType}
         stage={contact.stage}
+        optedOut={contact.opted_out}
       />
       {contact.quoteSuggestedAt ? (
         <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-800">

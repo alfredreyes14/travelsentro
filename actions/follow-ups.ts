@@ -35,8 +35,8 @@ import { createClient } from "@/lib/supabase/server";
  * sequence (lib/follow-ups/templates.ts), so it counts toward the automatic
  * 4. A click moves the lead on (see the lead_follow_ups migration).
  *
- * Like other individual sends, an individual follow-up ignores opted_out;
- * bulk follow-ups skip opted-out contacts.
+ * Unlike other individual sends, follow-ups respect opted_out: a lead who
+ * unsubscribed gets no more follow-ups, individual or bulk.
  *
  * Bulk sends take `values: null` to give each contact their own next
  * follow-up message, so contacts at different steps never get a repeat;
@@ -44,6 +44,8 @@ import { createClient } from "@/lib/supabase/server";
  */
 
 const SEND_ERROR_MESSAGE = "Couldn't send the follow-up. Please try again.";
+const OPTED_OUT_MESSAGE =
+  "This lead unsubscribed, so follow-ups have stopped. You can still send a regular message.";
 const NO_ELIGIBLE_RECIPIENTS_MESSAGE =
   "No eligible contacts to follow up — all selected contacts are opted out or missing the required contact info.";
 
@@ -78,10 +80,11 @@ export async function sendFollowUpEmail(
   const supabase = await createClient();
   const { data: contact, error } = await supabase
     .from("contacts")
-    .select("id, name, email")
+    .select("id, name, email, opted_out")
     .eq("id", contactId)
     .single();
   if (error || !contact) return { ok: false, error: SEND_ERROR_MESSAGE };
+  if (contact.opted_out) return { ok: false, error: OPTED_OUT_MESSAGE };
   if (!contact.email?.trim()) {
     return { ok: false, error: "This contact has no email address on file." };
   }
@@ -184,10 +187,11 @@ export async function sendFollowUpText(
   const supabase = await createClient();
   const { data: contact, error } = await supabase
     .from("contacts")
-    .select("id, name, phone")
+    .select("id, name, phone, opted_out")
     .eq("id", contactId)
     .single();
   if (error || !contact) return { ok: false, error: SEND_ERROR_MESSAGE };
+  if (contact.opted_out) return { ok: false, error: OPTED_OUT_MESSAGE };
   if (!contact.phone) {
     return { ok: false, error: "This contact has no phone number on file." };
   }

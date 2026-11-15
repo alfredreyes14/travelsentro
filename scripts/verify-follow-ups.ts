@@ -163,6 +163,9 @@ check("4 sent at New", followUpBadge(progress(4), "b2c", "new")?.label, "All 4 f
 check("clicked", followUpBadge(progress(1, true), "b2c", "new")?.label, "Clicked to chat");
 check("manual at Inquiry", followUpBadge(progress(1), "b2c", "inquiry")?.label, "1 follow-up sent");
 check("manual for B2B", followUpBadge(progress(3), "b2b", "contacted")?.label, "3 follow-ups sent");
+check("unsubscribed mid-sequence", followUpBadge(progress(2), "b2c", "new", true)?.label, "Unsubscribed");
+check("unsubscribed before any", followUpBadge(progress(0), "b2c", "quotation", true)?.label, "Unsubscribed");
+check("unsubscribed, never followed up, not automatic", followUpBadge(progress(0), "b2b", "won", true), null);
 
 let allPass = true;
 for (const r of results) {

@@ -16,12 +16,14 @@ export function FollowUpBadge({
   progress,
   clientType,
   stage,
+  optedOut = false,
 }: {
   progress: FollowUpProgress | undefined;
   clientType: string;
   stage: string;
+  optedOut?: boolean;
 }) {
-  const badge = followUpBadge(progress, clientType, stage);
+  const badge = followUpBadge(progress, clientType, stage, optedOut);
   if (!badge) return null;
 
   return (

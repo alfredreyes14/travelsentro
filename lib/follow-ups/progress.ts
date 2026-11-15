@@ -45,8 +45,18 @@ export function isAutomaticSequence(clientType: string, stage: string): boolean 
 export function followUpBadge(
   progress: FollowUpProgress | undefined,
   clientType: string,
-  stage: string
+  stage: string,
+  optedOut = false
 ): FollowUpBadge | null {
+  // Unsubscribing stops every follow-up, automatic or by staff.
+  if (optedOut && ((progress?.sentCount ?? 0) > 0 || isAutomaticSequence(clientType, stage))) {
+    return {
+      label: "Unsubscribed",
+      tone: "done",
+      detail: "This lead unsubscribed, so follow-ups have stopped.",
+    };
+  }
+
   if (!progress || progress.sentCount === 0) return null;
   const sequence = FOLLOW_UP_SEQUENCE_LABELS[progress.sequence];
 
