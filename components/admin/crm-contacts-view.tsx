@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MessageCircleIcon, PlusIcon, SearchIcon } from "lucide-react";
+import { HistoryIcon, MessageCircleIcon, PlusIcon, SearchIcon } from "lucide-react";
 import type { RowSelectionState } from "@tanstack/react-table";
 
 import { ContactAddDialog } from "./contact-add-dialog";
@@ -25,23 +25,22 @@ import {
   CLIENT_TYPES,
   CLIENT_TYPE_LABELS,
   STAGES_BY_TYPE,
-  STAGE_CHIP_CLASSNAME,
   STAGE_LABELS,
   type ClientType,
   type ContactStage,
 } from "@/lib/crm/stage";
-import { cn } from "@/lib/utils";
 
 const TAG_FILTER_ALL = "__all__";
+const STAGE_FILTER_ALL = "__all__";
 
 const EMPTY_COPY: Record<ClientType, { title: string; body: string }> = {
   b2c: {
-    title: "No B2C contacts yet",
-    body: "Contacts appear here as soon as someone submits an inquiry on the public site, or when you add one.",
+    title: "No B2C leads yet",
+    body: "Leads appear here as soon as someone submits an inquiry on the public site or a Facebook lead ad, or when you add one.",
   },
   b2b: {
     title: "No B2B clients yet",
-    body: "Add a company you work with, or convert an existing contact to B2B from its page.",
+    body: "Add a company you work with, or convert an existing lead to B2B from its page.",
   },
 };
 
@@ -57,9 +56,9 @@ function matchesSearch(contact: AdminContactListItem, query: string): boolean {
 }
 
 /**
- * The main Contacts page: B2C / B2B tabs, a row of stage chips that both
- * shows how many contacts sit in each stage and filters the table, search,
- * a tag filter, and bulk messaging.
+ * The main Leads page: B2C / B2B tabs, a stage dropdown (with how many
+ * leads sit in each stage), search, a tag filter, a paginated table, and
+ * bulk messaging.
  */
 export function CrmContactsView({
   contacts,
@@ -75,7 +74,9 @@ export function CrmContactsView({
 }) {
   const router = useRouter();
   const [type, setType] = useState<ClientType>(initialType);
-  const [stageFilter, setStageFilter] = useState<ContactStage | null>(null);
+  const [stageFilter, setStageFilter] = useState<ContactStage | typeof STAGE_FILTER_ALL>(
+    STAGE_FILTER_ALL
+  );
   const [search, setSearch] = useState("");
   const [tagFilter, setTagFilter] = useState(TAG_FILTER_ALL);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -122,7 +123,7 @@ export function CrmContactsView({
     () =>
       tabContacts.filter(
         (contact) =>
-          (stageFilter === null || contact.stage === stageFilter) &&
+          (stageFilter === STAGE_FILTER_ALL || contact.stage === stageFilter) &&
           (tagFilter === TAG_FILTER_ALL || contact.tags.includes(tagFilter)) &&
           matchesSearch(contact, query)
       ),
@@ -131,11 +132,11 @@ export function CrmContactsView({
 
   const selected = tabContacts.filter((contact) => rowSelection[contact.id]);
   const isFiltered =
-    stageFilter !== null || tagFilter !== TAG_FILTER_ALL || query !== "";
+    stageFilter !== STAGE_FILTER_ALL || tagFilter !== TAG_FILTER_ALL || query !== "";
 
   function handleTypeChange(next: ClientType) {
     setType(next);
-    setStageFilter(null);
+    setStageFilter(STAGE_FILTER_ALL);
     setTagFilter(TAG_FILTER_ALL);
     setRowSelection({});
     // Keeps the tab across a refresh or a shared link without a server
@@ -144,10 +145,20 @@ export function CrmContactsView({
   }
 
   function handleClearFilters() {
-    setStageFilter(null);
+    setStageFilter(STAGE_FILTER_ALL);
     setTagFilter(TAG_FILTER_ALL);
     setSearch("");
   }
+
+  const stageFilterItems: Record<string, string> = {
+    [STAGE_FILTER_ALL]: `All stages (${tabContacts.length})`,
+    ...Object.fromEntries(
+      STAGES_BY_TYPE[type].map((stage) => [
+        stage,
+        `${STAGE_LABELS[stage]} (${stageCounts.get(stage) ?? 0})`,
+      ])
+    ),
+  };
 
   const tagFilterItems = {
     [TAG_FILTER_ALL]: "All tags",
@@ -158,21 +169,35 @@ export function CrmContactsView({
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="font-heading text-[28px] leading-[1.2] font-semibold">
-          Contacts
+          Leads
         </h1>
-        {canEdit ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <MetaLeadSyncButton enabled={metaLeadSyncEnabled} />
-            <Button variant="outline" nativeButton={false} render={<Link href="/admin/crm/messenger" />}>
-              <MessageCircleIcon className="size-4" />
-              Messenger settings
-            </Button>
-            <Button onClick={() => setIsAddOpen(true)}>
-              <PlusIcon className="size-4" />
-              Add Contact
-            </Button>
-          </div>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="ghost"
+            nativeButton={false}
+            render={<Link href="/admin/crm/sync-log" />}
+          >
+            <HistoryIcon className="size-4" />
+            Sync log
+          </Button>
+          <Button
+            variant="ghost"
+            nativeButton={false}
+            render={<Link href="/admin/crm/messenger" />}
+          >
+            <MessageCircleIcon className="size-4" />
+            Messenger settings
+          </Button>
+          {canEdit ? (
+            <>
+              <MetaLeadSyncButton enabled={metaLeadSyncEnabled} />
+              <Button onClick={() => setIsAddOpen(true)}>
+                <PlusIcon className="size-4" />
+                Add Lead
+              </Button>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <Tabs
@@ -192,45 +217,6 @@ export function CrmContactsView({
         </TabsList>
 
         <TabsContent value={type} className="flex flex-col gap-4">
-          <div className="flex flex-wrap gap-2" aria-label="Filter by stage">
-            <button
-              type="button"
-              aria-pressed={stageFilter === null}
-              onClick={() => setStageFilter(null)}
-              className={cn(
-                "inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-medium transition",
-                stageFilter === null
-                  ? "bg-foreground text-background"
-                  : "bg-background hover:bg-muted"
-              )}
-            >
-              All
-              <span>{tabContacts.length}</span>
-            </button>
-            {STAGES_BY_TYPE[type].map((stage) => (
-              <button
-                key={stage}
-                type="button"
-                aria-pressed={stageFilter === stage}
-                onClick={() =>
-                  setStageFilter(stageFilter === stage ? null : stage)
-                }
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition",
-                  STAGE_CHIP_CLASSNAME[stage],
-                  stageFilter === stage
-                    ? "ring-2 ring-foreground/40 ring-offset-1"
-                    : stageFilter === null
-                      ? "hover:brightness-95"
-                      : "opacity-50 hover:opacity-100"
-                )}
-              >
-                {STAGE_LABELS[stage]}
-                <span>{stageCounts.get(stage) ?? 0}</span>
-              </button>
-            ))}
-          </div>
-
           <DataTableToolbar>
             <div className="relative flex-1">
               <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -246,11 +232,32 @@ export function CrmContactsView({
               />
             </div>
             <Select
+              items={stageFilterItems}
+              value={stageFilter}
+              onValueChange={(value) =>
+                setStageFilter(value as ContactStage | typeof STAGE_FILTER_ALL)
+              }
+            >
+              <SelectTrigger className="w-full sm:w-52" aria-label="Filter by stage">
+                <SelectValue placeholder="All stages" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={STAGE_FILTER_ALL}>
+                  {stageFilterItems[STAGE_FILTER_ALL]}
+                </SelectItem>
+                {STAGES_BY_TYPE[type].map((stage) => (
+                  <SelectItem key={stage} value={stage}>
+                    {stageFilterItems[stage]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
               items={tagFilterItems}
               value={tagFilter}
               onValueChange={(value) => setTagFilter(value as string)}
             >
-              <SelectTrigger className="w-full sm:w-48">
+              <SelectTrigger className="w-full sm:w-48" aria-label="Filter by tag">
                 <SelectValue placeholder="All tags" />
               </SelectTrigger>
               <SelectContent>
@@ -292,14 +299,14 @@ export function CrmContactsView({
               </p>
               {canEdit ? (
                 <Button variant="secondary" onClick={() => setIsAddOpen(true)}>
-                  Add Contact
+                  Add Lead
                 </Button>
               ) : null}
             </div>
           ) : visible.length === 0 ? (
             <div className="flex flex-col items-start gap-3 rounded-xl bg-card p-8 ring-1 ring-foreground/10">
               <h2 className="font-heading text-[20px] leading-[1.2] font-semibold">
-                No contacts match your filters
+                No leads match your filters
               </h2>
               <p className="text-base leading-[1.5] text-muted-foreground">
                 Try a different stage, tag or search.

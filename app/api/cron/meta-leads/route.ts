@@ -28,11 +28,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await runMetaLeadSync();
+    const result = await runMetaLeadSync({ kind: "cron" });
     // New Meta leads queue their first Conversions API event; send them.
     await flushMetaOutbox().catch((err) => console.error("Meta stage sync failed", err));
-    return Response.json(result, { status: result.failed > 0 ? 500 : 200 });
+    return Response.json(result, { status: result.status === "success" ? 200 : 500 });
   } catch (err) {
+    // Already recorded in the sync log (meta_lead_sync_runs) when it got that far.
     console.error("Meta lead sync failed", err);
     return Response.json({ error: "Sync failed" }, { status: 500 });
   }

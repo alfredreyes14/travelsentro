@@ -13,6 +13,7 @@ import {
 } from "@/components/admin/contact-messenger-link";
 import type {
   CrmDetailClosure,
+  CrmDetailContactLog,
   CrmDetailInquiry,
   CrmDetailMessage,
 } from "@/components/admin/contact-activity";
@@ -20,6 +21,7 @@ import {
   contactRowToFormValues,
   parseLabeledList,
 } from "@/lib/crm/contact-schema";
+import { CONTACT_LOG_CHANNEL_LABELS, toContactLogChannel } from "@/lib/crm/contact-logs";
 import type { MessageChannel, MessageStatus } from "@/lib/crm/messages";
 import { toMetaLeadSourceDetails } from "@/lib/crm/inquiry-source";
 import { toServiceKeys } from "@/lib/crm/services";
@@ -34,13 +36,14 @@ import {
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
-  title: "Contact | TravelSentro Admin",
+  title: "Lead | TravelSentro Admin",
 };
 
 type ContactRow = Database["public"]["Tables"]["contacts"]["Row"];
 type InquiryRow = Database["public"]["Tables"]["inquiries"]["Row"];
 type PackageRow = Database["public"]["Tables"]["packages"]["Row"];
 type MessageRow = Database["public"]["Tables"]["messages"]["Row"];
+type ContactLogRow = Database["public"]["Tables"]["contact_logs"]["Row"];
 
 type ContactDetail = ContactRow & {
   inquiries: (InquiryRow & {
@@ -68,6 +71,10 @@ type ContactDetail = ContactRow & {
     follow_ups_sent: number;
     created_at: string;
   }[];
+  contact_logs: Pick<
+    ContactLogRow,
+    "id" | "channel" | "note" | "contacted_at" | "logged_by_name"
+  >[];
 };
 
 /**
@@ -90,11 +97,12 @@ export default async function CrmContactPage({
     supabase
       .from("contacts")
       .select(
-        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name, kind, follow_up_sequence, follow_up_step, click_count, message_clicks(target, created_at)), follow_up_closures(id, sequence, follow_ups_sent, created_at)"
+        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name, kind, follow_up_sequence, follow_up_step, click_count, message_clicks(target, created_at)), follow_up_closures(id, sequence, follow_ups_sent, created_at), contact_logs(id, channel, note, contacted_at, logged_by_name)"
       )
       .eq("id", id)
       .order("created_at", { referencedTable: "inquiries", ascending: false })
       .order("created_at", { referencedTable: "messages", ascending: false })
+      .order("contacted_at", { referencedTable: "contact_logs", ascending: false })
       .single(),
     supabase.rpc("list_contact_tags"),
     supabase
@@ -235,6 +243,26 @@ export default async function CrmContactPage({
   const latestPackageName =
     contact.inquiries.find((inquiry) => inquiry.packages)?.packages?.name ?? null;
 
+  const detailContactLogs: CrmDetailContactLog[] = contact.contact_logs.map((log) => ({
+    id: log.id,
+    channel: toContactLogChannel(log.channel),
+    note: log.note,
+    created_at: log.contacted_at,
+    logged_by_name: log.logged_by_name,
+  }));
+
+  // Same rule as the contact_last_activity view: a sent email/SMS or a
+  // logged contact, whichever is latest. Both lists are newest first.
+  const lastSent = detailMessages.find((m) => m.status === "sent");
+  const lastLog = detailContactLogs[0];
+  const lastContact =
+    lastSent &&
+    (!lastLog || new Date(lastSent.created_at).getTime() > new Date(lastLog.created_at).getTime())
+      ? { at: lastSent.created_at, via: lastSent.channel === "email" ? "email" : "SMS" }
+      : lastLog
+        ? { at: lastLog.created_at, via: CONTACT_LOG_CHANNEL_LABELS[lastLog.channel] }
+        : null;
+
   // Quotes are readable only with can_manage_quotes (RLS), so the card is
   // not rendered at all for anyone else. B2C only, per the spec.
   const canManageQuotes = profile.role === "admin" || profile.can_manage_quotes;
@@ -285,7 +313,7 @@ export default async function CrmContactPage({
     const [linkedResult, unlinkedResult] = await Promise.all([
       supabase
         .from("statements")
-        .select("id, soa_no, kind, original_no, issue_date, total_amount, balance")
+        .select("id, soa_no, kind, original_no, issue_date, total_amount, balance, next_due_date")
         .eq("contact_id", id)
         .order("issue_date", { ascending: false }),
       supabase
@@ -312,6 +340,7 @@ export default async function CrmContactPage({
           issueDate: soa.issue_date,
           total: Number(soa.total_amount),
           balance: Number(soa.balance),
+          nextDueDate: soa.next_due_date,
         }))}
         unlinkedStatements={(unlinkedResult.data ?? []).map((soa) => ({
           id: soa.id,
@@ -361,6 +390,8 @@ export default async function CrmContactPage({
       followUpProgress={followUpProgress}
       closures={closures}
       messengerSlot={messengerSlot}
+      contactLogs={detailContactLogs}
+      lastContact={lastContact}
       canEdit={canEdit}
       quotesSlot={quotesSlot}
       documentsSlot={documentsSlot}

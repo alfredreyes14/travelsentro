@@ -92,6 +92,54 @@ export type Database = {
           },
         ];
       };
+      contact_logs: {
+        Row: {
+          channel: string;
+          contact_id: string;
+          contacted_at: string;
+          created_at: string;
+          id: string;
+          logged_by: string | null;
+          logged_by_name: string | null;
+          note: string | null;
+        };
+        Insert: {
+          channel: string;
+          contact_id: string;
+          contacted_at?: string;
+          created_at?: string;
+          id?: string;
+          logged_by?: string | null;
+          logged_by_name?: string | null;
+          note?: string | null;
+        };
+        Update: {
+          channel?: string;
+          contact_id?: string;
+          contacted_at?: string;
+          created_at?: string;
+          id?: string;
+          logged_by?: string | null;
+          logged_by_name?: string | null;
+          note?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "contact_logs_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "contact_logs_logged_by_fkey";
+            columns: ["logged_by"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       contacts: {
         Row: {
           client_type: string;
@@ -583,6 +631,66 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      meta_lead_sync_runs: {
+        Row: {
+          added: number;
+          error: string | null;
+          error_detail: string | null;
+          existing: number;
+          failed: number;
+          finished_at: string | null;
+          forms: number | null;
+          id: string;
+          lead_errors: Json;
+          lookback_days: number | null;
+          no_contact: number;
+          pulled: number;
+          started_at: string;
+          status: string;
+          trigger: string;
+          triggered_by: string | null;
+          triggered_by_name: string | null;
+        };
+        Insert: {
+          added?: number;
+          error?: string | null;
+          error_detail?: string | null;
+          existing?: number;
+          failed?: number;
+          finished_at?: string | null;
+          forms?: number | null;
+          id?: string;
+          lead_errors?: Json;
+          lookback_days?: number | null;
+          no_contact?: number;
+          pulled?: number;
+          started_at?: string;
+          status?: string;
+          trigger: string;
+          triggered_by?: string | null;
+          triggered_by_name?: string | null;
+        };
+        Update: {
+          added?: number;
+          error?: string | null;
+          error_detail?: string | null;
+          existing?: number;
+          failed?: number;
+          finished_at?: string | null;
+          forms?: number | null;
+          id?: string;
+          lead_errors?: Json;
+          lookback_days?: number | null;
+          no_contact?: number;
+          pulled?: number;
+          started_at?: string;
+          status?: string;
+          trigger?: string;
+          triggered_by?: string | null;
+          triggered_by_name?: string | null;
+        };
+        Relationships: [];
       };
       package_inclusions: {
         Row: {
@@ -1099,13 +1207,15 @@ export type Database = {
           file_size_bytes: number | null;
           file_storage_key: string | null;
           id: string;
+          installments: NonNullable<Json>;
           issue_date: string;
           kind: string;
           line_items: NonNullable<Json>;
-          notes: string | null;
+          next_due_date: string | null;
           original_no: string | null;
           payments: NonNullable<Json>;
-          reference: string | null;
+          quote_id: string | null;
+          remarks: string | null;
           soa_no: string;
           total_amount: number;
           updated_at: string;
@@ -1125,13 +1235,15 @@ export type Database = {
           file_size_bytes?: number | null;
           file_storage_key?: string | null;
           id?: string;
+          installments?: NonNullable<Json>;
           issue_date?: string;
           kind?: string;
           line_items?: NonNullable<Json>;
-          notes?: string | null;
+          next_due_date?: string | null;
           original_no?: string | null;
           payments?: NonNullable<Json>;
-          reference?: string | null;
+          quote_id?: string | null;
+          remarks?: string | null;
           soa_no?: string;
           total_amount?: number;
           updated_at?: string;
@@ -1151,13 +1263,15 @@ export type Database = {
           file_size_bytes?: number | null;
           file_storage_key?: string | null;
           id?: string;
+          installments?: NonNullable<Json>;
           issue_date?: string;
           kind?: string;
           line_items?: NonNullable<Json>;
-          notes?: string | null;
+          next_due_date?: string | null;
           original_no?: string | null;
           payments?: NonNullable<Json>;
-          reference?: string | null;
+          quote_id?: string | null;
+          remarks?: string | null;
           soa_no?: string;
           total_amount?: number;
           updated_at?: string;
@@ -1175,6 +1289,13 @@ export type Database = {
             columns: ["created_by"];
             isOneToOne: false;
             referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "statements_quote_id_fkey";
+            columns: ["quote_id"];
+            isOneToOne: false;
+            referencedRelation: "quotes";
             referencedColumns: ["id"];
           },
         ];
@@ -1384,6 +1505,14 @@ export type Database = {
       };
     };
     Views: {
+      contact_last_activity: {
+        Row: {
+          contact_id: string | null;
+          last_contacted_at: string | null;
+          last_inquiry_at: string | null;
+        };
+        Relationships: [];
+      };
       follow_up_progress: {
         Row: {
           clicked: boolean;

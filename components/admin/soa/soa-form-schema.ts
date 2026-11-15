@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { computeSoaTotals, sumCents } from "@/lib/soa/totals";
+
 /** Whole centavos only -- 1234.5 and 1234.56 pass, 1234.567 doesn't. */
 function hasAtMostTwoDecimals(value: number): boolean {
   return Math.abs(Math.round(value * 100) - value * 100) < 1e-6;
@@ -44,6 +46,12 @@ export const soaDiscountSchema = z
 
 export const soaPaymentSchema = z.object({
   date: isoDate,
+  amount: money.positive("Must be more than 0"),
+});
+
+/** One planned payment in an installment schedule. */
+export const soaInstallmentSchema = z.object({
+  dueDate: isoDate,
   label: z.string().optional(),
   amount: money.positive("Must be more than 0"),
 });
@@ -55,10 +63,10 @@ const soaHeaderShape = {
   billToName: z.string().trim().min(1, "Please enter who this is billed to"),
   billToDetails: z.string().optional(),
   contactId: z.string().optional(),
-  reference: z.string().optional(),
+  quoteId: z.string().optional(),
   issueDate: isoDate,
   dueDate: z.union([isoDate, z.literal("")]).optional(),
-  notes: z.string().optional(),
+  remarks: z.string().optional(),
 };
 
 const dueAfterIssue = {
@@ -77,8 +85,23 @@ export const soaFormSchema = z
     lineItems: z.array(soaLineItemSchema).min(1, "Add at least one line item"),
     discounts: z.array(soaDiscountSchema),
     payments: z.array(soaPaymentSchema),
+    installments: z.array(soaInstallmentSchema),
   })
-  .refine(dueAfterIssue.check, dueAfterIssue.params);
+  .refine(dueAfterIssue.check, dueAfterIssue.params)
+  .superRefine((values, ctx) => {
+    // A schedule must add up to exactly what's billed, so "next due" and
+    // the printed schedule never disagree with the total.
+    if (values.installments.length === 0) return;
+    const scheduledCents = sumCents(values.installments.map((i) => i.amount));
+    const totalCents = Math.round(computeSoaTotals(values).total * 100);
+    if (scheduledCents !== totalCents) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["installments"],
+        message: "The installments must add up to the total amount.",
+      });
+    }
+  });
 
 /** An SOA issued before this system: amounts are typed in, not computed. */
 export const previousSoaFormSchema = z
@@ -93,6 +116,7 @@ export const previousSoaFormSchema = z
 export type SoaLineItem = z.infer<typeof soaLineItemSchema>;
 export type SoaDiscount = z.infer<typeof soaDiscountSchema>;
 export type SoaPayment = z.infer<typeof soaPaymentSchema>;
+export type SoaInstallment = z.infer<typeof soaInstallmentSchema>;
 export type SoaFormValues = z.infer<typeof soaFormSchema>;
 export type PreviousSoaFormValues = z.infer<typeof previousSoaFormSchema>;
 
@@ -109,13 +133,15 @@ export function emptySoaValues(): SoaFormValues {
     billToName: "",
     billToDetails: "",
     contactId: "",
-    reference: "",
+    quoteId: "",
     issueDate: todayInManila(),
     dueDate: "",
-    lineItems: [{ description: "", quantity: 1, unitPrice: 0 }],
+    // Blank, not 0, so there's nothing to delete before typing a price.
+    lineItems: [{ description: "", quantity: 1, unitPrice: undefined as unknown as number }],
     discounts: [],
     payments: [],
-    notes: "",
+    installments: [],
+    remarks: "",
   };
 }
 
@@ -124,10 +150,10 @@ export function emptyPreviousSoaValues(): PreviousSoaFormValues {
     billToName: "",
     billToDetails: "",
     contactId: "",
-    reference: "",
+    quoteId: "",
     issueDate: todayInManila(),
     dueDate: "",
-    notes: "",
+    remarks: "",
     originalNo: "",
     totalAmount: undefined as unknown as number,
     amountPaid: 0,

@@ -21,7 +21,7 @@ export default async function AdminSoaPage() {
   const { data, error } = await supabase
     .from("statements")
     .select(
-      "id, soa_no, kind, original_no, bill_to_name, issue_date, total_amount, amount_paid, balance, contacts(id, name, client_type)"
+      "id, soa_no, kind, original_no, bill_to_name, issue_date, total_amount, amount_paid, balance, next_due_date, contacts(id, name, client_type)"
     )
     .order("issue_date", { ascending: false })
     .order("soa_no", { ascending: false });
@@ -40,6 +40,7 @@ export default async function AdminSoaPage() {
     total_amount: number;
     amount_paid: number;
     balance: number;
+    next_due_date: string | null;
     contacts: { id: string; name: string; client_type: string } | null;
   }>;
 
@@ -56,6 +57,7 @@ export default async function AdminSoaPage() {
     total: Number(row.total_amount),
     paid: Number(row.amount_paid),
     balance: Number(row.balance),
+    nextDueDate: row.next_due_date,
   }));
 
   const billed = statements.reduce((sum, s) => sum + s.total, 0);

@@ -350,8 +350,8 @@ revoke select on public.follow_up_progress from anon;
 -- entering the stage, for step 1). Half a day of slack lets a once-a-day
 -- run catch contacts that arrived later in the day.
 -- p_max_lead_age_days only limits who STARTS a sequence; a contact already
--- in one finishes it. Skips contacts staff messaged in the last day, and
--- gives up after 3 failed sends. Newest first.
+-- in one finishes it. Skips contacts staff messaged or logged contact with
+-- in the last day, and gives up after 3 failed sends. Newest first.
 -- ============================================================================
 create function public.list_due_follow_ups(
   p_gap_days integer[],
@@ -408,6 +408,12 @@ as $$
       select 1 from messages m
       where m.contact_id = c.id
         and m.created_at > now() - interval '1 day'
+    )
+    -- ...or logged a call/chat with (contact_logs).
+    and not exists (
+      select 1 from contact_logs l
+      where l.contact_id = c.id
+        and l.contacted_at > now() - interval '1 day'
     )
   order by c.stage_changed_at desc
   limit p_limit;

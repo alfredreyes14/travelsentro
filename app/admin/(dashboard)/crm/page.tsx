@@ -10,7 +10,7 @@ import { isMetaLeadSyncEnabled } from "@/lib/meta-leads/run-sync";
 import { toFollowUpProgress } from "@/lib/follow-ups/progress";
 
 export const metadata: Metadata = {
-  title: "Contacts | TravelSentro Admin",
+  title: "Leads | TravelSentro Admin",
 };
 
 // Covers the "Sync Meta leads" Server Action (same limit as the cron route).
@@ -29,33 +29,45 @@ export default async function AdminCrmPage({
 
   const supabase = await createClient();
 
-  const [{ data: contacts, error }, { data: progressRows, error: progressError }] =
-    await Promise.all([
-      supabase
-        .from("contacts")
-        .select(
-          "id, name, email, phone, client_type, stage, tags, opted_out, services_availed, services_other, rep_name, contract_end, created_at"
-        )
-        .order("created_at", { ascending: false }),
-      // Only contacts that got a follow-up in their current stage have a badge.
-      supabase
-        .from("follow_up_progress")
-        .select("contact_id, sequence, sent_count, clicked")
-        .gt("sent_count", 0),
-    ]);
+  const [contactsResult, activityResult, progressResult] = await Promise.all([
+    supabase
+      .from("contacts")
+      .select(
+        "id, name, email, phone, client_type, stage, tags, opted_out, services_availed, services_other, rep_name, contract_end, created_at"
+      )
+      .order("created_at", { ascending: false }),
+    // Latest inquiry and latest contact per lead (a view; see
+    // 20261115120000_lead_contact_tracking.sql).
+    supabase
+      .from("contact_last_activity")
+      .select("contact_id, last_inquiry_at, last_contacted_at"),
+    // Only contacts that got a follow-up in their current stage have a badge.
+    supabase
+      .from("follow_up_progress")
+      .select("contact_id, sequence, sent_count, clicked")
+      .gt("sent_count", 0),
+  ]);
+  const { data: contacts, error } = contactsResult;
 
   if (error) {
     console.error("Failed to load contacts:", error.message);
   }
-  if (progressError) {
-    console.error("Failed to load follow-up progress:", progressError.message);
+  if (activityResult.error) {
+    console.error("Failed to load lead activity dates:", activityResult.error.message);
+  }
+  if (progressResult.error) {
+    console.error("Failed to load follow-up progress:", progressResult.error.message);
   }
   const progressById = new Map(
-    (progressRows ?? []).map((row) => [row.contact_id, toFollowUpProgress(row)])
+    (progressResult.data ?? []).map((row) => [row.contact_id, toFollowUpProgress(row)])
+  );
+  const activityById = new Map(
+    (activityResult.data ?? []).map((row) => [row.contact_id, row])
   );
 
   const items: AdminContactListItem[] = (contacts ?? []).map((contact) => {
     const clientType = toClientType(contact.client_type);
+    const activity = activityById.get(contact.id);
     return {
       id: contact.id,
       name: contact.name,
@@ -71,6 +83,8 @@ export default async function AdminCrmPage({
       repName: contact.rep_name,
       contractEnd: contact.contract_end,
       createdAt: contact.created_at,
+      lastInquiryAt: activity?.last_inquiry_at ?? null,
+      lastContactedAt: activity?.last_contacted_at ?? null,
     };
   });
 

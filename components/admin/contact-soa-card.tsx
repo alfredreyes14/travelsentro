@@ -6,7 +6,7 @@ import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 
 import { linkSoaToContact, unlinkSoaFromContact } from "@/actions/soa";
-import { BalanceCell } from "@/components/admin/soa/soa-table";
+import { BalanceCell, NextDueCell } from "@/components/admin/soa/soa-table";
 import { formatPeso } from "@/lib/soa/totals";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ export type ContactSoa = {
   issueDate: string;
   total: number;
   balance: number;
+  nextDueDate: string | null;
 };
 
 export type UnlinkedSoa = {
@@ -146,6 +147,11 @@ export function ContactSoaCard({
                   <span className="tabular-nums">
                     <BalanceCell balance={soa.balance} />
                   </span>
+                  {soa.nextDueDate ? (
+                    <span className="text-muted-foreground">
+                      Next due <NextDueCell date={soa.nextDueDate} />
+                    </span>
+                  ) : null}
                   <Button
                     variant="ghost"
                     size="sm"

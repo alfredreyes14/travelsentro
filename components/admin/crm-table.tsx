@@ -3,15 +3,23 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
-import { ArrowDownIcon, ArrowUpDownIcon, ArrowUpIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowUpDownIcon,
+  ArrowUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   flexRender,
   type Column,
   type ColumnDef,
   type OnChangeFn,
+  type PaginationState,
   type RowSelectionState,
   type SortingState,
 } from "@tanstack/react-table";
@@ -20,8 +28,16 @@ import { ContactStageChip } from "./contact-stage-chip";
 import { FollowUpBadge } from "./follow-up-badge";
 import { ContractEndChip } from "./contract-end-chip";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -36,8 +52,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { SERVICE_LABELS, type ServiceKey } from "@/lib/crm/services";
-import type { ClientType, ContactStage } from "@/lib/crm/stage";
+import { STAGES_BY_TYPE, type ClientType, type ContactStage } from "@/lib/crm/stage";
 import type { FollowUpProgress } from "@/lib/follow-ups/progress";
+
+const PAGE_SIZES = [10, 25, 50, 100] as const;
+const DEFAULT_PAGE_SIZE = 25;
 
 export type AdminContactListItem = {
   id: string;
@@ -54,6 +73,10 @@ export type AdminContactListItem = {
   repName: string | null;
   contractEnd: string | null;
   createdAt: string;
+  /** Latest inquiry (website form or Meta lead ad); null if none. */
+  lastInquiryAt: string | null;
+  /** Latest email/SMS sent or contact logged by staff; null if never. */
+  lastContactedAt: string | null;
 };
 
 function SortableHeader({
@@ -148,6 +171,76 @@ const selectColumn: ColumnDef<AdminContactListItem> = {
   ),
 };
 
+const dateFormat = new Intl.DateTimeFormat("en-PH", {
+  timeZone: "Asia/Manila",
+  dateStyle: "medium",
+});
+const dateTimeFormat = new Intl.DateTimeFormat("en-PH", {
+  timeZone: "Asia/Manila",
+  dateStyle: "medium",
+  timeStyle: "short",
+});
+
+/** Sort key and display date: the latest inquiry, else when the lead was added. */
+function inquiryDate(contact: AdminContactListItem): string {
+  return contact.lastInquiryAt ?? contact.createdAt;
+}
+
+export const DEFAULT_SORTING: SortingState = [{ id: "inquiryDate", desc: true }];
+
+// Phones get no table headers to click, so sorting is a dropdown there.
+const MOBILE_SORTS = {
+  inquiry_desc: { id: "inquiryDate", desc: true },
+  inquiry_asc: { id: "inquiryDate", desc: false },
+  contact_desc: { id: "lastContact", desc: true },
+  contact_asc: { id: "lastContact", desc: false },
+  name_asc: { id: "name", desc: false },
+} as const;
+type MobileSortKey = keyof typeof MOBILE_SORTS;
+const MOBILE_SORT_LABELS: Record<MobileSortKey, string> = {
+  inquiry_desc: "Latest inquiry first",
+  inquiry_asc: "Oldest inquiry first",
+  contact_desc: "Most recently contacted",
+  contact_asc: "Least recently contacted",
+  name_asc: "Name A–Z",
+};
+
+function mobileSortValue(sorting: SortingState): MobileSortKey | null {
+  const current = sorting[0];
+  if (!current) return null;
+  const match = (Object.keys(MOBILE_SORTS) as MobileSortKey[]).find(
+    (key) => MOBILE_SORTS[key].id === current.id && MOBILE_SORTS[key].desc === current.desc
+  );
+  return match ?? null;
+}
+
+function InquiryDate({ contact }: { contact: AdminContactListItem }) {
+  const date = new Date(inquiryDate(contact));
+  return (
+    <div className="flex flex-col" title={dateTimeFormat.format(date)}>
+      <span>{dateFormat.format(date)}</span>
+      {contact.lastInquiryAt ? null : (
+        <span className="text-xs text-muted-foreground">Added, no inquiry</span>
+      )}
+    </div>
+  );
+}
+
+function LastContact({ contact }: { contact: AdminContactListItem }) {
+  if (!contact.lastContactedAt) {
+    return <span className="text-muted-foreground">Never</span>;
+  }
+  const date = new Date(contact.lastContactedAt);
+  return (
+    <div className="flex flex-col" title={dateTimeFormat.format(date)}>
+      <span>{dateFormat.format(date)}</span>
+      <span className="text-xs text-muted-foreground">
+        {formatDistanceToNow(date, { addSuffix: true })}
+      </span>
+    </div>
+  );
+}
+
 function StageCell({ contact }: { contact: AdminContactListItem }) {
   return (
     <div className="flex flex-col items-start gap-1">
@@ -163,26 +256,38 @@ function StageCell({ contact }: { contact: AdminContactListItem }) {
 
 const stageColumn: ColumnDef<AdminContactListItem> = {
   accessorKey: "stage",
-  header: "Stage",
+  header: ({ column }) => <SortableHeader label="Stage" column={column} />,
+  // Pipeline order (New first), not alphabetical.
+  sortingFn: (a, b) => {
+    const order = STAGES_BY_TYPE[a.original.clientType];
+    return order.indexOf(a.original.stage) - order.indexOf(b.original.stage);
+  },
   cell: ({ row }) => <StageCell contact={row.original} />,
+};
+
+const inquiryDateColumn: ColumnDef<AdminContactListItem> = {
+  id: "inquiryDate",
+  accessorFn: inquiryDate,
+  sortDescFirst: true,
+  header: ({ column }) => <SortableHeader label="Inquiry date" column={column} />,
+  cell: ({ row }) => <InquiryDate contact={row.original} />,
+};
+
+const lastContactColumn: ColumnDef<AdminContactListItem> = {
+  id: "lastContact",
+  // undefined (not null) so sortUndefined applies: never contacted counts as
+  // the oldest contact -- last when newest-first, first when oldest-first.
+  accessorFn: (contact) => contact.lastContactedAt ?? undefined,
+  sortUndefined: -1,
+  sortDescFirst: true,
+  header: ({ column }) => <SortableHeader label="Last contact" column={column} />,
+  cell: ({ row }) => <LastContact contact={row.original} />,
 };
 
 const tagsColumn: ColumnDef<AdminContactListItem> = {
   id: "tags",
   header: "Tags",
   cell: ({ row }) => <TagList contact={row.original} />,
-};
-
-const createdColumn: ColumnDef<AdminContactListItem> = {
-  accessorKey: "createdAt",
-  header: ({ column }) => <SortableHeader label="Created" column={column} />,
-  cell: ({ row }) => (
-    <span title={new Date(row.original.createdAt).toLocaleString()}>
-      {formatDistanceToNow(new Date(row.original.createdAt), {
-        addSuffix: true,
-      })}
-    </span>
-  ),
 };
 
 const COLUMNS: Record<ClientType, ColumnDef<AdminContactListItem>[]> = {
@@ -206,13 +311,14 @@ const COLUMNS: Record<ClientType, ColumnDef<AdminContactListItem>[]> = {
       ),
     },
     stageColumn,
+    inquiryDateColumn,
+    lastContactColumn,
     {
       id: "services",
       header: "Services",
       cell: ({ row }) => <ServiceList contact={row.original} />,
     },
     tagsColumn,
-    createdColumn,
   ],
   b2b: [
     selectColumn,
@@ -238,15 +344,17 @@ const COLUMNS: Record<ClientType, ColumnDef<AdminContactListItem>[]> = {
       ),
       cell: ({ row }) => <ContractEndChip end={row.original.contractEnd} />,
     },
+    inquiryDateColumn,
+    lastContactColumn,
     tagsColumn,
-    createdColumn,
   ],
 };
 
 /**
- * The contacts table (desktop) and cards (mobile) for one client type.
+ * The leads table (desktop) and cards (mobile) for one client type.
  * Filtering and the selection state live in CrmContactsView; this owns
- * only sorting and layout.
+ * sorting, pagination and layout. The page resets to the first one
+ * whenever the filtered rows or the sort change (autoResetPageIndex).
  */
 export function CrmTable({
   type,
@@ -260,22 +368,37 @@ export function CrmTable({
   onRowSelectionChange: OnChangeFn<RowSelectionState>;
 }) {
   const router = useRouter();
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>(DEFAULT_SORTING);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: DEFAULT_PAGE_SIZE,
+  });
   const columns = useMemo(() => COLUMNS[type], [type]);
 
   const table = useReactTable({
     data: contacts,
     columns,
-    state: { rowSelection, sorting },
+    state: { rowSelection, sorting, pagination },
     onRowSelectionChange,
     onSortingChange: setSorting,
+    onPaginationChange: setPagination,
+    autoResetPageIndex: true,
+    // Header clicks flip between descending and ascending; never back to
+    // unsorted, so there is always a defined order.
+    enableSortingRemoval: false,
     getRowId: (row) => row.id,
     enableRowSelection: (row) => !row.original.opted_out,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
   const rows = table.getRowModel().rows;
+  const total = contacts.length;
+  const { pageIndex, pageSize } = pagination;
+  const firstRow = total === 0 ? 0 : pageIndex * pageSize + 1;
+  const lastRow = Math.min(total, (pageIndex + 1) * pageSize);
+  const pageCount = Math.max(1, table.getPageCount());
 
   return (
     <>
@@ -316,6 +439,25 @@ export function CrmTable({
       </div>
 
       <div className="flex flex-col gap-3 md:hidden">
+        <Select
+          items={MOBILE_SORT_LABELS}
+          value={mobileSortValue(sorting)}
+          onValueChange={(value) => {
+            const option = MOBILE_SORTS[value as MobileSortKey];
+            if (option) setSorting([option]);
+          }}
+        >
+          <SelectTrigger className="w-full" aria-label="Sort leads">
+            <SelectValue placeholder="Sort by" />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(MOBILE_SORTS) as MobileSortKey[]).map((key) => (
+              <SelectItem key={key} value={key}>
+                {MOBILE_SORT_LABELS[key]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         {rows.map((row) => {
           const contact = row.original;
           const selectCell = row
@@ -348,9 +490,64 @@ export function CrmTable({
                 ) : null}
                 <TagList contact={contact} />
               </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {contact.lastInquiryAt
+                  ? `Inquired ${dateFormat.format(new Date(contact.lastInquiryAt))}`
+                  : `Added ${dateFormat.format(new Date(contact.createdAt))}`}
+                {" · "}
+                {contact.lastContactedAt
+                  ? `Last contact ${formatDistanceToNow(new Date(contact.lastContactedAt), { addSuffix: true })}`
+                  : "Never contacted"}
+              </p>
             </Card>
           );
         })}
+      </div>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Showing {firstRow}–{lastRow} of {total} lead{total === 1 ? "" : "s"}
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-muted-foreground">Rows per page</span>
+          <Select
+            items={Object.fromEntries(PAGE_SIZES.map((size) => [String(size), String(size)]))}
+            value={String(pageSize)}
+            onValueChange={(value) => table.setPageSize(Number(value))}
+          >
+            <SelectTrigger size="sm" className="w-18" aria-label="Rows per page">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZES.map((size) => (
+                <SelectItem key={size} value={String(size)}>
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-sm text-muted-foreground">
+            Page {pageIndex + 1} of {pageCount}
+          </span>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            <ChevronLeftIcon />
+            <span className="sr-only">Previous page</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            <ChevronRightIcon />
+            <span className="sr-only">Next page</span>
+          </Button>
+        </div>
       </div>
     </>
   );

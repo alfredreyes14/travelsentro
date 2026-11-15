@@ -1,9 +1,20 @@
 "use client";
 
+import { useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
-import { MailIcon, MessageSquareIcon, MousePointerClickIcon } from "lucide-react";
+import {
+  MailIcon,
+  MessageSquareIcon,
+  MousePointerClickIcon,
+  PhoneIcon,
+  Trash2Icon,
+} from "lucide-react";
+import { toast } from "sonner";
 
+import { deleteContactLog } from "@/actions/contact-logs";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -15,6 +26,10 @@ import {
   type MessageChannel,
   type MessageStatus,
 } from "@/lib/crm/messages";
+import {
+  CONTACT_LOG_CHANNEL_LABELS,
+  type ContactLogChannel,
+} from "@/lib/crm/contact-logs";
 import {
   INQUIRY_SOURCE_LABELS,
   type InquirySource,
@@ -53,9 +68,20 @@ export type CrmDetailMessage = {
   clicks: { target: ChatTarget; createdAt: string }[];
 };
 
+/** A contact made outside the panel, logged by staff (contact_logs). */
+export type CrmDetailContactLog = {
+  id: string;
+  channel: ContactLogChannel;
+  note: string | null;
+  /** When the contact happened; named like the others so the timeline sorts on it. */
+  created_at: string;
+  logged_by_name: string | null;
+};
+
 type ActivityItem =
   | ({ kind: "inquiry" } & CrmDetailInquiry)
   | ({ kind: "message" } & CrmDetailMessage)
+  | ({ kind: "log" } & CrmDetailContactLog)
   | ({ kind: "auto_lost" } & CrmDetailClosure);
 
 /** The follow-up automation moving this contact to Lost (follow_up_closures). */
@@ -66,20 +92,59 @@ export type CrmDetailClosure = {
   followUpsSent: number;
 };
 
-/** A contact's inquiries and sent messages, newest first. */
+function DeleteLogButton({ contactId, logId }: { contactId: string; logId: string }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  return (
+    <Button
+      variant="ghost"
+      size="icon-xs"
+      disabled={isPending}
+      aria-label="Remove this contact log"
+      title="Remove this contact log"
+      onClick={() => {
+        if (!window.confirm("Remove this contact log?")) return;
+        startTransition(async () => {
+          try {
+            const result = await deleteContactLog(contactId, logId);
+            if (!result.ok) {
+              toast.error(result.error);
+              return;
+            }
+            toast.success("Contact log removed.");
+            router.refresh();
+          } catch {
+            toast.error("Something went wrong removing this entry. Please try again.");
+          }
+        });
+      }}
+    >
+      <Trash2Icon />
+    </Button>
+  );
+}
+
+/** A contact's inquiries, sent messages and logged contacts, newest first. */
 export function ContactActivity({
+  contactId,
   inquiries,
   messages,
+  contactLogs,
   closures = [],
+  canEdit,
 }: {
+  contactId: string;
   inquiries: CrmDetailInquiry[];
   messages: CrmDetailMessage[];
+  contactLogs: CrmDetailContactLog[];
   /** When the follow-up automation moved this contact to Lost, if it did. */
   closures?: CrmDetailClosure[];
+  canEdit: boolean;
 }) {
   const activity: ActivityItem[] = [
     ...inquiries.map((i) => ({ kind: "inquiry" as const, ...i })),
     ...messages.map((m) => ({ kind: "message" as const, ...m })),
+    ...contactLogs.map((l) => ({ kind: "log" as const, ...l })),
     ...closures.map((c) => ({ kind: "auto_lost" as const, ...c })),
   ].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -93,7 +158,7 @@ export function ContactActivity({
 
       {activity.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          No inquiries or messages yet.
+          No inquiries, messages or logged contacts yet.
         </p>
       ) : (
         <ol className="flex flex-col gap-6">
@@ -173,6 +238,26 @@ export function ContactActivity({
                         General inquiry
                       </span>
                     ) : null}
+                  </>
+                ) : item.kind === "log" ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <PhoneIcon className="size-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">
+                        Contacted via {CONTACT_LOG_CHANNEL_LABELS[item.channel]}
+                      </span>
+                      {canEdit ? (
+                        <DeleteLogButton contactId={contactId} logId={item.id} />
+                      ) : null}
+                    </div>
+                    {item.note ? (
+                      <p className="text-base leading-[1.5] whitespace-pre-line">
+                        {item.note}
+                      </p>
+                    ) : null}
+                    <p className="text-sm text-muted-foreground">
+                      Logged by {item.logged_by_name ?? "a staff member"}
+                    </p>
                   </>
                 ) : (
                   <>

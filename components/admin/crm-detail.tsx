@@ -3,13 +3,14 @@
 import { useOptimistic, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
-import { MessageCircleReplyIcon, SendIcon } from "lucide-react";
+import { MessageCircleReplyIcon, PhoneIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateStage } from "@/actions/crm";
 import { updateOptOut } from "@/actions/messages";
 import {
   ContactActivity,
+  type CrmDetailContactLog,
   type CrmDetailInquiry,
   type CrmDetailClosure,
   type CrmDetailMessage,
@@ -18,6 +19,7 @@ import { FollowUpBadge } from "./follow-up-badge";
 import { ContactB2bCard } from "./contact-b2b-card";
 import { ContactConvertDialog } from "./contact-convert-dialog";
 import { ContactEditForm } from "./contact-edit-form";
+import { ContactLogDialog } from "./contact-log-dialog";
 import { ContactStageChip } from "./contact-stage-chip";
 import {
   MessageComposeDialog,
@@ -99,6 +101,8 @@ export function CrmDetail({
   followUpProgress,
   closures,
   messengerSlot,
+  contactLogs,
+  lastContact,
   canEdit,
   quotesSlot,
   documentsSlot,
@@ -117,6 +121,9 @@ export function CrmDetail({
   closures: CrmDetailClosure[];
   /** Linking the contact to their Messenger chat. */
   messengerSlot?: ReactNode;
+  contactLogs: CrmDetailContactLog[];
+  /** Latest sent email/SMS or logged contact; null if never contacted. */
+  lastContact: { at: string; via: string } | null;
   canEdit: boolean;
   quotesSlot?: ReactNode;
   documentsSlot?: ReactNode;
@@ -134,6 +141,7 @@ export function CrmDetail({
   const [isMessageOpen, setIsMessageOpen] = useState(false);
   const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
+  const [isLogOpen, setIsLogOpen] = useState(false);
 
   const isB2b = contact.clientType === "b2b";
   const composeContact = {
@@ -225,6 +233,12 @@ export function CrmDetail({
             Follow Up
           </Button>
           {canEdit ? (
+            <Button variant="outline" onClick={() => setIsLogOpen(true)}>
+              <PhoneIcon className="size-4" />
+              Log contact
+            </Button>
+          ) : null}
+          {canEdit ? (
             <Button variant="outline" onClick={() => setIsConvertOpen(true)}>
               Convert to {CLIENT_TYPE_LABELS[otherType]}
             </Button>
@@ -240,6 +254,11 @@ export function CrmDetail({
           ) : (
             <p>Added {formatDistanceToNow(new Date(contact.created_at))} ago</p>
           )}
+          <p>
+            {lastContact
+              ? `Last contacted ${formatDistanceToNow(new Date(lastContact.at))} ago (${lastContact.via}, ${format(new Date(lastContact.at), "MMM d, yyyy")})`
+              : "Not contacted yet"}
+          </p>
           {contact.updated_by ? (
             <p>
               Last updated by {contact.updated_by_name ?? "a staff member"}{" "}
@@ -255,11 +274,11 @@ export function CrmDetail({
           {canEdit ? (
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
               <DialogTrigger render={<Button variant="secondary" size="sm" />}>
-                Edit Contact
+                Edit Lead
               </DialogTrigger>
               <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Edit Contact</DialogTitle>
+                  <DialogTitle>Edit Lead</DialogTitle>
                 </DialogHeader>
                 <ContactEditForm
                   contactId={contact.id}
@@ -368,9 +387,12 @@ export function CrmDetail({
       {soaSlot}
 
       <ContactActivity
+        contactId={contact.id}
         inquiries={inquiries}
         messages={messages}
+        contactLogs={contactLogs}
         closures={closures}
+        canEdit={canEdit}
       />
 
       <MessageComposeDialog
@@ -403,6 +425,13 @@ export function CrmDetail({
         currentType={contact.clientType}
         open={isConvertOpen}
         onOpenChange={setIsConvertOpen}
+      />
+
+      <ContactLogDialog
+        contactId={contact.id}
+        contactName={contact.name}
+        open={isLogOpen}
+        onOpenChange={setIsLogOpen}
       />
     </div>
   );

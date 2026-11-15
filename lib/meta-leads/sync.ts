@@ -25,12 +25,30 @@ export type LeadOutcome = {
 
 export type SyncSummary = {
   forms: number;
+  /** Leads Meta returned: added + existing + noContact + failed. */
+  pulled: number;
   added: number;
   existing: number;
   /** Leads with neither email nor phone; the CRM can't store them. */
   noContact: number;
   failed: number;
 };
+
+/**
+ * A run that stopped part-way: Meta or the token couldn't be reached.
+ * `step` says what the sync was doing; `summary` counts the leads handled
+ * before it stopped (they are saved).
+ */
+export class MetaLeadSyncError extends Error {
+  constructor(
+    readonly step: string,
+    readonly cause: unknown,
+    readonly summary: SyncSummary
+  ) {
+    super(`Meta lead sync failed while ${step}: ${cause instanceof Error ? cause.message : String(cause)}`);
+    this.name = "MetaLeadSyncError";
+  }
+}
 
 export async function syncMetaLeads(options: {
   /** Service-role client. null = dry run. */
@@ -40,13 +58,30 @@ export async function syncMetaLeads(options: {
   onLead?: (outcome: LeadOutcome) => void;
 }): Promise<SyncSummary> {
   const { supabase, since, onLead } = options;
-  const token = await getPageAccessToken(FACEBOOK_PAGE_ID);
-  const forms = await listLeadForms(FACEBOOK_PAGE_ID, token);
-  const summary: SyncSummary = { forms: forms.length, added: 0, existing: 0, noContact: 0, failed: 0 };
+  const summary: SyncSummary = { forms: 0, pulled: 0, added: 0, existing: 0, noContact: 0, failed: 0 };
+
+  async function step<T>(description: string, fn: () => Promise<T>): Promise<T> {
+    try {
+      return await fn();
+    } catch (err) {
+      throw new MetaLeadSyncError(description, err, { ...summary });
+    }
+  }
+
+  const token = await step("getting the Facebook Page access token", () =>
+    getPageAccessToken(FACEBOOK_PAGE_ID)
+  );
+  const forms = await step("listing the Page's lead forms", () =>
+    listLeadForms(FACEBOOK_PAGE_ID, token)
+  );
+  summary.forms = forms.length;
 
   for (const form of forms) {
     const formName = form.name ?? null;
-    const leads = await listFormLeads(form.id, token, since);
+    const leads = await step(`reading leads from the form "${formName ?? form.id}"`, () =>
+      listFormLeads(form.id, token, since)
+    );
+    summary.pulled += leads.length;
 
     for (const lead of leads) {
       const parsed = parseMetaLead(lead, formName);
