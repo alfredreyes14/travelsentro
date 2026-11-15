@@ -429,45 +429,102 @@ export type Database = {
           },
         ];
       };
+      message_clicks: {
+        Row: {
+          contact_id: string;
+          created_at: string;
+          id: string;
+          message_id: string;
+          target: string;
+        };
+        Insert: {
+          contact_id: string;
+          created_at?: string;
+          id?: string;
+          message_id: string;
+          target: string;
+        };
+        Update: {
+          contact_id?: string;
+          created_at?: string;
+          id?: string;
+          message_id?: string;
+          target?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "message_clicks_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "message_clicks_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       messages: {
         Row: {
           batch_id: string | null;
           body: string;
           channel: string;
+          click_count: number;
           contact_id: string;
           created_at: string;
+          first_clicked_at: string | null;
+          follow_up_step: number | null;
           id: string;
+          kind: string;
+          last_clicked_at: string | null;
           provider_message_id: string | null;
           sent_by: string | null;
           sent_by_name: string | null;
           status: string;
           subject: string | null;
+          tracking_token: string | null;
         };
         Insert: {
           batch_id?: string | null;
           body: string;
           channel: string;
+          click_count?: number;
           contact_id: string;
           created_at?: string;
+          first_clicked_at?: string | null;
+          follow_up_step?: number | null;
           id?: string;
+          kind?: string;
+          last_clicked_at?: string | null;
           provider_message_id?: string | null;
           sent_by?: string | null;
           sent_by_name?: string | null;
           status?: string;
           subject?: string | null;
+          tracking_token?: string | null;
         };
         Update: {
           batch_id?: string | null;
           body?: string;
           channel?: string;
+          click_count?: number;
           contact_id?: string;
           created_at?: string;
+          first_clicked_at?: string | null;
+          follow_up_step?: number | null;
           id?: string;
+          kind?: string;
+          last_clicked_at?: string | null;
           provider_message_id?: string | null;
           sent_by?: string | null;
           sent_by_name?: string | null;
           status?: string;
           subject?: string | null;
+          tracking_token?: string | null;
         };
         Relationships: [
           {
@@ -1167,6 +1224,25 @@ export type Database = {
       };
       has_permission: { Args: { perm: string; uid: string }; Returns: boolean };
       list_contact_tags: { Args: Record<PropertyKey, never>; Returns: string[] };
+      list_due_follow_ups: {
+        Args: { p_gap_days: number[]; p_limit: number; p_max_lead_age_days: number };
+        Returns: {
+          contact_id: string;
+          email: string;
+          name: string;
+          next_step: number;
+          package_name: string | null;
+        }[];
+      };
+      mark_follow_ups_sent: { Args: { p_message_ids: string[] }; Returns: undefined };
+      record_follow_up_click: {
+        Args: { p_target: string; p_token: string };
+        Returns: {
+          channel: string;
+          contact_name: string;
+          package_slug: string | null;
+        }[];
+      };
       record_inquiry: {
         Args: {
           p_email: string;

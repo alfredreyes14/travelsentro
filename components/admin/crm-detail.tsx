@@ -3,7 +3,7 @@
 import { useOptimistic, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
-import { SendIcon } from "lucide-react";
+import { MessageCircleReplyIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateStage } from "@/actions/crm";
@@ -17,7 +17,10 @@ import { ContactB2bCard } from "./contact-b2b-card";
 import { ContactConvertDialog } from "./contact-convert-dialog";
 import { ContactEditForm } from "./contact-edit-form";
 import { ContactStageChip } from "./contact-stage-chip";
-import { MessageComposeDialog } from "./message-compose-dialog";
+import {
+  MessageComposeDialog,
+  type ComposeFollowUp,
+} from "./message-compose-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,6 +92,7 @@ export function CrmDetail({
   existingTags,
   inquiries,
   messages,
+  followUp,
   canEdit,
   quotesSlot,
   documentsSlot,
@@ -99,6 +103,8 @@ export function CrmDetail({
   existingTags: string[];
   inquiries: CrmDetailInquiry[];
   messages: CrmDetailMessage[];
+  /** The next follow-up's number and the lead's package, for its draft. */
+  followUp: ComposeFollowUp;
   canEdit: boolean;
   quotesSlot?: ReactNode;
   documentsSlot?: ReactNode;
@@ -114,9 +120,17 @@ export function CrmDetail({
   const [isPending, startTransition] = useTransition();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
 
   const isB2b = contact.clientType === "b2b";
+  const composeContact = {
+    id: contact.id,
+    name: contact.name,
+    email: contact.email,
+    phone: contact.phone,
+    opted_out: optedOut,
+  };
   const otherType: ClientType = isB2b ? "b2c" : "b2b";
   const stageItems = Object.fromEntries(
     STAGES_BY_TYPE[contact.clientType].map((s) => [s, STAGE_LABELS[s]])
@@ -188,6 +202,10 @@ export function CrmDetail({
           <Button onClick={() => setIsMessageOpen(true)}>
             <SendIcon className="size-4" />
             Message
+          </Button>
+          <Button variant="outline" onClick={() => setIsFollowUpOpen(true)}>
+            <MessageCircleReplyIcon className="size-4" />
+            Follow Up
           </Button>
           {canEdit ? (
             <Button variant="outline" onClick={() => setIsConvertOpen(true)}>
@@ -334,20 +352,25 @@ export function CrmDetail({
       <ContactActivity inquiries={inquiries} messages={messages} />
 
       <MessageComposeDialog
-        contacts={[
-          {
-            id: contact.id,
-            name: contact.name,
-            email: contact.email,
-            phone: contact.phone,
-            opted_out: optedOut,
-          },
-        ]}
+        contacts={[composeContact]}
         mode="individual"
         open={isMessageOpen}
         onOpenChange={setIsMessageOpen}
         onSuccess={() => {
           setIsMessageOpen(false);
+          router.refresh();
+        }}
+      />
+
+      <MessageComposeDialog
+        key={`follow-up-${followUp.step}`}
+        contacts={[composeContact]}
+        mode="individual"
+        followUp={followUp}
+        open={isFollowUpOpen}
+        onOpenChange={setIsFollowUpOpen}
+        onSuccess={() => {
+          setIsFollowUpOpen(false);
           router.refresh();
         }}
       />

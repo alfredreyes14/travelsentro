@@ -19,6 +19,7 @@ import type { MessageChannel, MessageStatus } from "@/lib/crm/messages";
 import { toMetaLeadSourceDetails } from "@/lib/crm/inquiry-source";
 import { toServiceKeys } from "@/lib/crm/services";
 import { toClientType, toContactStage } from "@/lib/crm/stage";
+import { toChatTarget } from "@/lib/follow-ups/links";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -34,10 +35,21 @@ type ContactDetail = ContactRow & {
   inquiries: (InquiryRow & {
     packages: Pick<PackageRow, "id" | "name" | "slug"> | null;
   })[];
-  messages: Pick<
+  messages: (Pick<
     MessageRow,
-    "id" | "channel" | "subject" | "body" | "status" | "created_at" | "sent_by_name"
-  >[];
+    | "id"
+    | "channel"
+    | "subject"
+    | "body"
+    | "status"
+    | "created_at"
+    | "sent_by_name"
+    | "kind"
+    | "follow_up_step"
+    | "click_count"
+  > & {
+    message_clicks: { target: string; created_at: string }[];
+  })[];
 };
 
 /**
@@ -60,7 +72,7 @@ export default async function CrmContactPage({
     supabase
       .from("contacts")
       .select(
-        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name)"
+        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name, kind, follow_up_step, click_count, message_clicks(target, created_at))"
       )
       .eq("id", id)
       .order("created_at", { referencedTable: "inquiries", ascending: false })
@@ -123,7 +135,21 @@ export default async function CrmContactPage({
     status: m.status as MessageStatus,
     created_at: m.created_at,
     sent_by_name: m.sent_by_name,
+    followUpStep: m.kind === "follow_up" ? (m.follow_up_step ?? 1) : null,
+    clicks: (m.message_clicks ?? [])
+      .map((click) => ({
+        target: toChatTarget(click.target),
+        createdAt: click.created_at,
+      }))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   }));
+
+  // Next follow-up number, and the package to mention in its draft.
+  const nextFollowUpStep =
+    detailMessages.filter((m) => m.followUpStep !== null && m.status === "sent")
+      .length + 1;
+  const latestPackageName =
+    contact.inquiries.find((inquiry) => inquiry.packages)?.packages?.name ?? null;
 
   // Quotes are readable only with can_manage_quotes (RLS), so the card is
   // not rendered at all for anyone else. B2C only, per the spec.
@@ -247,6 +273,7 @@ export default async function CrmContactPage({
       existingTags={tagsResult.data ?? []}
       inquiries={detailInquiries}
       messages={detailMessages}
+      followUp={{ step: nextFollowUpStep, packageName: latestPackageName }}
       canEdit={canEdit}
       quotesSlot={quotesSlot}
       documentsSlot={documentsSlot}

@@ -58,6 +58,30 @@ a toast naming what was found. TravelSentro's own logo is allowed.
 The check fails open: if it can't run (no key, out of credits, API error),
 the photo uploads anyway and the reason is logged server-side.
 
+### Lead follow-ups (email + SMS)
+
+Follow-ups nudge leads into a chat and move them through the funnel.
+
+- **Email:** each follow-up has "Chat with us on Messenger" and "Chat on
+  WhatsApp" buttons. **SMS:** a Messenger link is added to the text. Every
+  link is personal (`/go/<token>`): a click is logged on the contact's
+  Activity and the visitor lands in the chat.
+- **Funnel:** sending moves the lead to **Follow-up** (B2C and B2B). A click
+  moves them to **Inquiry** (B2C) or **Discovery** (B2B), and revives a Lost
+  lead. Stages only move forward; Confirmation/Won are never touched.
+- **By hand:** "Follow Up" on a contact, or "Follow Up Selected" in the CRM
+  list. Drafts come pre-filled and are editable.
+- **Automatic:** a daily cron (01:07 UTC = 9:07 AM Manila) emails B2C leads
+  with an inquiry that are still at New/Follow-up and haven't clicked, on day
+  1, 3 and 7. Off until `FOLLOW_UPS_ENABLED=true`; see `.env.local.example`
+  for the limits. Copy and cadence: `lib/follow-ups/templates.ts`.
+- **SMS caveat:** Philippine telcos filter texts with links. Semaphore's A2P
+  route delivers them with a registered sender name (`SEMAPHORE_SENDER_NAME`);
+  never use link shorteners (Smart drops them). Test on Globe and Smart
+  numbers before relying on it.
+
+Verify the link/template logic offline: `npm run verify:follow-ups`.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

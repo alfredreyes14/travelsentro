@@ -79,6 +79,7 @@ export function CrmContactsView({
   const [tagFilter, setTagFilter] = useState(TAG_FILTER_ALL);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   const byType = useMemo(
@@ -267,6 +268,9 @@ export function CrmContactsView({
               <Button variant="ghost" onClick={() => setRowSelection({})}>
                 Clear
               </Button>
+              <Button variant="outline" onClick={() => setIsFollowUpOpen(true)}>
+                Follow Up Selected
+              </Button>
               <Button onClick={() => setIsComposeOpen(true)}>
                 Message Selected
               </Button>
@@ -320,6 +324,19 @@ export function CrmContactsView({
         onSuccess={() => {
           setRowSelection({});
           setIsComposeOpen(false);
+          router.refresh();
+        }}
+      />
+
+      <MessageComposeDialog
+        contacts={selected}
+        mode="bulk"
+        followUp={{ step: 1 }}
+        open={isFollowUpOpen}
+        onOpenChange={setIsFollowUpOpen}
+        onSuccess={() => {
+          setRowSelection({});
+          setIsFollowUpOpen(false);
           router.refresh();
         }}
       />

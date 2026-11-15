@@ -34,6 +34,8 @@ export async function proxy(request: NextRequest) {
       pathname === COMING_SOON_PATH ||
       pathname.startsWith("/admin") ||
       pathname.startsWith("/api") ||
+      // Tracked follow-up links (app/go) must reach the chat even before launch.
+      pathname.startsWith("/go/") ||
       SEO_FILE_PATHS.includes(pathname) ||
       ALWAYS_REACHABLE_PATHS.includes(pathname);
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
-import { MailIcon, MessageSquareIcon } from "lucide-react";
+import { MailIcon, MessageSquareIcon, MousePointerClickIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,6 +20,7 @@ import {
   type InquirySource,
   type MetaLeadSourceDetails,
 } from "@/lib/crm/inquiry-source";
+import { CHAT_TARGET_LABELS, type ChatTarget } from "@/lib/follow-ups/links";
 
 export type CrmDetailInquiry = {
   id: string;
@@ -39,6 +40,10 @@ export type CrmDetailMessage = {
   status: MessageStatus;
   created_at: string;
   sent_by_name: string | null;
+  /** Set for follow-ups: which follow-up this was (1, 2, ...). */
+  followUpStep: number | null;
+  /** Tracked chat-button clicks, oldest first. */
+  clicks: { target: ChatTarget; createdAt: string }[];
 };
 
 type ActivityItem =
@@ -147,13 +152,23 @@ export function ContactActivity({
                       <span className="text-sm text-muted-foreground">
                         {CHANNEL_LABELS[item.channel]}
                       </span>
+                      {item.followUpStep !== null ? (
+                        <Badge variant="outline">
+                          Follow-up #{item.followUpStep}
+                        </Badge>
+                      ) : null}
                     </div>
                     {item.channel === "email" && item.subject ? (
                       <p className="text-base leading-[1.5] font-semibold">
                         {item.subject}
                       </p>
                     ) : null}
-                    <p className="text-base leading-[1.5]">{item.body}</p>
+                    <p className="text-base leading-[1.5] whitespace-pre-line">
+                      {item.body}
+                    </p>
+                    {item.followUpStep !== null && item.status === "sent" ? (
+                      <FollowUpClicks clicks={item.clicks} />
+                    ) : null}
                     {item.status === "failed" ? (
                       <Badge variant="destructive" className="w-fit">
                         Failed to send
@@ -169,6 +184,44 @@ export function ContactActivity({
           ))}
         </ol>
       )}
+    </div>
+  );
+}
+
+/** "Clicked Messenger 2 hours ago · 3 clicks", or "Not clicked yet". */
+function FollowUpClicks({
+  clicks,
+}: {
+  clicks: { target: ChatTarget; createdAt: string }[];
+}) {
+  if (clicks.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">Chat link not clicked yet</p>
+    );
+  }
+
+  const first = clicks[0];
+  const targets = [...new Set(clicks.map((c) => CHAT_TARGET_LABELS[c.target]))];
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <MousePointerClickIcon className="size-4 text-green-700" />
+      <span className="font-semibold text-green-700">
+        Clicked to chat on {targets.join(" and ")}
+      </span>
+      <Tooltip>
+        <TooltipTrigger
+          render={<span className="text-muted-foreground" />}
+        >
+          {formatDistanceToNow(new Date(first.createdAt), { addSuffix: true })}
+        </TooltipTrigger>
+        <TooltipContent>
+          First click {format(new Date(first.createdAt), "MMM d, yyyy h:mm a")}
+        </TooltipContent>
+      </Tooltip>
+      {clicks.length > 1 ? (
+        <span className="text-muted-foreground">· {clicks.length} clicks</span>
+      ) : null}
     </div>
   );
 }
