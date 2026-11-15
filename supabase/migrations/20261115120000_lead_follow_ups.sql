@@ -1,35 +1,61 @@
--- Lead follow-ups: tracked "chat with us" emails/texts that move leads
--- through the funnel.
+-- Lead follow-ups: tracked "chat with us" emails/texts, run as two
+-- sequences per B2C stage, that move leads through the funnel.
 --
--- (1) B2C pipeline gains a `follow_up` stage between New and Inquiry
---     (lib/crm/stage.ts mirrors this list -- change both together).
--- (2) messages gains follow-up columns: kind, step, a per-message tracking
---     token (the capability inside the email/SMS link) and click counters.
+-- Stages stay New -> Inquiry -> Quotation -> Confirmation / Lost for B2C.
+-- A follow-up is not a stage: it's something the system does AT a stage.
+--   no_reply  runs while a B2C lead sits at New (never replied)
+--   quote     runs while a B2C lead sits at Quotation (quote sent, quiet)
+-- Each runs up to 4 steps; a step counts only follow-ups sent since the
+-- contact entered its current stage, so a lead re-entering a stage starts
+-- that sequence fresh. B2B follow-ups are sent by staff only.
+--
+-- (1) contacts.stage_changed_at + trigger -- when the current stage began.
+-- (2) messages follow-up columns: kind, sequence, step, a per-message
+--     tracking token (the capability inside the email/SMS link), clicks.
 -- (3) message_clicks -- one row per recorded click on a follow-up link.
--- (4) advance_stage_for_follow_up() -- internal, forward-only stage move.
--- (5) mark_follow_ups_sent() -- staff/cron call after a send: moves each
---     contact that got a follow-up to Follow-up.
--- (6) record_follow_up_click() -- the public /go/<token> route's only write
---     path (anon). Moves the contact to Inquiry (B2C) / Discovery (B2B).
--- (7) list_due_follow_ups() -- the daily automation's work list
---     (service_role only).
--- (8) close_unconverted_follow_ups() -- the daily automation moves leads
---     who never clicked after the whole sequence to Lost (service_role
---     only), stamping contacts.follow_ups_closed_at.
+-- (4) follow_up_closures -- each time the automation moved a lead to Lost.
+-- (5) follow_up_sequence_for() -- which sequence a contact is in.
+-- (6) advance_stage_for_follow_up() -- internal, forward-only stage move.
+-- (7) mark_follow_ups_sent() -- staff/cron call after a send (B2B moves).
+-- (8) record_follow_up_click() -- the public /go/<token> route's only write.
+-- (9) follow_up_progress -- per contact, the current sequence's progress
+--     (for badges and step numbering).
+-- (10) list_due_follow_ups() -- the daily automation's work list.
+-- (11) close_unconverted_follow_ups() -- no reply after the whole sequence
+--      -> Lost.
 
 -- ============================================================================
--- (1) B2C follow_up stage
+-- (1) contacts.stage_changed_at
 -- ============================================================================
-alter table contacts drop constraint contacts_stage_matches_type;
+alter table contacts add column stage_changed_at timestamptz;
+
+-- Best available guess for existing rows: a lead still at New entered it
+-- when created; anything else at its last update.
+alter table contacts disable trigger contacts_set_updated_by;
+update contacts
+set stage_changed_at = case when stage = 'new' then created_at else updated_at end;
+alter table contacts enable trigger contacts_set_updated_by;
 
 alter table contacts
-  add constraint contacts_stage_matches_type check (
-    (client_type = 'b2c' and stage in
-      ('new', 'follow_up', 'inquiry', 'quotation', 'confirmation', 'lost'))
-    or
-    (client_type = 'b2b' and stage in
-      ('new', 'contacted', 'follow_up', 'discovery', 'contract_review', 'won', 'lost'))
-  );
+  alter column stage_changed_at set default now(),
+  alter column stage_changed_at set not null;
+
+create function public.contacts_set_stage_changed_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.stage is distinct from old.stage
+     or new.client_type is distinct from old.client_type then
+    new.stage_changed_at := now();
+  end if;
+  return new;
+end;
+$$;
+
+create trigger contacts_set_stage_changed_at
+  before update on contacts
+  for each row execute function public.contacts_set_stage_changed_at();
 
 -- ============================================================================
 -- (2) messages follow-up columns
@@ -37,6 +63,8 @@ alter table contacts
 alter table messages
   add column kind text not null default 'message'
     check (kind in ('message', 'follow_up')),
+  add column follow_up_sequence text
+    check (follow_up_sequence in ('no_reply', 'quote')),
   add column follow_up_step smallint
     check (follow_up_step is null or follow_up_step > 0),
   add column tracking_token text unique,
@@ -44,15 +72,14 @@ alter table messages
   add column first_clicked_at timestamptz,
   add column last_clicked_at timestamptz,
   add constraint messages_follow_up_fields check (
-    kind = 'follow_up' or (follow_up_step is null and tracking_token is null)
+    case kind
+      when 'follow_up' then follow_up_sequence is not null and follow_up_step is not null
+      else follow_up_sequence is null and follow_up_step is null and tracking_token is null
+    end
   );
 
 create index messages_contact_kind_created_at_idx
   on messages(contact_id, kind, created_at desc);
-
--- When the automation moved this contact to Lost (shown on Activity). Set
--- once: a lead staff reopen afterwards is never auto-closed again.
-alter table contacts add column follow_ups_closed_at timestamptz;
 
 -- ============================================================================
 -- (3) message_clicks
@@ -75,17 +102,56 @@ create policy "authenticated staff can read message clicks" on message_clicks
   for select to authenticated using (true);
 
 -- ============================================================================
--- (4) advance_stage_for_follow_up() -- forward-only
+-- (4) follow_up_closures
+-- ============================================================================
+create table follow_up_closures (
+  id uuid primary key default gen_random_uuid(),
+  contact_id uuid not null references contacts(id) on delete cascade,
+  sequence text not null check (sequence in ('no_reply', 'quote')),
+  follow_ups_sent integer not null,
+  created_at timestamptz not null default now()
+);
+
+alter table follow_up_closures enable row level security;
+
+create index follow_up_closures_contact_id_idx on follow_up_closures(contact_id);
+
+-- Read-only for staff. Written by close_unconverted_follow_ups() only.
+create policy "authenticated staff can read follow-up closures" on follow_up_closures
+  for select to authenticated using (true);
+
+-- ============================================================================
+-- (5) follow_up_sequence_for() -- B2C Quotation -> quote, else no_reply.
+-- Staff can follow up a contact at any stage; the copy then comes from the
+-- no_reply sequence.
+-- ============================================================================
+create function public.follow_up_sequence_for(p_client_type text, p_stage text)
+returns text
+language sql
+immutable
+as $$
+  select case
+    when p_client_type = 'b2c' and p_stage = 'quotation' then 'quote'
+    else 'no_reply'
+  end;
+$$;
+
+-- ============================================================================
+-- (6) advance_stage_for_follow_up() -- forward-only
 --
--- p_event 'sent':    B2C new -> follow_up;  B2B new/contacted -> follow_up
--- p_event 'clicked': B2C new/follow_up/lost -> inquiry;
---                    B2B new/contacted/follow_up/lost -> discovery
+-- B2C, on click:  no_reply follow-up -> Inquiry; quote follow-up -> Quotation
+-- B2B, on send:   New / Contacted -> Follow-up
+-- B2B, on click:  -> Discovery
 --
 -- Never moves a contact backwards, and never touches a closed deal
--- (confirmation / won). A click revives a Lost lead: they asked to chat.
+-- (Confirmation / Won). A click revives a Lost lead: they asked to chat.
 -- Internal: no grants.
 -- ============================================================================
-create function public.advance_stage_for_follow_up(p_contact_id uuid, p_event text)
+create function public.advance_stage_for_follow_up(
+  p_contact_id uuid,
+  p_event text,
+  p_sequence text default 'no_reply'
+)
 returns text
 language plpgsql
 security definer
@@ -110,8 +176,12 @@ begin
     v_order := array['new', 'contacted', 'follow_up', 'discovery', 'contract_review', 'won'];
     v_target := case p_event when 'sent' then 'follow_up' when 'clicked' then 'discovery' end;
   else
-    v_order := array['new', 'follow_up', 'inquiry', 'quotation', 'confirmation'];
-    v_target := case p_event when 'sent' then 'follow_up' when 'clicked' then 'inquiry' end;
+    v_order := array['new', 'inquiry', 'quotation', 'confirmation'];
+    v_target := case
+      when p_event <> 'clicked' then null
+      when p_sequence = 'quote' then 'quotation'
+      else 'inquiry'
+    end;
   end if;
 
   if v_target is null then
@@ -132,15 +202,16 @@ begin
 end;
 $$;
 
-revoke execute on function public.advance_stage_for_follow_up(uuid, text)
+revoke execute on function public.advance_stage_for_follow_up(uuid, text, text)
   from public, anon, authenticated;
 
 -- ============================================================================
--- (5) mark_follow_ups_sent()
+-- (7) mark_follow_ups_sent()
 --
 -- Called right after follow-up messages are logged. Only messages that are
--- really sent follow-ups move anything, so the permission it needs is the
--- sender's (can_message_customers), not can_edit_crm.
+-- really sent follow-ups count, so the permission it needs is the sender's
+-- (can_message_customers), not can_edit_crm. Today only B2B stages move on
+-- send; B2C stays put while its sequence runs.
 -- ============================================================================
 create function public.mark_follow_ups_sent(p_message_ids uuid[])
 returns void
@@ -172,7 +243,7 @@ revoke execute on function public.mark_follow_ups_sent(uuid[]) from public, anon
 grant execute on function public.mark_follow_ups_sent(uuid[]) to authenticated, service_role;
 
 -- ============================================================================
--- (6) record_follow_up_click()
+-- (8) record_follow_up_click()
 --
 -- The token is a random 96-bit value only the recipient has. An unknown
 -- token returns no row (the route still sends them to the chat). Repeat
@@ -217,7 +288,9 @@ begin
         last_clicked_at = now()
     where id = v_message.id;
 
-    perform public.advance_stage_for_follow_up(v_message.contact_id, 'clicked');
+    perform public.advance_stage_for_follow_up(
+      v_message.contact_id, 'clicked', v_message.follow_up_sequence
+    );
   end if;
 
   return query
@@ -241,16 +314,44 @@ revoke execute on function public.record_follow_up_click(text, text) from public
 grant execute on function public.record_follow_up_click(text, text) to anon, authenticated;
 
 -- ============================================================================
--- (7) list_due_follow_ups()
+-- (9) follow_up_progress -- the current sequence, per contact.
 --
--- B2C leads (at least one inquiry) still at New / Follow-up, with an email,
--- not opted out, who never clicked a follow-up, and whose next step is due.
--- p_gap_days[n] = days to wait before step n, counted from the previous
--- sent follow-up (or from when the lead came in, for step 1). Half a day of
--- slack lets a once-a-day run catch leads that came in later in the day.
--- p_max_lead_age_days only limits who STARTS the sequence; a lead already in
--- it finishes it. Skips contacts staff messaged in the last day, and gives
--- up on a contact after 3 failed sends. Newest leads first.
+-- Counts only follow-ups of the contact's current sequence sent since it
+-- entered its current stage. security_invoker: readers see what RLS lets
+-- them see on contacts and messages (all staff can read both).
+-- ============================================================================
+create view public.follow_up_progress
+with (security_invoker = true) as
+select
+  c.id as contact_id,
+  public.follow_up_sequence_for(c.client_type, c.stage) as sequence,
+  count(m.id) filter (where m.status = 'sent')::integer as sent_count,
+  count(m.id) filter (where m.status = 'failed')::integer as failed_count,
+  max(m.created_at) filter (where m.status = 'sent') as last_sent_at,
+  coalesce(bool_or(m.click_count > 0), false) as clicked
+from contacts c
+left join messages m
+  on m.contact_id = c.id
+  and m.kind = 'follow_up'
+  and m.follow_up_sequence = public.follow_up_sequence_for(c.client_type, c.stage)
+  and m.created_at >= c.stage_changed_at
+group by c.id;
+
+grant select on public.follow_up_progress to authenticated, service_role;
+revoke select on public.follow_up_progress from anon;
+
+-- ============================================================================
+-- (10) list_due_follow_ups()
+--
+-- B2C contacts with an email, not opted out, at New (with an inquiry --
+-- leads, not contacts staff typed in) or at Quotation, who haven't clicked
+-- in this sequence, and whose next step is due. p_gap_days[n] = days to
+-- wait before step n, counted from the previous follow-up (or from
+-- entering the stage, for step 1). Half a day of slack lets a once-a-day
+-- run catch contacts that arrived later in the day.
+-- p_max_lead_age_days only limits who STARTS a sequence; a contact already
+-- in one finishes it. Skips contacts staff messaged in the last day, and
+-- gives up after 3 failed sends. Newest first.
 -- ============================================================================
 create function public.list_due_follow_ups(
   p_gap_days integer[],
@@ -261,6 +362,7 @@ returns table (
   contact_id uuid,
   name text,
   email text,
+  sequence text,
   next_step integer,
   package_name text
 )
@@ -269,27 +371,12 @@ stable
 security invoker
 set search_path = public
 as $$
-  with fu as (
-    select
-      m.contact_id,
-      count(*) filter (where m.status = 'sent') as sent_count,
-      count(*) filter (where m.status = 'failed') as failed_count,
-      max(m.created_at) filter (where m.status = 'sent') as last_sent_at,
-      bool_or(m.click_count > 0) as clicked
-    from messages m
-    where m.kind = 'follow_up'
-    group by m.contact_id
-  ),
-  last_message as (
-    select m.contact_id, max(m.created_at) as last_at
-    from messages m
-    group by m.contact_id
-  )
   select
     c.id,
     c.name,
     c.email,
-    (coalesce(fu.sent_count, 0) + 1)::integer,
+    fp.sequence,
+    fp.sent_count + 1,
     (
       select p.name
       from inquiries i
@@ -299,25 +386,30 @@ as $$
       limit 1
     )
   from contacts c
-  left join fu on fu.contact_id = c.id
-  left join last_message lm on lm.contact_id = c.id
+  join follow_up_progress fp on fp.contact_id = c.id
   where c.client_type = 'b2c'
-    and c.stage in ('new', 'follow_up')
+    and (
+      c.stage = 'quotation'
+      or (c.stage = 'new' and exists (select 1 from inquiries i where i.contact_id = c.id))
+    )
     and c.opted_out = false
     and nullif(trim(coalesce(c.email, '')), '') is not null
     and (
-      coalesce(fu.sent_count, 0) > 0
-      or c.created_at >= now() - make_interval(days => p_max_lead_age_days)
+      fp.sent_count > 0
+      or c.stage_changed_at >= now() - make_interval(days => p_max_lead_age_days)
     )
-    and exists (select 1 from inquiries i where i.contact_id = c.id)
-    and coalesce(fu.clicked, false) = false
-    and coalesce(fu.failed_count, 0) < 3
-    and coalesce(fu.sent_count, 0) < coalesce(array_length(p_gap_days, 1), 0)
-    and coalesce(fu.last_sent_at, c.created_at)
-      <= now() - make_interval(days => p_gap_days[coalesce(fu.sent_count, 0) + 1])
+    and fp.clicked = false
+    and fp.failed_count < 3
+    and fp.sent_count < coalesce(array_length(p_gap_days, 1), 0)
+    and coalesce(fp.last_sent_at, c.stage_changed_at)
+      <= now() - make_interval(days => p_gap_days[fp.sent_count + 1])
          + interval '12 hours'
-    and (lm.last_at is null or lm.last_at <= now() - interval '1 day')
-  order by c.created_at desc
+    and not exists (
+      select 1 from messages m
+      where m.contact_id = c.id
+        and m.created_at > now() - interval '1 day'
+    )
+  order by c.stage_changed_at desc
   limit p_limit;
 $$;
 
@@ -327,49 +419,51 @@ grant execute on function public.list_due_follow_ups(integer[], integer, integer
   to service_role;
 
 -- ============================================================================
--- (8) close_unconverted_follow_ups()
+-- (11) close_unconverted_follow_ups()
 --
--- B2C leads still at New / Follow-up who got at least p_step_count
--- follow-ups, never clicked, and whose last follow-up is p_grace_days old
--- (half a day of slack, like list_due_follow_ups) move to Lost. Each
--- contact is auto-closed at most once. Returns how many moved.
+-- B2C contacts still at the stage their sequence ran at (New / Quotation)
+-- who got at least p_step_count follow-ups there, never clicked, and whose
+-- last one is p_grace_days old (half a day of slack) move to Lost, with a
+-- follow_up_closures row for the Activity timeline. A contact staff move
+-- or reopen has a new stage_changed_at, so it starts with a clean count
+-- and is never closed on old follow-ups. Returns how many moved.
 -- ============================================================================
 create function public.close_unconverted_follow_ups(
   p_step_count integer,
   p_grace_days integer
 )
 returns integer
-language sql
+language plpgsql
 security invoker
 set search_path = public
 as $$
-  with fu as (
-    select
-      m.contact_id,
-      count(*) filter (where m.status = 'sent') as sent_count,
-      max(m.created_at) filter (where m.status = 'sent') as last_sent_at,
-      bool_or(m.click_count > 0) as clicked
-    from messages m
-    where m.kind = 'follow_up'
-    group by m.contact_id
+declare
+  v_count integer;
+begin
+  with due as (
+    select c.id, fp.sequence, fp.sent_count
+    from contacts c
+    join follow_up_progress fp on fp.contact_id = c.id
+    where c.client_type = 'b2c'
+      and c.stage in ('new', 'quotation')
+      and fp.clicked = false
+      and fp.sent_count >= p_step_count
+      and fp.last_sent_at
+        <= now() - make_interval(days => p_grace_days) + interval '12 hours'
   ),
   closed as (
-    update contacts c
-    set stage = 'lost',
-        follow_ups_closed_at = now()
-    from fu
-    where fu.contact_id = c.id
-      and c.client_type = 'b2c'
-      and c.stage in ('new', 'follow_up')
-      and c.follow_ups_closed_at is null
-      and exists (select 1 from inquiries i where i.contact_id = c.id)
-      and fu.clicked = false
-      and fu.sent_count >= p_step_count
-      and fu.last_sent_at
-        <= now() - make_interval(days => p_grace_days) + interval '12 hours'
-    returning c.id
+    insert into follow_up_closures (contact_id, sequence, follow_ups_sent)
+    select id, sequence, sent_count from due
+    returning contact_id
   )
-  select count(*)::integer from closed;
+  update contacts c
+  set stage = 'lost'
+  from closed
+  where c.id = closed.contact_id;
+
+  get diagnostics v_count = row_count;
+  return v_count;
+end;
 $$;
 
 revoke execute on function public.close_unconverted_follow_ups(integer, integer)

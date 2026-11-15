@@ -101,7 +101,6 @@ export type Database = {
           created_by: string | null;
           created_by_name: string | null;
           email: string | null;
-          follow_ups_closed_at: string | null;
           id: string;
           name: string;
           opted_out: boolean;
@@ -113,6 +112,7 @@ export type Database = {
           services_availed: string[];
           services_other: string | null;
           stage: string;
+          stage_changed_at: string;
           tags: string[];
           updated_at: string;
           updated_by: string | null;
@@ -126,7 +126,6 @@ export type Database = {
           created_by?: string | null;
           created_by_name?: string | null;
           email?: string | null;
-          follow_ups_closed_at?: string | null;
           id?: string;
           name: string;
           opted_out?: boolean;
@@ -138,6 +137,7 @@ export type Database = {
           services_availed?: string[];
           services_other?: string | null;
           stage?: string;
+          stage_changed_at?: string;
           tags?: string[];
           updated_at?: string;
           updated_by?: string | null;
@@ -151,7 +151,6 @@ export type Database = {
           created_by?: string | null;
           created_by_name?: string | null;
           email?: string | null;
-          follow_ups_closed_at?: string | null;
           id?: string;
           name?: string;
           opted_out?: boolean;
@@ -163,6 +162,7 @@ export type Database = {
           services_availed?: string[];
           services_other?: string | null;
           stage?: string;
+          stage_changed_at?: string;
           tags?: string[];
           updated_at?: string;
           updated_by?: string | null;
@@ -349,6 +349,38 @@ export type Database = {
         };
         Relationships: [];
       };
+      follow_up_closures: {
+        Row: {
+          contact_id: string;
+          created_at: string;
+          follow_ups_sent: number;
+          id: string;
+          sequence: string;
+        };
+        Insert: {
+          contact_id: string;
+          created_at?: string;
+          follow_ups_sent: number;
+          id?: string;
+          sequence: string;
+        };
+        Update: {
+          contact_id?: string;
+          created_at?: string;
+          follow_ups_sent?: number;
+          id?: string;
+          sequence?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "follow_up_closures_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       inquiries: {
         Row: {
           contact_id: string;
@@ -480,6 +512,7 @@ export type Database = {
           contact_id: string;
           created_at: string;
           first_clicked_at: string | null;
+          follow_up_sequence: string | null;
           follow_up_step: number | null;
           id: string;
           kind: string;
@@ -499,6 +532,7 @@ export type Database = {
           contact_id: string;
           created_at?: string;
           first_clicked_at?: string | null;
+          follow_up_sequence?: string | null;
           follow_up_step?: number | null;
           id?: string;
           kind?: string;
@@ -518,6 +552,7 @@ export type Database = {
           contact_id?: string;
           created_at?: string;
           first_clicked_at?: string | null;
+          follow_up_sequence?: string | null;
           follow_up_step?: number | null;
           id?: string;
           kind?: string;
@@ -1216,7 +1251,17 @@ export type Database = {
       };
     };
     Views: {
-      [_ in never]: never;
+      follow_up_progress: {
+        Row: {
+          clicked: boolean;
+          contact_id: string;
+          failed_count: number;
+          last_sent_at: string | null;
+          sent_count: number;
+          sequence: string;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
       close_unconverted_follow_ups: {
@@ -1239,6 +1284,7 @@ export type Database = {
           name: string;
           next_step: number;
           package_name: string | null;
+          sequence: string;
         }[];
       };
       mark_follow_ups_sent: { Args: { p_message_ids: string[] }; Returns: undefined };

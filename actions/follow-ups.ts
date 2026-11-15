@@ -14,8 +14,9 @@ import {
   smsComposeSchema,
 } from "@/lib/crm/message-schema";
 import {
-  countSentFollowUps,
+  FIRST_FOLLOW_UP,
   latestPackageNames,
+  nextFollowUps,
   sendFollowUpEmails,
   sendFollowUpSms,
   type FollowUpSummary,
@@ -29,15 +30,16 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * Staff-sent follow-ups: the same compose flow as actions/messages.ts, but
  * every email carries tracked Messenger/WhatsApp buttons (every text, a
- * tracked link), the send moves the lead to Follow-up, and a click moves
- * it on to Inquiry (B2C) / Discovery (B2B). See lib/follow-ups/send.ts.
+ * tracked link). Each is logged as the next step of the contact's current
+ * sequence (lib/follow-ups/templates.ts), so it counts toward the automatic
+ * 4. A click moves the lead on (see the lead_follow_ups migration).
  *
  * Like other individual sends, an individual follow-up ignores opted_out;
  * bulk follow-ups skip opted-out contacts.
  *
- * Bulk sends take `values: null` to give each lead their own next
- * follow-up message (lib/follow-ups/templates.ts), so leads at different
- * steps never get a repeat; or one custom message for everyone.
+ * Bulk sends take `values: null` to give each contact their own next
+ * follow-up message, so contacts at different steps never get a repeat;
+ * or one custom message for everyone.
  */
 
 const SEND_ERROR_MESSAGE = "Couldn't send the follow-up. Please try again.";
@@ -50,11 +52,6 @@ const MAX_BULK_SMS = 100;
 
 function toBulkResult(summary: FollowUpSummary): BulkSendResult {
   return { ok: true, ...summary };
-}
-
-function revalidateContacts(ids: string[]) {
-  revalidatePath("/admin/crm");
-  for (const id of ids) revalidatePath(`/admin/crm/${id}`);
 }
 
 export async function sendFollowUpEmail(
@@ -81,7 +78,7 @@ export async function sendFollowUpEmail(
     return { ok: false, error: "Today's email limit is used up. Try again tomorrow." };
   }
 
-  const counts = await countSentFollowUps(supabase, [contact.id]);
+  const next = (await nextFollowUps(supabase, [contact.id])).get(contact.id) ?? FIRST_FOLLOW_UP;
   const summary = await sendFollowUpEmails({
     supabase,
     items: [
@@ -89,7 +86,7 @@ export async function sendFollowUpEmail(
         contactId: contact.id,
         name: contact.name,
         email: contact.email,
-        step: (counts.get(contact.id) ?? 0) + 1,
+        ...next,
         ...parsed.data,
       },
     ],
@@ -97,7 +94,8 @@ export async function sendFollowUpEmail(
     origin: await getSiteOrigin(),
   });
 
-  revalidateContacts([contact.id]);
+  revalidatePath("/admin/crm");
+  revalidatePath(`/admin/crm/${contact.id}`);
   return summary.sent === 1 ? { ok: true } : { ok: false, error: SEND_ERROR_MESSAGE };
 }
 
@@ -135,20 +133,21 @@ export async function sendBulkFollowUpEmail(
   }
 
   const ids = contacts.map((c) => c.id);
-  const [counts, packageNames] = await Promise.all([
-    countSentFollowUps(supabase, ids),
+  const [nextById, packageNames] = await Promise.all([
+    nextFollowUps(supabase, ids),
     custom ? Promise.resolve(new Map<string, string>()) : latestPackageNames(supabase, ids),
   ]);
   const summary = await sendFollowUpEmails({
     supabase,
     items: contacts.map((c) => {
-      const step = (counts.get(c.id) ?? 0) + 1;
+      const next = nextById.get(c.id) ?? FIRST_FOLLOW_UP;
       return {
         contactId: c.id,
         name: c.name,
         email: c.email,
-        step,
-        ...(custom ?? followUpEmailTemplate(step, packageNames.get(c.id))),
+        ...next,
+        ...(custom ??
+          followUpEmailTemplate(next.sequence, next.step, packageNames.get(c.id))),
       };
     }),
     sender: { id: profile.id, name: profile.name },
@@ -179,7 +178,7 @@ export async function sendFollowUpText(
     return { ok: false, error: "This contact has no phone number on file." };
   }
 
-  const counts = await countSentFollowUps(supabase, [contact.id]);
+  const next = (await nextFollowUps(supabase, [contact.id])).get(contact.id) ?? FIRST_FOLLOW_UP;
   const summary = await sendFollowUpSms({
     supabase,
     items: [
@@ -187,7 +186,7 @@ export async function sendFollowUpText(
         contactId: contact.id,
         name: contact.name,
         phone: contact.phone,
-        step: (counts.get(contact.id) ?? 0) + 1,
+        ...next,
         body: parsed.data.body,
       },
     ],
@@ -195,7 +194,8 @@ export async function sendFollowUpText(
     origin: await getSiteOrigin(),
   });
 
-  revalidateContacts([contact.id]);
+  revalidatePath("/admin/crm");
+  revalidatePath(`/admin/crm/${contact.id}`);
   return summary.sent === 1 ? { ok: true } : { ok: false, error: SEND_ERROR_MESSAGE };
 }
 
@@ -229,20 +229,20 @@ export async function sendBulkFollowUpText(
     };
   }
 
-  const counts = await countSentFollowUps(
+  const nextById = await nextFollowUps(
     supabase,
     contacts.map((c) => c.id)
   );
   const summary = await sendFollowUpSms({
     supabase,
     items: contacts.map((c) => {
-      const step = (counts.get(c.id) ?? 0) + 1;
+      const next = nextById.get(c.id) ?? FIRST_FOLLOW_UP;
       return {
         contactId: c.id,
         name: c.name,
         phone: c.phone!,
-        step,
-        body: customBody ?? followUpSmsTemplate(step),
+        ...next,
+        body: customBody ?? followUpSmsTemplate(next.sequence, next.step),
       };
     }),
     sender: { id: profile.id, name: profile.name },

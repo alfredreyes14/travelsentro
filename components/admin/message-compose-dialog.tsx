@@ -50,8 +50,11 @@ import {
 import { withEmail } from "@/lib/crm/contact-label";
 import { SITE_URL } from "@/lib/constants";
 import {
-  FOLLOW_UP_STEPS,
+  FOLLOW_UP_COPY,
+  FOLLOW_UP_SEQUENCE_LABELS,
+  FOLLOW_UP_STEP_COUNT,
   followUpAngle,
+  type FollowUpSequence,
   followUpEmailTemplate,
   followUpSmsTemplate,
   trackedLinkLength,
@@ -68,12 +71,16 @@ type ComposeContact = {
 type ActiveTab = "email" | "sms";
 
 /**
- * Follow-up mode: drafts start from the follow-up templates, emails get
- * tracked chat buttons, texts a tracked link, and sending moves the lead
- * in the funnel (actions/follow-ups.ts). Parents key the dialog on `step`
- * so the draft refreshes after each send.
+ * Follow-up mode: drafts start from the follow-up templates for the
+ * contact's sequence and next step, emails get tracked chat buttons, texts
+ * a tracked link (actions/follow-ups.ts). Parents key the dialog on the
+ * sequence and step so the draft refreshes after each send.
  */
-export type ComposeFollowUp = { step: number; packageName?: string | null };
+export type ComposeFollowUp = {
+  sequence: FollowUpSequence;
+  step: number;
+  packageName?: string | null;
+};
 
 // The appended link's length, for the SMS counter (staging's host is a bit
 // longer; close enough for a segment estimate).
@@ -105,8 +112,8 @@ export function MessageComposeDialog({
 }) {
   const draft = followUp
     ? {
-        ...followUpEmailTemplate(followUp.step, followUp.packageName),
-        sms: followUpSmsTemplate(followUp.step),
+        ...followUpEmailTemplate(followUp.sequence, followUp.step, followUp.packageName),
+        sms: followUpSmsTemplate(followUp.sequence, followUp.step),
       }
     : { subject: "", body: "", sms: "" };
 
@@ -268,12 +275,12 @@ export function MessageComposeDialog({
         {followUp ? (
           <p className="text-sm text-muted-foreground">
             {mode === "individual"
-              ? `Follow-up #${followUp.step} · ${followUpAngle(followUp.step).label}. `
+              ? `${FOLLOW_UP_SEQUENCE_LABELS[followUp.sequence]} · follow-up ${followUp.step} · ${followUpAngle(followUp.sequence, followUp.step).label}. `
               : ""}
             Emails get &ldquo;Chat on Messenger&rdquo; and &ldquo;Chat on
-            WhatsApp&rdquo; buttons; texts get a chat link. Sending moves
-            the lead to Follow-up, and a click moves them to Inquiry
-            (Discovery for B2B).
+            WhatsApp&rdquo; buttons; texts get a chat link. A tap moves a
+            lead at New to Inquiry, and brings a Lost lead back. It counts
+            toward the {FOLLOW_UP_STEP_COUNT} automatic follow-ups.
           </p>
         ) : null}
 
@@ -474,18 +481,27 @@ export function MessageComposeDialog({
 /** What each lead gets when bulk follow-ups pick the message per lead. */
 function PerLeadMessages({ sms = false }: { sms?: boolean }) {
   return (
-    <div className="flex flex-col gap-1.5 rounded-lg bg-muted/50 p-3 text-sm">
+    <div className="flex flex-col gap-2 rounded-lg bg-muted/50 p-3 text-sm">
       <p>
-        Each lead gets the {sms ? "text" : "email"} for their next follow-up:
+        Each lead gets the {sms ? "text" : "email"} for their next follow-up,
+        based on their stage:
       </p>
-      <ol className="list-decimal pl-5 text-muted-foreground">
-        {FOLLOW_UP_STEPS.map((step) => (
-          <li key={step.label}>{step.label}</li>
-        ))}
-      </ol>
+      {(["no_reply", "quote"] as const).map((sequence) => (
+        <div key={sequence} className="flex flex-col gap-0.5">
+          <span className="font-semibold">
+            {sequence === "quote" ? "At Quotation" : "At New and other stages"}{" "}
+            — {FOLLOW_UP_SEQUENCE_LABELS[sequence]}
+          </span>
+          <ol className="list-decimal pl-5 text-muted-foreground">
+            {FOLLOW_UP_COPY[sequence].steps.map((angle) => (
+              <li key={angle.label}>{angle.label}</li>
+            ))}
+          </ol>
+        </div>
+      ))}
       <p className="text-muted-foreground">
-        Leads past follow-up {FOLLOW_UP_STEPS.length} get extra angles in turn:
-        questions answered, group trips, visa help, planning ahead.
+        After follow-up {FOLLOW_UP_STEP_COUNT}, extra angles take turns, so
+        nobody gets the same message twice in a row.
       </p>
     </div>
   );

@@ -19,15 +19,18 @@ import {
   toChatTarget,
 } from "../lib/follow-ups/links";
 import {
+  FOLLOW_UP_COPY,
   FOLLOW_UP_GAP_DAYS,
-  EXTRA_ANGLES,
+  FOLLOW_UP_SEQUENCES,
   FOLLOW_UP_STEP_COUNT,
-  followUpAngle,
-  followUpSmsTemplate,
   LOST_AFTER_DAYS,
+  followUpAngle,
   followUpEmailTemplate,
+  followUpSequenceFor,
+  followUpSmsTemplate,
   trackedLinkLength,
 } from "../lib/follow-ups/templates";
+import { followUpBadge } from "../lib/follow-ups/progress";
 import { applyNameTemplate } from "../lib/crm/messages";
 import { B2C_STAGES } from "../lib/crm/stage";
 
@@ -104,30 +107,57 @@ check(
   "Hi TravelSentro! I got your follow-up email and I'd like to continue my inquiry."
 );
 
-// ---------------------------------------------------------------- templates
-check("gaps: 1, 3, 5, 10 days", FOLLOW_UP_GAP_DAYS, [1, 3, 5, 10]);
+// ---------------------------------------------------------------- cadence
+check("gaps: 1, 3, 5, 10 days", [...FOLLOW_UP_GAP_DAYS], [1, 3, 5, 10]);
 check("emails land on day 1, 4, 9, 19", FOLLOW_UP_GAP_DAYS.reduce<number[]>((acc, gap) => [...acc, (acc.at(-1) ?? 0) + gap], []), [1, 4, 9, 19]);
 check("4 steps", FOLLOW_UP_STEP_COUNT, 4);
 check("lost 3 days after the last email", LOST_AFTER_DAYS, 3);
-check("last step says it's the last", followUpEmailTemplate(4).body.includes("last check-in"), true);
-const step1 = followUpEmailTemplate(1, "Palawan Escape");
-check("step 1 names the package", step1.body.includes("your Palawan Escape trip"), true);
-check("step 1 subject has the name tag", applyNameTemplate(step1.subject, "Ana"), "Ana, let's plan your Palawan Escape trip");
-check("no package -> generic trip", followUpEmailTemplate(2, null).body.includes("your next trip"), true);
-// Every follow-up has its own angle: no two in a row share a subject or SMS,
-// and the first 8 (4 automatic + 4 extra) are all different.
-const subjects = Array.from({ length: 12 }, (_, i) => followUpEmailTemplate(i + 1).subject);
-const smsTexts = Array.from({ length: 12 }, (_, i) => followUpSmsTemplate(i + 1));
-check("first 8 email subjects all different", new Set(subjects.slice(0, 8)).size, 8);
-check("first 8 SMS texts all different", new Set(smsTexts.slice(0, 8)).size, 8);
-check("no two follow-ups in a row repeat", subjects.every((s, i) => i === 0 || s !== subjects[i - 1]), true);
-check("follow-up 5 is the first extra angle", followUpAngle(5).label, EXTRA_ANGLES[0].label);
-check("extras rotate after the last", followUpAngle(5 + EXTRA_ANGLES.length).label, EXTRA_ANGLES[0].label);
-check("every SMS + link fits 2 segments", smsTexts.every((t) => t.length + 15 + trackedLinkLength("https://travelsentro.com") <= 320), true);
-check("step 0 clamps to the first", followUpEmailTemplate(0).subject, followUpEmailTemplate(1).subject);
 
-// ---------------------------------------------------------------- funnel
-check("B2C has a Follow-up stage after New", B2C_STAGES.indexOf("follow_up"), B2C_STAGES.indexOf("new") + 1);
+// ---------------------------------------------------------------- sequences
+check("New -> no_reply", followUpSequenceFor("b2c", "new"), "no_reply");
+check("Quotation -> quote", followUpSequenceFor("b2c", "quotation"), "quote");
+check("Inquiry -> no_reply copy", followUpSequenceFor("b2c", "inquiry"), "no_reply");
+check("B2B never quote", followUpSequenceFor("b2b", "quotation"), "no_reply");
+check("B2C funnel has no Follow-up stage", B2C_STAGES, ["new", "inquiry", "quotation", "confirmation", "lost"]);
+
+// ---------------------------------------------------------------- copy
+for (const sequence of FOLLOW_UP_SEQUENCES) {
+  check(`${sequence}: one angle per automatic step`, FOLLOW_UP_COPY[sequence].steps.length, FOLLOW_UP_STEP_COUNT);
+  check(`${sequence}: step 4 is the last check-in`, followUpAngle(sequence, 4).label, "Last check-in");
+
+  // Every follow-up has its own angle: the first 8 (4 automatic + 4 extra)
+  // are all different, and no two in a row repeat.
+  const subjects = Array.from({ length: 12 }, (_, i) => followUpEmailTemplate(sequence, i + 1).subject);
+  const smsTexts = Array.from({ length: 12 }, (_, i) => followUpSmsTemplate(sequence, i + 1));
+  check(`${sequence}: first 8 email subjects all different`, new Set(subjects.slice(0, 8)).size, 8);
+  check(`${sequence}: first 8 SMS texts all different`, new Set(smsTexts.slice(0, 8)).size, 8);
+  check(`${sequence}: no two in a row repeat`, subjects.every((s, i) => i === 0 || s !== subjects[i - 1]), true);
+  check(`${sequence}: extras rotate`, followUpAngle(sequence, 5).label, followUpAngle(sequence, 9).label);
+  // Longest real name budget: 15 characters.
+  check(`${sequence}: every SMS + link fits 2 segments`, smsTexts.every((t) => t.length + 15 + trackedLinkLength("https://travelsentro.com") <= 320), true);
+  check(`${sequence}: step 0 clamps to the first`, followUpEmailTemplate(sequence, 0).subject, followUpEmailTemplate(sequence, 1).subject);
+}
+
+const first = followUpEmailTemplate("no_reply", 1, "Palawan Escape");
+check("no_reply 1 names the package", applyNameTemplate(first.subject, "Ana"), "Ana, let's check dates for your Palawan Escape trip");
+check("no_reply 1 asks for group size and dates", first.body.includes("how many people") && first.body.includes("travel dates"), true);
+check("quote 1 asks for passport copies", followUpEmailTemplate("quote", 1).body.includes("passport"), true);
+check("quote without package says 'your trip'", followUpEmailTemplate("quote", 1).subject, "Ready to reserve your trip?");
+check("no_reply without package says 'your next trip'", followUpEmailTemplate("no_reply", 3).body.includes("your next trip"), true);
+check(
+  "the two sequences never share a subject",
+  FOLLOW_UP_COPY.no_reply.steps.every((a) => FOLLOW_UP_COPY.quote.steps.every((b) => a.email("x").subject !== b.email("x").subject)),
+  true
+);
+
+// ---------------------------------------------------------------- badges
+const progress = (sentCount: number, clicked = false) => ({ sequence: "no_reply" as const, sentCount, clicked });
+check("no follow-ups -> no badge", followUpBadge(progress(0), "b2c", "new"), null);
+check("2 sent at New", followUpBadge(progress(2), "b2c", "new")?.label, "Following up 2 of 4");
+check("4 sent at New", followUpBadge(progress(4), "b2c", "new")?.label, "All 4 follow-ups sent");
+check("clicked", followUpBadge(progress(1, true), "b2c", "new")?.label, "Clicked to chat");
+check("manual at Inquiry", followUpBadge(progress(1), "b2c", "inquiry")?.label, "1 follow-up sent");
+check("manual for B2B", followUpBadge(progress(3), "b2b", "contacted")?.label, "3 follow-ups sent");
 
 let allPass = true;
 for (const r of results) {

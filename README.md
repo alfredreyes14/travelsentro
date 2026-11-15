@@ -60,28 +60,37 @@ the photo uploads anyway and the reason is logged server-side.
 
 ### Lead follow-ups (email + SMS)
 
-Follow-ups nudge leads into a chat and move them through the funnel.
+Follow-ups nudge B2C leads back into a chat. A follow-up is not a stage:
+it's something the system does *at* a stage. The B2C funnel stays
+New → Inquiry → Quotation → Confirmation / Lost.
 
-- **Email:** each follow-up has "Chat with us on Messenger" and "Chat on
-  WhatsApp" buttons. **SMS:** a Messenger link is added to the text. Every
-  link is personal (`/go/<token>`): a click is logged on the contact's
-  Activity and the visitor lands in the chat.
-- **Funnel:** sending moves the lead to **Follow-up** (B2C and B2B). A click
-  moves them to **Inquiry** (B2C) or **Discovery** (B2B), and revives a Lost
-  lead. Stages only move forward; Confirmation/Won are never touched.
+| Sequence | Runs while the lead is at | Angles (one per follow-up) | A tap on the chat button |
+|---|---|---|---|
+| **No reply yet** | New | group size & dates · dates fill up · help choosing · last check-in | moves them to **Inquiry** |
+| **Quote follow-up** | Quotation | send passport copies to reserve · slots are limited · questions before booking · last check-in | stops the emails; they stay at **Quotation** |
+
+- **Schedule:** gaps of 1, 3, 5 and 10 days from the previous follow-up
+  (counting from when the lead entered the stage), so day 1, 4, 9 and 19.
+  3 days after the 4th with no tap, the lead moves to **Lost** (shown on
+  Activity). A tap on an old link brings a Lost lead back.
+- **Counting:** only follow-ups sent since the lead entered its current
+  stage count, so moving a lead (e.g. New → Quotation) starts the next
+  sequence fresh.
+- **Links:** each email has "Chat with us on Messenger" and "Chat on
+  WhatsApp" buttons; each text a Messenger link. Every link is personal
+  (`/go/<token>`), so a tap is logged on the contact's Activity.
+- **Badges:** "Following up 2 of 4", "All 4 follow-ups sent" or "Clicked to
+  chat" next to the stage, in the CRM list and on the contact.
 - **By hand:** "Follow Up" on a contact, or "Follow Up Selected" in the CRM
-  list. Drafts come pre-filled and are editable.
-- **Angles:** every follow-up has its own message (email and SMS): 1 plan
-  your trip, 2 travel dates, 3 help choosing, 4 last check-in; follow-ups
-  staff send after that rotate through questions answered, group trip, visa
-  help and plan ahead. Bulk follow-ups give each lead their own next message
-  unless staff switch to one custom message.
-- **Automatic:** a daily cron (01:07 UTC = 9:07 AM Manila) emails B2C leads
-  with an inquiry that are still at New/Follow-up and haven't clicked. Gaps
-  are 1, 3, 5 and 10 days from the previous follow-up (day 1, 4, 9, 19).
-  3 days after the 4th, a lead who never clicked moves to **Lost** (once;
-  shown on Activity). On by default; `FOLLOW_UPS_ENABLED=false` stops it.
-  Limits: `.env.local.example`. Copy and cadence: `lib/follow-ups/templates.ts`.
+  list (each lead gets their own next message unless staff write one).
+  These count toward the 4; after the 4th, extra angles take turns.
+  Staff can follow up B2B contacts too (New/Contacted → Follow-up, a tap →
+  Discovery); there's no automation for B2B.
+- **Automatic:** daily cron at 01:07 UTC (9:07 AM Manila), B2C only, emails
+  only. On by default; `FOLLOW_UPS_ENABLED=false` stops it. Limits:
+  `.env.local.example`. Copy and cadence: `lib/follow-ups/templates.ts`.
+- **Keep stages current:** the CRM can't see Messenger chats. A lead staff
+  are chatting with but left at New still gets "No reply yet" emails.
 - **SMS caveat:** Philippine telcos filter texts with links. Semaphore's A2P
   route delivers them with a registered sender name (`SEMAPHORE_SENDER_NAME`);
   never use link shorteners (Smart drops them). Test on Globe and Smart

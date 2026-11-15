@@ -8,6 +8,7 @@ import { ContactQuotesCard } from "@/components/admin/contact-quotes-card";
 import { ContactSoaCard } from "@/components/admin/contact-soa-card";
 import { CrmDetail, type CrmDetailContact } from "@/components/admin/crm-detail";
 import type {
+  CrmDetailClosure,
   CrmDetailInquiry,
   CrmDetailMessage,
 } from "@/components/admin/contact-activity";
@@ -20,6 +21,11 @@ import { toMetaLeadSourceDetails } from "@/lib/crm/inquiry-source";
 import { toServiceKeys } from "@/lib/crm/services";
 import { toClientType, toContactStage } from "@/lib/crm/stage";
 import { toChatTarget } from "@/lib/follow-ups/links";
+import { toFollowUpProgress } from "@/lib/follow-ups/progress";
+import {
+  followUpSequenceFor,
+  toFollowUpSequence,
+} from "@/lib/follow-ups/templates";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -45,11 +51,18 @@ type ContactDetail = ContactRow & {
     | "created_at"
     | "sent_by_name"
     | "kind"
+    | "follow_up_sequence"
     | "follow_up_step"
     | "click_count"
   > & {
     message_clicks: { target: string; created_at: string }[];
   })[];
+  follow_up_closures: {
+    id: string;
+    sequence: string;
+    follow_ups_sent: number;
+    created_at: string;
+  }[];
 };
 
 /**
@@ -68,17 +81,22 @@ export default async function CrmContactPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [contactResult, tagsResult] = await Promise.all([
+  const [contactResult, tagsResult, progressResult] = await Promise.all([
     supabase
       .from("contacts")
       .select(
-        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name, kind, follow_up_step, click_count, message_clicks(target, created_at))"
+        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name, kind, follow_up_sequence, follow_up_step, click_count, message_clicks(target, created_at)), follow_up_closures(id, sequence, follow_ups_sent, created_at)"
       )
       .eq("id", id)
       .order("created_at", { referencedTable: "inquiries", ascending: false })
       .order("created_at", { referencedTable: "messages", ascending: false })
       .single(),
     supabase.rpc("list_contact_tags"),
+    supabase
+      .from("follow_up_progress")
+      .select("sequence, sent_count, clicked")
+      .eq("contact_id", id)
+      .maybeSingle(),
   ]);
 
   if (contactResult.error || !contactResult.data) notFound();
@@ -107,7 +125,6 @@ export default async function CrmContactPage({
     otherPhones: parseLabeledList(contact.other_phones),
     contractStart: contact.contract_start,
     contractEnd: contact.contract_end,
-    followUpsClosedAt: contact.follow_ups_closed_at,
     created_at: contact.created_at,
     created_by: contact.created_by,
     created_by_name: contact.created_by_name,
@@ -136,7 +153,13 @@ export default async function CrmContactPage({
     status: m.status as MessageStatus,
     created_at: m.created_at,
     sent_by_name: m.sent_by_name,
-    followUpStep: m.kind === "follow_up" ? (m.follow_up_step ?? 1) : null,
+    followUp:
+      m.kind === "follow_up"
+        ? {
+            sequence: toFollowUpSequence(m.follow_up_sequence),
+            step: m.follow_up_step ?? 1,
+          }
+        : null,
     clicks: (m.message_clicks ?? [])
       .map((click) => ({
         target: toChatTarget(click.target),
@@ -145,10 +168,25 @@ export default async function CrmContactPage({
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   }));
 
-  // Next follow-up number, and the package to mention in its draft.
-  const nextFollowUpStep =
-    detailMessages.filter((m) => m.followUpStep !== null && m.status === "sent")
-      .length + 1;
+  // The current sequence and its next step (follow_up_progress counts only
+  // this sequence since the contact entered its stage), and the package to
+  // mention in the draft.
+  if (progressResult.error) {
+    console.error("Failed to load follow-up progress:", progressResult.error.message);
+  }
+  const followUpProgress = progressResult.data
+    ? toFollowUpProgress(progressResult.data)
+    : undefined;
+  const nextFollowUp = {
+    sequence: followUpProgress?.sequence ?? followUpSequenceFor(contact.client_type, contact.stage),
+    step: (followUpProgress?.sentCount ?? 0) + 1,
+  };
+  const closures: CrmDetailClosure[] = (contact.follow_up_closures ?? []).map((c) => ({
+    id: c.id,
+    created_at: c.created_at,
+    sequence: toFollowUpSequence(c.sequence),
+    followUpsSent: c.follow_ups_sent,
+  }));
   const latestPackageName =
     contact.inquiries.find((inquiry) => inquiry.packages)?.packages?.name ?? null;
 
@@ -274,7 +312,9 @@ export default async function CrmContactPage({
       existingTags={tagsResult.data ?? []}
       inquiries={detailInquiries}
       messages={detailMessages}
-      followUp={{ step: nextFollowUpStep, packageName: latestPackageName }}
+      followUp={{ ...nextFollowUp, packageName: latestPackageName }}
+      followUpProgress={followUpProgress}
+      closures={closures}
       canEdit={canEdit}
       quotesSlot={quotesSlot}
       documentsSlot={documentsSlot}

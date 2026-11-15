@@ -11,14 +11,16 @@ import { sendSingleSms } from "@/lib/sms/semaphore";
 import { signContactId } from "@/lib/unsubscribe-token";
 
 import { buildTrackedUrl } from "./links";
+import { toFollowUpSequence, type FollowUpSequence } from "./templates";
 
 /**
  * The one send path for follow-ups, shared by staff actions
  * (actions/follow-ups.ts) and the daily automation (run-automation.ts).
  *
  * Each recipient gets their own tracking token, so every email/SMS is sent
- * and logged per contact. After logging, mark_follow_ups_sent() moves each
- * contact that was really reached to Follow-up.
+ * and logged per contact, tagged with its sequence and step. After
+ * logging, mark_follow_ups_sent() applies any stage move a send causes
+ * (today: B2B New/Contacted -> Follow-up).
  */
 
 export type FollowUpSender = { id: string | null; name: string | null };
@@ -29,6 +31,7 @@ export type FollowUpEmailItem = {
   contactId: string;
   name: string;
   email: string;
+  sequence: FollowUpSequence;
   step: number;
   /** May contain {{name}}. */
   subject: string;
@@ -40,6 +43,7 @@ export type FollowUpSmsItem = {
   contactId: string;
   name: string;
   phone: string;
+  sequence: FollowUpSequence;
   step: number;
   /** May contain {{name}}. The tracked link is appended. */
   body: string;
@@ -56,6 +60,7 @@ type MessageRow = {
   sent_by: string | null;
   sent_by_name: string | null;
   kind: "follow_up";
+  follow_up_sequence: FollowUpSequence;
   follow_up_step: number;
   tracking_token: string;
 };
@@ -67,27 +72,37 @@ function newTrackingToken(): string {
   return randomBytes(12).toString("base64url");
 }
 
-/** Sent follow-ups per contact, for numbering the next step. */
-export async function countSentFollowUps(
+export type NextFollowUp = { sequence: FollowUpSequence; step: number };
+
+/**
+ * Each contact's current sequence and the number of its next follow-up,
+ * from the follow_up_progress view (counts only this sequence, since the
+ * contact entered its current stage).
+ */
+export async function nextFollowUps(
   supabase: SupabaseClient,
   contactIds: string[]
-): Promise<Map<string, number>> {
-  const counts = new Map<string, number>();
-  if (contactIds.length === 0) return counts;
+): Promise<Map<string, NextFollowUp>> {
+  const next = new Map<string, NextFollowUp>();
+  if (contactIds.length === 0) return next;
 
   const { data, error } = await supabase
-    .from("messages")
-    .select("contact_id")
-    .eq("kind", "follow_up")
-    .eq("status", "sent")
+    .from("follow_up_progress")
+    .select("contact_id, sequence, sent_count")
     .in("contact_id", contactIds);
 
-  if (error) console.error("countSentFollowUps failed:", error.message);
+  if (error) console.error("nextFollowUps failed:", error.message);
   for (const row of data ?? []) {
-    counts.set(row.contact_id, (counts.get(row.contact_id) ?? 0) + 1);
+    next.set(row.contact_id, {
+      sequence: toFollowUpSequence(row.sequence),
+      step: (row.sent_count ?? 0) + 1,
+    });
   }
-  return counts;
+  return next;
 }
+
+/** A contact missing from nextFollowUps()' result: start of no_reply. */
+export const FIRST_FOLLOW_UP: NextFollowUp = { sequence: "no_reply", step: 1 };
 
 /** Each contact's most recent inquired package name, if any. */
 export async function latestPackageNames(
@@ -207,6 +222,7 @@ export async function sendFollowUpEmails({
       sent_by: sender.id,
       sent_by_name: sender.name,
       kind: "follow_up",
+      follow_up_sequence: p.sequence,
       follow_up_step: p.step,
       tracking_token: p.token,
     }))
@@ -266,6 +282,7 @@ export async function sendFollowUpSms({
         sent_by: sender.id,
         sent_by_name: sender.name,
         kind: "follow_up",
+        follow_up_sequence: item.sequence,
         follow_up_step: item.step,
         tracking_token: token,
       };

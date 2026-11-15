@@ -54,7 +54,6 @@ function check(name: string, actual: unknown, expected: unknown) {
 // ---------------------------------------------------------------- stages
 check("B2C stages in order", B2C_STAGES, [
   "new",
-  "follow_up",
   "inquiry",
   "quotation",
   "confirmation",

@@ -27,7 +27,6 @@ export function toClientType(value: string): ClientType {
 
 export const B2C_STAGES = [
   "new",
-  "follow_up",
   "inquiry",
   "quotation",
   "confirmation",

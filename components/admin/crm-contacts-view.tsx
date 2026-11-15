@@ -331,7 +331,7 @@ export function CrmContactsView({
       <MessageComposeDialog
         contacts={selected}
         mode="bulk"
-        followUp={{ step: 1 }}
+        followUp={{ sequence: "no_reply", step: 1 }}
         open={isFollowUpOpen}
         onOpenChange={setIsFollowUpOpen}
         onSuccess={() => {

@@ -22,7 +22,11 @@ import {
 } from "@/lib/crm/inquiry-source";
 import { STAGE_CHIP_CLASSNAME } from "@/lib/crm/stage";
 import { CHAT_TARGET_LABELS, type ChatTarget } from "@/lib/follow-ups/links";
-import { FOLLOW_UP_STEP_COUNT } from "@/lib/follow-ups/templates";
+import {
+  FOLLOW_UP_SEQUENCE_LABELS,
+  FOLLOW_UP_STEP_COUNT,
+  type FollowUpSequence,
+} from "@/lib/follow-ups/templates";
 import { cn } from "@/lib/utils";
 
 export type CrmDetailInquiry = {
@@ -44,7 +48,7 @@ export type CrmDetailMessage = {
   created_at: string;
   sent_by_name: string | null;
   /** Set for follow-ups: which follow-up this was (1, 2, ...). */
-  followUpStep: number | null;
+  followUp: { sequence: FollowUpSequence; step: number } | null;
   /** Tracked chat-button clicks, oldest first. */
   clicks: { target: ChatTarget; createdAt: string }[];
 };
@@ -52,25 +56,31 @@ export type CrmDetailMessage = {
 type ActivityItem =
   | ({ kind: "inquiry" } & CrmDetailInquiry)
   | ({ kind: "message" } & CrmDetailMessage)
-  | { kind: "auto_lost"; id: string; created_at: string };
+  | ({ kind: "auto_lost" } & CrmDetailClosure);
+
+/** The follow-up automation moving this contact to Lost (follow_up_closures). */
+export type CrmDetailClosure = {
+  id: string;
+  created_at: string;
+  sequence: FollowUpSequence;
+  followUpsSent: number;
+};
 
 /** A contact's inquiries and sent messages, newest first. */
 export function ContactActivity({
   inquiries,
   messages,
-  autoLostAt,
+  closures = [],
 }: {
   inquiries: CrmDetailInquiry[];
   messages: CrmDetailMessage[];
   /** When the follow-up automation moved this contact to Lost, if it did. */
-  autoLostAt?: string | null;
+  closures?: CrmDetailClosure[];
 }) {
   const activity: ActivityItem[] = [
     ...inquiries.map((i) => ({ kind: "inquiry" as const, ...i })),
     ...messages.map((m) => ({ kind: "message" as const, ...m })),
-    ...(autoLostAt
-      ? [{ kind: "auto_lost" as const, id: "auto-lost", created_at: autoLostAt }]
-      : []),
+    ...closures.map((c) => ({ kind: "auto_lost" as const, ...c })),
   ].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
@@ -113,7 +123,8 @@ export function ContactActivity({
                       Moved to Lost automatically
                     </Badge>
                     <p className="text-base leading-[1.5]">
-                      No reply after {FOLLOW_UP_STEP_COUNT} follow-up emails.
+                      No reply after {item.followUpsSent} follow-ups (
+                      {FOLLOW_UP_SEQUENCE_LABELS[item.sequence]}).
                     </p>
                   </>
                 ) : item.kind === "inquiry" ? (
@@ -174,11 +185,12 @@ export function ContactActivity({
                       <span className="text-sm text-muted-foreground">
                         {CHANNEL_LABELS[item.channel]}
                       </span>
-                      {item.followUpStep !== null ? (
+                      {item.followUp !== null ? (
                         <Badge variant="outline">
-                          {item.followUpStep <= FOLLOW_UP_STEP_COUNT
-                            ? `Follow-up ${item.followUpStep} of ${FOLLOW_UP_STEP_COUNT}`
-                            : `Follow-up #${item.followUpStep}`}
+                          {FOLLOW_UP_SEQUENCE_LABELS[item.followUp.sequence]} ·{" "}
+                          {item.followUp.step <= FOLLOW_UP_STEP_COUNT
+                            ? `${item.followUp.step} of ${FOLLOW_UP_STEP_COUNT}`
+                            : `#${item.followUp.step}`}
                         </Badge>
                       ) : null}
                     </div>
@@ -190,7 +202,7 @@ export function ContactActivity({
                     <p className="text-base leading-[1.5] whitespace-pre-line">
                       {item.body}
                     </p>
-                    {item.followUpStep !== null && item.status === "sent" ? (
+                    {item.followUp !== null && item.status === "sent" ? (
                       <FollowUpClicks clicks={item.clicks} />
                     ) : null}
                     {item.status === "failed" ? (

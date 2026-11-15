@@ -11,8 +11,10 @@ import { updateOptOut } from "@/actions/messages";
 import {
   ContactActivity,
   type CrmDetailInquiry,
+  type CrmDetailClosure,
   type CrmDetailMessage,
 } from "./contact-activity";
+import { FollowUpBadge } from "./follow-up-badge";
 import { ContactB2bCard } from "./contact-b2b-card";
 import { ContactConvertDialog } from "./contact-convert-dialog";
 import { ContactEditForm } from "./contact-edit-form";
@@ -49,6 +51,7 @@ import {
   type ClientType,
   type ContactStage,
 } from "@/lib/crm/stage";
+import type { FollowUpProgress } from "@/lib/follow-ups/progress";
 import { cn } from "@/lib/utils";
 
 const STAGE_ERROR_MESSAGE =
@@ -73,8 +76,6 @@ export type CrmDetailContact = {
   otherPhones: LabeledValue[];
   contractStart: string | null;
   contractEnd: string | null;
-  /** When the follow-up automation moved this contact to Lost. */
-  followUpsClosedAt: string | null;
   created_at: string;
   created_by: string | null;
   created_by_name: string | null;
@@ -95,6 +96,8 @@ export function CrmDetail({
   inquiries,
   messages,
   followUp,
+  followUpProgress,
+  closures,
   canEdit,
   quotesSlot,
   documentsSlot,
@@ -107,6 +110,10 @@ export function CrmDetail({
   messages: CrmDetailMessage[];
   /** The next follow-up's number and the lead's package, for its draft. */
   followUp: ComposeFollowUp;
+  /** The current sequence's progress, for the badge next to the stage. */
+  followUpProgress?: FollowUpProgress;
+  /** Times the automation moved this contact to Lost. */
+  closures: CrmDetailClosure[];
   canEdit: boolean;
   quotesSlot?: ReactNode;
   documentsSlot?: ReactNode;
@@ -201,6 +208,11 @@ export function CrmDetail({
           ) : (
             <ContactStageChip stage={stage} />
           )}
+          <FollowUpBadge
+            progress={followUpProgress}
+            clientType={contact.clientType}
+            stage={contact.stage}
+          />
           <Button onClick={() => setIsMessageOpen(true)}>
             <SendIcon className="size-4" />
             Message
@@ -354,7 +366,7 @@ export function CrmDetail({
       <ContactActivity
         inquiries={inquiries}
         messages={messages}
-        autoLostAt={contact.followUpsClosedAt}
+        closures={closures}
       />
 
       <MessageComposeDialog
@@ -369,7 +381,7 @@ export function CrmDetail({
       />
 
       <MessageComposeDialog
-        key={`follow-up-${followUp.step}`}
+        key={`follow-up-${followUp.sequence}-${followUp.step}`}
         contacts={[composeContact]}
         mode="individual"
         followUp={followUp}

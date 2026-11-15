@@ -10,14 +10,17 @@ import {
   FOLLOW_UP_STEP_COUNT,
   LOST_AFTER_DAYS,
   followUpEmailTemplate,
+  toFollowUpSequence,
 } from "./templates";
 
 /**
  * The daily lead follow-up run (app/api/cron/follow-ups):
- *   1. moves leads who got every follow-up and never clicked to Lost
- *      (close_unconverted_follow_ups()), then
- *   2. emails every B2C lead whose next step is due (list_due_follow_ups()),
- *      within what's left of the shared Resend quota.
+ *   1. moves B2C contacts who got a whole sequence and never clicked to
+ *      Lost (close_unconverted_follow_ups()), then
+ *   2. emails every B2C contact at New or Quotation whose next step is due
+ *      (list_due_follow_ups()), within what's left of the shared Resend
+ *      quota. The stage picks the sequence: New -> no_reply, Quotation ->
+ *      quote (lib/follow-ups/templates.ts).
  *
  * On by default; FOLLOW_UPS_ENABLED=false switches it off. Vercel only runs
  * crons on production, so staging never emails leads on its own.
@@ -85,15 +88,20 @@ export async function runFollowUpAutomation(): Promise<FollowUpRunResult> {
       contact_id: string;
       name: string;
       email: string;
+      sequence: string;
       next_step: number;
       package_name: string | null;
-    }) => ({
-      contactId: row.contact_id,
-      name: row.name,
-      email: row.email,
-      step: row.next_step,
-      ...followUpEmailTemplate(row.next_step, row.package_name),
-    })
+    }) => {
+      const sequence = toFollowUpSequence(row.sequence);
+      return {
+        contactId: row.contact_id,
+        name: row.name,
+        email: row.email,
+        sequence,
+        step: row.next_step,
+        ...followUpEmailTemplate(sequence, row.next_step, row.package_name),
+      };
+    }
   );
 
   const summary = await sendFollowUpEmails({

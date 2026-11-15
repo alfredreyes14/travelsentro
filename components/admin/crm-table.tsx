@@ -17,6 +17,7 @@ import {
 } from "@tanstack/react-table";
 
 import { ContactStageChip } from "./contact-stage-chip";
+import { FollowUpBadge } from "./follow-up-badge";
 import { ContractEndChip } from "./contract-end-chip";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -36,6 +37,7 @@ import {
 } from "@/components/ui/tooltip";
 import { SERVICE_LABELS, type ServiceKey } from "@/lib/crm/services";
 import type { ClientType, ContactStage } from "@/lib/crm/stage";
+import type { FollowUpProgress } from "@/lib/follow-ups/progress";
 
 export type AdminContactListItem = {
   id: string;
@@ -44,6 +46,7 @@ export type AdminContactListItem = {
   phone: string | null;
   clientType: ClientType;
   stage: ContactStage;
+  followUp?: FollowUpProgress;
   tags: string[];
   opted_out: boolean;
   servicesAvailed: ServiceKey[];
@@ -145,10 +148,23 @@ const selectColumn: ColumnDef<AdminContactListItem> = {
   ),
 };
 
+function StageCell({ contact }: { contact: AdminContactListItem }) {
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <ContactStageChip stage={contact.stage} />
+      <FollowUpBadge
+        progress={contact.followUp}
+        clientType={contact.clientType}
+        stage={contact.stage}
+      />
+    </div>
+  );
+}
+
 const stageColumn: ColumnDef<AdminContactListItem> = {
   accessorKey: "stage",
   header: "Stage",
-  cell: ({ row }) => <ContactStageChip stage={row.original.stage} />,
+  cell: ({ row }) => <StageCell contact={row.original} />,
 };
 
 const tagsColumn: ColumnDef<AdminContactListItem> = {
@@ -324,7 +340,7 @@ export function CrmTable({
                       : (contact.email ?? contact.phone ?? "—")}
                   </p>
                 </div>
-                <ContactStageChip stage={contact.stage} />
+                <StageCell contact={contact} />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-1">
                 {type === "b2b" && contact.contractEnd ? (
