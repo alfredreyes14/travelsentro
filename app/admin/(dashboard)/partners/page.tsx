@@ -22,8 +22,8 @@ export const metadata: Metadata = {
 
 export default async function AdminPartnersPage() {
   // AUTH-05 -- gate independent of nav hiding; RLS is the second,
-  // independent enforcement layer (mirrors every other admin page). Reuses
-  // can_manage_packages, the same permission that gates /admin/content.
+  // independent enforcement layer (mirrors every other admin page). Needs
+  // Partners View.
   await requireModuleOrRedirect("partners");
 
   const supabase = await createClient();

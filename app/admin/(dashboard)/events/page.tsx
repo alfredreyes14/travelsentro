@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 export default async function AdminEventsPage() {
   // AUTH-05 -- gate independent of nav hiding; RLS is the second layer.
-  // Reuses can_manage_packages like Partners and Content.
+  // Needs Events View.
   const profile = await requireModuleOrRedirect("events");
 
   const supabase = await createClient();

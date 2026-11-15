@@ -152,7 +152,9 @@ test("a lead who unsubscribes gets no more follow-ups or messages", async ({ req
   expect((await sentEmails()).map((e) => e.to)).not.toContain(lead.email);
 
   await page.goto(`/admin/crm/${lead.id}`);
-  await expect(page.getByText("Unsubscribed", { exact: true })).toBeVisible();
+  // Shown twice: the follow-up badge and the Unsubscribed switch label.
+  await expect(page.getByText("Unsubscribed", { exact: true }).first()).toBeVisible();
+  await expect(page.getByRole("switch")).toBeChecked();
   await expect(page.getByRole("button", { name: "Follow Up", exact: true })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Message", exact: true })).toBeDisabled();
 });

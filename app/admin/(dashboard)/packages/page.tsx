@@ -104,7 +104,7 @@ export default async function AdminPackagesPage() {
   }
 
   // Every destination in the DB is offered in the filter, not just those
-  // currently attached to a package. RLS grants can_manage_packages users
+  // currently attached to a package. RLS grants Packages View users
   // read access to all destinations (active or not).
   const { data: destinationRows, error: destinationsError } = await supabase
     .from("destinations")

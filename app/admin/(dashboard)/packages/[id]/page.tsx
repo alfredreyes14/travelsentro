@@ -37,7 +37,7 @@ type PackageDetail = Database["public"]["Tables"]["packages"]["Row"] & {
 
 /**
  * Admin edit page (PKG-01/02). Fetches by id, NOT slug, and with no
- * published filter — an Admin/Staff with can_manage_packages must be able
+ * published filter — an Admin, or Staff with Packages View, must be able
  * to open and edit an unpublished draft, unlike the public detail page.
  */
 export default async function EditPackagePage({
