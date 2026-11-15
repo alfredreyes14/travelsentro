@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requirePermission } from "@/lib/auth/dal";
+import { scheduleMetaSync } from "@/lib/meta-sync/schedule";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 import {
@@ -173,6 +174,7 @@ export async function updateStage(
   }
   if (!data || data.length === 0) return { ok: false, error: GONE_MESSAGE };
 
+  scheduleMetaSync();
   revalidatePath("/admin/crm");
   revalidatePath(`/admin/crm/${id}`);
   return { ok: true };
@@ -206,6 +208,7 @@ export async function convertContactType(
   }
   if (!data || data.length === 0) return { ok: false, error: GONE_MESSAGE };
 
+  scheduleMetaSync();
   revalidatePath("/admin/crm");
   revalidatePath(`/admin/crm/${id}`);
   return { ok: true };

@@ -7,6 +7,10 @@ import { ContactDocumentsCard } from "@/components/admin/contact-documents-card"
 import { ContactQuotesCard } from "@/components/admin/contact-quotes-card";
 import { ContactSoaCard } from "@/components/admin/contact-soa-card";
 import { CrmDetail, type CrmDetailContact } from "@/components/admin/crm-detail";
+import {
+  ContactMessengerLink,
+  type MessengerChatOption,
+} from "@/components/admin/contact-messenger-link";
 import type {
   CrmDetailContactLog,
   CrmDetailInquiry,
@@ -21,6 +25,13 @@ import type { MessageChannel, MessageStatus } from "@/lib/crm/messages";
 import { toMetaLeadSourceDetails } from "@/lib/crm/inquiry-source";
 import { toServiceKeys } from "@/lib/crm/services";
 import { toClientType, toContactStage } from "@/lib/crm/stage";
+import { toChatTarget } from "@/lib/follow-ups/links";
+import { chatUrl } from "@/lib/meta-sync/chats";
+import { toFollowUpProgress } from "@/lib/follow-ups/progress";
+import {
+  followUpSequenceFor,
+  toFollowUpSequence,
+} from "@/lib/follow-ups/templates";
 import type { Database } from "@/types/database";
 
 export const metadata: Metadata = {
@@ -37,10 +48,22 @@ type ContactDetail = ContactRow & {
   inquiries: (InquiryRow & {
     packages: Pick<PackageRow, "id" | "name" | "slug"> | null;
   })[];
-  messages: Pick<
+  messages: (Pick<
     MessageRow,
-    "id" | "channel" | "subject" | "body" | "status" | "created_at" | "sent_by_name"
-  >[];
+    | "id"
+    | "channel"
+    | "subject"
+    | "body"
+    | "status"
+    | "created_at"
+    | "sent_by_name"
+    | "kind"
+    | "follow_up_sequence"
+    | "follow_up_step"
+    | "click_count"
+  > & {
+    message_clicks: { target: string; created_at: string }[];
+  })[];
   contact_logs: Pick<
     ContactLogRow,
     "id" | "channel" | "note" | "contacted_at" | "logged_by_name"
@@ -63,11 +86,11 @@ export default async function CrmContactPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [contactResult, tagsResult] = await Promise.all([
+  const [contactResult, tagsResult, progressResult, chatsResult] = await Promise.all([
     supabase
       .from("contacts")
       .select(
-        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name), contact_logs(id, channel, note, contacted_at, logged_by_name)"
+        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name, kind, follow_up_sequence, follow_up_step, click_count, message_clicks(target, created_at)), contact_logs(id, channel, note, contacted_at, logged_by_name)"
       )
       .eq("id", id)
       .order("created_at", { referencedTable: "inquiries", ascending: false })
@@ -75,6 +98,18 @@ export default async function CrmContactPage({
       .order("contacted_at", { referencedTable: "contact_logs", ascending: false })
       .single(),
     supabase.rpc("list_contact_tags"),
+    supabase
+      .from("follow_up_progress")
+      .select("sequence, sent_count, clicked")
+      .eq("contact_id", id)
+      .maybeSingle(),
+    // This contact's chat (if linked) plus recent chats nobody linked yet.
+    supabase
+      .from("messenger_threads")
+      .select("psid, name, last_snippet, last_inbound_at, chat_link, contact_id")
+      .or(`contact_id.eq.${id},contact_id.is.null`)
+      .order("last_inbound_at", { ascending: false, nullsFirst: false })
+      .limit(50),
   ]);
 
   if (contactResult.error || !contactResult.data) notFound();
@@ -103,6 +138,7 @@ export default async function CrmContactPage({
     otherPhones: parseLabeledList(contact.other_phones),
     contractStart: contact.contract_start,
     contractEnd: contact.contract_end,
+    quoteSuggestedAt: contact.quote_suggested_at,
     created_at: contact.created_at,
     created_by: contact.created_by,
     created_by_name: contact.created_by_name,
@@ -131,7 +167,69 @@ export default async function CrmContactPage({
     status: m.status as MessageStatus,
     created_at: m.created_at,
     sent_by_name: m.sent_by_name,
+    followUp:
+      m.kind === "follow_up"
+        ? {
+            sequence: toFollowUpSequence(m.follow_up_sequence),
+            step: m.follow_up_step ?? 1,
+          }
+        : null,
+    clicks: (m.message_clicks ?? [])
+      .map((click) => ({
+        target: toChatTarget(click.target),
+        createdAt: click.created_at,
+      }))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
   }));
+
+  // The current sequence and its next step (follow_up_progress counts only
+  // this sequence since the contact entered its stage), and the package to
+  // mention in the draft.
+  if (progressResult.error) {
+    console.error("Failed to load follow-up progress:", progressResult.error.message);
+  }
+  const followUpProgress = progressResult.data
+    ? toFollowUpProgress(progressResult.data)
+    : undefined;
+  const nextFollowUp = {
+    sequence: followUpProgress?.sequence ?? followUpSequenceFor(contact.client_type, contact.stage),
+    step: (followUpProgress?.sentCount ?? 0) + 1,
+  };
+  if (chatsResult.error) {
+    console.error("Failed to load Messenger chats:", chatsResult.error.message);
+  }
+  const toChat = (row: {
+    psid: string;
+    name: string | null;
+    last_snippet: string | null;
+    last_inbound_at: string | null;
+    chat_link: string | null;
+  }): MessengerChatOption => ({
+    psid: row.psid,
+    name: row.name,
+    snippet: row.last_snippet,
+    lastInboundAt: row.last_inbound_at,
+    chatUrl: chatUrl(row.chat_link),
+  });
+  const chatRows = chatsResult.data ?? [];
+  const linkedRow = chatRows.find((row) => row.contact_id === id);
+  const messengerSlot = (
+    <ContactMessengerLink
+      contactId={id}
+      linkedChat={
+        linkedRow
+          ? toChat(linkedRow)
+          : contact.messenger_psid
+            ? { psid: contact.messenger_psid, name: null, snippet: null, lastInboundAt: null, chatUrl: null }
+            : null
+      }
+      unlinkedChats={chatRows.filter((row) => row.contact_id === null).map(toChat)}
+      canEdit={canEdit}
+    />
+  );
+
+  const latestPackageName =
+    contact.inquiries.find((inquiry) => inquiry.packages)?.packages?.name ?? null;
 
   const detailContactLogs: CrmDetailContactLog[] = contact.contact_logs.map((log) => ({
     id: log.id,
@@ -148,7 +246,7 @@ export default async function CrmContactPage({
   const lastContact =
     lastSent &&
     (!lastLog || new Date(lastSent.created_at).getTime() > new Date(lastLog.created_at).getTime())
-      ? { at: lastSent.created_at, via: lastSent.channel === "email" ? "email" : "SMS" }
+      ? { at: lastSent.created_at, via: { email: "email", sms: "SMS", messenger: "Messenger" }[lastSent.channel] }
       : lastLog
         ? { at: lastLog.created_at, via: CONTACT_LOG_CHANNEL_LABELS[lastLog.channel] }
         : null;
@@ -276,6 +374,9 @@ export default async function CrmContactPage({
       existingTags={tagsResult.data ?? []}
       inquiries={detailInquiries}
       messages={detailMessages}
+      followUp={{ ...nextFollowUp, packageName: latestPackageName }}
+      followUpProgress={followUpProgress}
+      messengerSlot={messengerSlot}
       contactLogs={detailContactLogs}
       lastContact={lastContact}
       canEdit={canEdit}

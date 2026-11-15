@@ -4,6 +4,14 @@
     {
       "path": "/api/cron/meta-leads",
       "schedule": "59 15 * * *"
+    },
+    {
+      "path": "/api/cron/follow-ups",
+      "schedule": "7 1 * * *"
+    },
+    {
+      "path": "/api/cron/messenger-sync",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

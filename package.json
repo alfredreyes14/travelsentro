@@ -41,7 +41,13 @@
     "verify:quote-pdf": "tsx --env-file=.env.local scripts/verify-quote-pdf.ts",
     "import:meta-leads": "tsx --env-file=.env.local scripts/import-meta-leads.ts",
     "verify:meta-leads": "tsx scripts/verify-meta-leads.ts",
-    "verify:soa": "tsx scripts/verify-soa.ts"
+    "verify:soa": "tsx scripts/verify-soa.ts",
+    "verify:follow-ups": "tsx scripts/verify-follow-ups.ts",
+    "verify:meta-sync": "tsx scripts/verify-meta-sync.ts",
+    "setup:meta-sync": "tsx --env-file=.env.local scripts/setup-meta-sync.ts",
+    "check:messenger-access": "tsx --env-file=.env.local scripts/check-messenger-access.ts",
+    "e2e": "playwright test",
+    "e2e:build": "tsx e2e/build.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
@@ -77,6 +83,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^24.19.2",
     "@types/react": "^19",

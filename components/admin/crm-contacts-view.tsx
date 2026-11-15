@@ -1,9 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { HistoryIcon, PlusIcon, SearchIcon } from "lucide-react";
+import { HistoryIcon, MessageCircleIcon, PlusIcon, SearchIcon } from "lucide-react";
 import type { RowSelectionState } from "@tanstack/react-table";
 
 import { ContactAddDialog } from "./contact-add-dialog";
@@ -11,7 +11,7 @@ import { CrmTable, type AdminContactListItem } from "./crm-table";
 import { MessageComposeDialog } from "./message-compose-dialog";
 import { MetaLeadSyncButton } from "./meta-lead-sync-button";
 import { DataTableToolbar } from "@/components/admin/data-table-toolbar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -65,12 +65,15 @@ export function CrmContactsView({
   initialType,
   canEdit,
   metaLeadSyncEnabled,
+  todoSlot,
 }: {
   contacts: AdminContactListItem[];
   initialType: ClientType;
   canEdit: boolean;
   /** Production only; see lib/meta-leads/run-sync.ts. */
   metaLeadSyncEnabled: boolean;
+  /** The Messenger to-do panel (components/admin/messenger-todo.tsx). */
+  todoSlot?: ReactNode;
 }) {
   const router = useRouter();
   const [type, setType] = useState<ClientType>(initialType);
@@ -81,6 +84,7 @@ export function CrmContactsView({
   const [tagFilter, setTagFilter] = useState(TAG_FILTER_ALL);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   const byType = useMemo(
@@ -179,6 +183,11 @@ export function CrmContactsView({
             <HistoryIcon className="size-4" />
             Sync log
           </Button>
+          {/* A real link styled as a button (Button render={<Link>} is announced as a button). */}
+          <Link href="/admin/crm/messenger" className={buttonVariants({ variant: "ghost" })}>
+            <MessageCircleIcon className="size-4" />
+            Messenger settings
+          </Link>
           {canEdit ? (
             <>
               <MetaLeadSyncButton enabled={metaLeadSyncEnabled} />
@@ -190,6 +199,8 @@ export function CrmContactsView({
           ) : null}
         </div>
       </div>
+
+      {todoSlot}
 
       <Tabs
         value={type}
@@ -271,6 +282,9 @@ export function CrmContactsView({
               <Button variant="ghost" onClick={() => setRowSelection({})}>
                 Clear
               </Button>
+              <Button variant="outline" onClick={() => setIsFollowUpOpen(true)}>
+                Follow Up Selected
+              </Button>
               <Button onClick={() => setIsComposeOpen(true)}>
                 Message Selected
               </Button>
@@ -324,6 +338,19 @@ export function CrmContactsView({
         onSuccess={() => {
           setRowSelection({});
           setIsComposeOpen(false);
+          router.refresh();
+        }}
+      />
+
+      <MessageComposeDialog
+        contacts={selected}
+        mode="bulk"
+        followUp={{ sequence: "no_reply", step: 1 }}
+        open={isFollowUpOpen}
+        onOpenChange={setIsFollowUpOpen}
+        onSuccess={() => {
+          setRowSelection({});
+          setIsFollowUpOpen(false);
           router.refresh();
         }}
       />

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { requirePermission } from "@/lib/auth/dal";
+import { scheduleMetaSync } from "@/lib/meta-sync/schedule";
 import {
   isMetaLeadSyncEnabled,
   MetaLeadSyncRunError,
@@ -32,6 +33,8 @@ export async function syncMetaLeadsNow(): Promise<MetaLeadSyncActionResult> {
       userId: profile.id,
       userName: profile.name || profile.email,
     });
+    // New Meta leads queue their first Conversions API event; send them.
+    scheduleMetaSync();
     // "layout" also covers /admin/crm/sync-log.
     revalidatePath("/admin/crm", "layout");
     return { ok: true, result };

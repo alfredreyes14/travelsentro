@@ -18,6 +18,7 @@ import {
 } from "@/lib/sms/semaphore";
 import { applyNameTemplate } from "@/lib/crm/messages";
 import { withEmail } from "@/lib/crm/contact-label";
+import { remainingEmailQuota } from "@/lib/crm/email-quota";
 import { signContactId } from "@/lib/unsubscribe-token";
 import { CustomerMessageEmail } from "@/components/email/customer-message-email";
 import {
@@ -179,15 +180,7 @@ export async function sendIndividualSms(
 export async function getRemainingEmailQuota(): Promise<number> {
   await requirePermission("can_message_customers");
 
-  const supabase = await createClient();
-
-  const { count } = await supabase
-    .from("messages")
-    .select("id", { count: "exact", head: true })
-    .eq("channel", "email")
-    .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-
-  return Math.max(0, 100 - (count ?? 0));
+  return remainingEmailQuota(await createClient());
 }
 
 /**
@@ -226,13 +219,7 @@ export async function sendBulkEmail(
     return { ok: false, error: NO_ELIGIBLE_RECIPIENTS_MESSAGE };
   }
 
-  const { count } = await supabase
-    .from("messages")
-    .select("id", { count: "exact", head: true })
-    .eq("channel", "email")
-    .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-
-  const remaining = Math.max(0, 100 - (count ?? 0));
+  const remaining = await remainingEmailQuota(supabase);
 
   if (contacts.length > remaining) {
     return {
