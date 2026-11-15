@@ -17,9 +17,6 @@ import { splitParagraphs } from "@/lib/text/split-paragraphs";
  * button URLs go through /go/<token> (lib/follow-ups/links.ts), which logs
  * the click and moves the lead in the funnel before opening the chat.
  * Same brand tokens as customer-message-email.tsx.
- *
- * The brand mark is text, not the logo image: with the image, Gmail filed
- * these under Promotions; without one they reached the inbox.
  */
 export function FollowUpEmail({
   name,
@@ -57,18 +54,6 @@ export function FollowUpEmail({
             borderRadius: "8px",
           }}
         >
-          <Text
-            style={{
-              margin: "0 0 8px",
-              fontSize: "22px",
-              fontWeight: 700,
-              fontStyle: "italic",
-              letterSpacing: "-0.5px",
-            }}
-          >
-            <span style={{ color: "#021F4A" }}>Travel</span>
-            <span style={{ color: "#F49314" }}>Sentro</span>
-          </Text>
           <Heading style={{ color: "#021F4A", fontSize: "24px" }}>
             Hi {name},
           </Heading>
@@ -92,8 +77,6 @@ export function FollowUpEmail({
             </Button>
           </Section>
           <Text style={{ color: "#6B7280", fontSize: "12px" }}>
-            TravelSentro · travelsentro.com
-            <br />
             You&apos;re receiving this because you asked TravelSentro about a
             trip.{" "}
             <a href={unsubscribeUrl} style={{ color: "#6B7280" }}>

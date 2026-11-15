@@ -74,6 +74,9 @@ type MessageRow = {
   tracking_token: string;
 };
 
+/** Every follow-up email, staff or automated, comes from the same person. */
+export const FOLLOW_UP_FROM_NAME = "Almira from TravelSentro";
+
 // Parallel Semaphore calls per bulk SMS follow-up.
 const SMS_CONCURRENCY = 5;
 
@@ -205,10 +208,6 @@ export async function sendFollowUpEmails({
 }): Promise<FollowUpSummary> {
   if (items.length === 0) return { sent: 0, failed: 0, total: 0 };
 
-  // A staff send shows as "<name> from TravelSentro"; the daily automation
-  // (no sender id) as "TravelSentro".
-  const staffName = sender.id ? sender.name?.trim() : null;
-  const from = fromWithName(staffName ? `${staffName} from TravelSentro` : "TravelSentro");
 
   const batchId = items.length > 1 ? randomUUID() : null;
   const prepared = items.map((item) => ({
@@ -222,7 +221,7 @@ export async function sendFollowUpEmails({
   try {
     results = await sendBatchEmails(
       prepared.map((p) => ({
-        from,
+        from: fromWithName(FOLLOW_UP_FROM_NAME),
         to: p.email,
         subject: p.subject,
         react: createElement(FollowUpEmail, {
