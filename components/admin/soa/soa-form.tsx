@@ -34,6 +34,7 @@ import type {
 } from "@/lib/soa/soa-options";
 import { useRemoveConfirmation } from "@/components/admin/itinerary-fields/remove-confirmation";
 import { Form } from "@/components/ui/form";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -62,6 +63,7 @@ export function SoaForm({
   canCreateContact: boolean;
   emailDefaults?: SoaEmailDefaults;
 }) {
+  const canSave = useCan("soa", soaId ? "update" : "create");
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -110,50 +112,52 @@ export function SoaForm({
         className="flex flex-col gap-6"
         noValidate
       >
-        <SoaSection title="Bill to">
-          <SoaBillToFields
-            contacts={contacts}
-            quotes={quotes}
-            existingTags={existingTags}
-            canCreateContact={canCreateContact}
-          />
-        </SoaSection>
+        <fieldset disabled={!canSave} className="contents">
+          <SoaSection title="Bill to">
+            <SoaBillToFields
+              contacts={contacts}
+              quotes={quotes}
+              existingTags={existingTags}
+              canCreateContact={canCreateContact}
+            />
+          </SoaSection>
 
-        <SoaSection title="Line items" description="Add anything you're billing for.">
-          <SoaLineItemsFields onRequestRemove={requestRemove} />
-        </SoaSection>
+          <SoaSection title="Line items" description="Add anything you're billing for.">
+            <SoaLineItemsFields onRequestRemove={requestRemove} />
+          </SoaSection>
 
-        <SoaSection
-          title="Discounts & vouchers"
-          description="Percent discounts are taken from the subtotal. Discounts never bring the total below ₱0."
-        >
-          <SoaDiscountsFields vouchers={vouchers} onRequestRemove={requestRemove} />
-        </SoaSection>
+          <SoaSection
+            title="Discounts & vouchers"
+            description="Percent discounts are taken from the subtotal. Discounts never bring the total below ₱0."
+          >
+            <SoaDiscountsFields vouchers={vouchers} onRequestRemove={requestRemove} />
+          </SoaSection>
 
-        <SoaSection
-          title="Payments received"
-          description="Deducted from the total to get the balance due."
-        >
-          <SoaPaymentsFields onRequestRemove={requestRemove} defaultDate={todayInManila} />
-        </SoaSection>
+          <SoaSection
+            title="Payments received"
+            description="Deducted from the total to get the balance due."
+          >
+            <SoaPaymentsFields onRequestRemove={requestRemove} defaultDate={todayInManila} />
+          </SoaSection>
 
-        <SoaSection
-          title="Installments (optional)"
-          description="Split the total into scheduled payments. Payments received are applied to the earliest installment first."
-        >
-          <SoaInstallmentsFields onRequestRemove={requestRemove} defaultDate={todayInManila} />
-        </SoaSection>
+          <SoaSection
+            title="Installments (optional)"
+            description="Split the total into scheduled payments. Payments received are applied to the earliest installment first."
+          >
+            <SoaInstallmentsFields onRequestRemove={requestRemove} defaultDate={todayInManila} />
+          </SoaSection>
 
-        <SoaSection
-          title="Remarks"
-          description="e.g. bank / GCash details and payment terms. Printed at the bottom."
-        >
-          <SoaRemarksField />
-        </SoaSection>
+          <SoaSection
+            title="Remarks"
+            description="e.g. bank / GCash details and payment terms. Printed at the bottom."
+          >
+            <SoaRemarksField />
+          </SoaSection>
 
-        <SoaSection title="Summary">
-          <SoaSummary />
-        </SoaSection>
+          <SoaSection title="Summary">
+            <SoaSummary />
+          </SoaSection>
+        </fieldset>
 
         {removeDialog}
 

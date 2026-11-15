@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -22,7 +22,7 @@ const GENERIC_ERROR_MESSAGE =
 export async function addUpsellItem(
   packageId: string
 ): Promise<ActionResult & { id?: string }> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "create");
 
   const supabase = await createClient();
 
@@ -45,7 +45,7 @@ export async function addUpsellItem(
 }
 
 export async function removeUpsellItem(id: string): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "delete");
 
   const supabase = await createClient();
 

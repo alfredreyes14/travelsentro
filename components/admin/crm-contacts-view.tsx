@@ -29,6 +29,7 @@ import {
   type ClientType,
   type ContactStage,
 } from "@/lib/crm/stage";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const TAG_FILTER_ALL = "__all__";
 const STAGE_FILTER_ALL = "__all__";
@@ -63,19 +64,21 @@ function matchesSearch(contact: AdminContactListItem, query: string): boolean {
 export function CrmContactsView({
   contacts,
   initialType,
-  canEdit,
+  canCreate,
   metaLeadSyncEnabled,
   todoSlot,
 }: {
   contacts: AdminContactListItem[];
   initialType: ClientType;
-  canEdit: boolean;
+  /** Leads Create: "Add Lead" and the Meta sync button. */
+  canCreate: boolean;
   /** Production only; see lib/meta-leads/run-sync.ts. */
   metaLeadSyncEnabled: boolean;
   /** The Messenger to-do panel (components/admin/messenger-todo.tsx). */
   todoSlot?: ReactNode;
 }) {
   const router = useRouter();
+  const canMessage = useCan("messages", "create");
   const [type, setType] = useState<ClientType>(initialType);
   const [stageFilter, setStageFilter] = useState<ContactStage | typeof STAGE_FILTER_ALL>(
     STAGE_FILTER_ALL
@@ -188,7 +191,7 @@ export function CrmContactsView({
             <MessageCircleIcon className="size-4" />
             Messenger settings
           </Link>
-          {canEdit ? (
+          {canCreate ? (
             <>
               <MetaLeadSyncButton enabled={metaLeadSyncEnabled} />
               <Button onClick={() => setIsAddOpen(true)}>
@@ -282,12 +285,16 @@ export function CrmContactsView({
               <Button variant="ghost" onClick={() => setRowSelection({})}>
                 Clear
               </Button>
-              <Button variant="outline" onClick={() => setIsFollowUpOpen(true)}>
-                Follow Up Selected
-              </Button>
-              <Button onClick={() => setIsComposeOpen(true)}>
-                Message Selected
-              </Button>
+              {canMessage ? (
+                <>
+                  <Button variant="outline" onClick={() => setIsFollowUpOpen(true)}>
+                    Follow Up Selected
+                  </Button>
+                  <Button onClick={() => setIsComposeOpen(true)}>
+                    Message Selected
+                  </Button>
+                </>
+              ) : null}
             </div>
           ) : null}
 
@@ -299,7 +306,7 @@ export function CrmContactsView({
               <p className="text-base leading-[1.5] text-muted-foreground">
                 {EMPTY_COPY[type].body}
               </p>
-              {canEdit ? (
+              {canCreate ? (
                 <Button variant="secondary" onClick={() => setIsAddOpen(true)}>
                   Add Lead
                 </Button>

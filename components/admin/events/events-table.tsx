@@ -24,6 +24,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -138,6 +139,8 @@ function EventRow({
   onPatch: (id: string, patch: Partial<EventRecord>) => void;
   onDelete: () => void;
 }) {
+  const canUpdate = useCan("events", "update");
+  const canDelete = useCan("events", "delete");
   const [isPending, startTransition] = useTransition();
   const upcoming = isUpcoming(item, today);
 
@@ -166,7 +169,7 @@ function EventRow({
       <Switch
         checked={item.isFeatured}
         onCheckedChange={(checked) => toggle("isFeatured", checked, setEventFeatured)}
-        disabled={isPending || !item.isPublished}
+        disabled={isPending || !item.isPublished || !canUpdate}
       />
       Homepage
     </label>
@@ -204,7 +207,7 @@ function EventRow({
           <Switch
             checked={item.isPublished}
             onCheckedChange={(checked) => toggle("isPublished", checked, setEventPublished)}
-            disabled={isPending}
+            disabled={isPending || !canUpdate}
           />
           Published
         </label>
@@ -224,11 +227,13 @@ function EventRow({
             nativeButton={false}
             render={<Link href={`/admin/events/${item.id}`} />}
           >
-            Edit
+            {canUpdate ? "Edit" : "View"}
           </Button>
-          <Button variant="destructive" size="sm" onClick={onDelete}>
-            Delete
-          </Button>
+          {canDelete ? (
+            <Button variant="destructive" size="sm" onClick={onDelete}>
+              Delete
+            </Button>
+          ) : null}
         </div>
       </div>
     </div>

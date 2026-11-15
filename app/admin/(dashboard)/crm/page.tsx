@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { getProfile } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { CrmContactsView } from "@/components/admin/crm-contacts-view";
 import type { AdminContactListItem } from "@/components/admin/crm-table";
@@ -38,10 +39,9 @@ export default async function AdminCrmPage({
 }: {
   searchParams: Promise<{ type?: string }>;
 }) {
-  // CRM-03: read access is universal for every authenticated Staff/Admin,
-  // regardless of can_edit_crm -- session validation only, no permission
-  // gate. can_edit_crm only decides whether "Add Contact" shows.
-  const profile = await getProfile();
+  // Leads View is required; Create decides whether "Add Lead" and the Meta
+  // sync button show.
+  const profile = await requireModuleOrRedirect("leads");
   const { type } = await searchParams;
 
   const supabase = await createClient();
@@ -124,7 +124,7 @@ export default async function AdminCrmPage({
     };
   });
 
-  const canEdit = profile.role === "admin" || profile.can_edit_crm;
+  const canEdit = can(profile, "leads", "update");
   const todo = (
     <MessengerTodo
       suggestions={items
@@ -150,7 +150,7 @@ export default async function AdminCrmPage({
       })}
       leads={items.map((c) => ({ id: c.id, name: c.name, detail: c.email ?? c.phone }))}
       canEdit={canEdit}
-      canMessage={profile.role === "admin" || profile.can_message_customers}
+      canMessage={can(profile, "messages", "create")}
     />
   );
 
@@ -158,7 +158,7 @@ export default async function AdminCrmPage({
     <CrmContactsView
       contacts={items}
       initialType={isClientType(type) ? type : "b2c"}
-      canEdit={canEdit}
+      canCreate={can(profile, "leads", "create")}
       todoSlot={todo}
       metaLeadSyncEnabled={isMetaLeadSyncEnabled()}
     />

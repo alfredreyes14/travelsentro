@@ -44,6 +44,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -126,6 +127,7 @@ export function HeroSlidesList({
 }: {
   initialSlides: HeroSlideListItem[];
 }) {
+  const canCreate = useCan("content", "create");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [items, setItems] = useState(initialSlides);
@@ -290,15 +292,17 @@ export function HeroSlidesList({
           tabIndex={-1}
           onChange={handleFilesSelected}
         />
-        <Button
-          size="lg"
-          className="shrink-0"
-          disabled={isUploading}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <ImagePlusIcon />
-          {isUploading ? "Uploading..." : "Add Images"}
-        </Button>
+        {canCreate ? (
+          <Button
+            size="lg"
+            className="shrink-0"
+            disabled={isUploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <ImagePlusIcon />
+            {isUploading ? "Uploading..." : "Add Images"}
+          </Button>
+        ) : null}
       </div>
 
       {items.length === 0 ? (
@@ -371,6 +375,8 @@ function HeroSlideTile({
   position: number;
   onDelete: () => void;
 }) {
+  const canUpdate = useCan("content", "update");
+  const canDelete = useCan("content", "delete");
   const {
     attributes,
     listeners,
@@ -378,7 +384,7 @@ function HeroSlideTile({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: item.id });
+  } = useSortable({ id: item.id, disabled: !canUpdate });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -421,21 +427,23 @@ function HeroSlideTile({
           <TooltipContent>Drag to reorder</TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <button
-                type="button"
-                className="flex size-11 items-center justify-center text-destructive"
-                onClick={onDelete}
-              />
-            }
-          >
-            <XIcon />
-            <span className="sr-only">Remove image</span>
-          </TooltipTrigger>
-          <TooltipContent>Remove image</TooltipContent>
-        </Tooltip>
+        {canDelete ? (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <button
+                  type="button"
+                  className="flex size-11 items-center justify-center text-destructive"
+                  onClick={onDelete}
+                />
+              }
+            >
+              <XIcon />
+              <span className="sr-only">Remove image</span>
+            </TooltipTrigger>
+            <TooltipContent>Remove image</TooltipContent>
+          </Tooltip>
+        ) : null}
       </div>
     </div>
   );

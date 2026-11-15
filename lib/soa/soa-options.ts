@@ -33,7 +33,7 @@ export type SoaVoucherOption = {
 /**
  * Contacts (with tags, for the "New contact" dialog), quotes and usable
  * vouchers for the SOA forms' pickers. Vouchers are
- * RLS-gated by can_manage_vouchers, so staff without it just get an empty
+ * RLS-gated by Vouchers View, so staff without it just get an empty
  * list and type the voucher in by hand.
  */
 export async function loadSoaFormOptions(

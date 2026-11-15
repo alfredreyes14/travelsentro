@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import type { ActionResult } from "@/lib/action-result";
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -22,7 +22,7 @@ export async function addStagePhrase(values: {
   phrase: string;
   stage: string;
 }): Promise<ActionResult> {
-  const profile = await requirePermission("can_edit_crm");
+  const profile = await requireModule("leads", "update");
 
   const parsed = phraseSchema.safeParse(values);
   if (!parsed.success) {
@@ -46,7 +46,7 @@ export async function addStagePhrase(values: {
 }
 
 export async function deleteStagePhrase(id: string): Promise<ActionResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "delete");
 
   const supabase = await createClient();
   const { error } = await supabase.from("messenger_stage_phrases").delete().eq("id", id);

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 import type { DestinationFormValues } from "@/components/admin/content/destination-form-schema";
@@ -28,7 +28,7 @@ const DISABLE_GUARD_ERROR = "P0001";
 export async function createDestination(
   values: DestinationFormValues
 ): Promise<ActionResult & { id?: string }> {
-  await requirePermission("can_manage_packages");
+  await requireModule("destinations", "create");
 
   const supabase = await createClient();
 
@@ -75,7 +75,7 @@ export async function updateDestination(
   id: string,
   values: DestinationFormValues
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("destinations", "update");
 
   const supabase = await createClient();
 
@@ -122,7 +122,7 @@ export async function toggleDestinationActive(
   id: string,
   isActive: boolean
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("destinations", "update");
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -153,7 +153,7 @@ export async function toggleDestinationActive(
  * raw Postgres FK-violation message.
  */
 export async function deleteDestination(id: string): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("destinations", "delete");
 
   const supabase = await createClient();
 

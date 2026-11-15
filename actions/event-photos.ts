@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { uploadObject, deleteObject } from "@/lib/storage/r2-client";
 import { extensionFromMimeType } from "@/lib/storage/image-extension";
@@ -39,7 +39,7 @@ export async function uploadEventPhotos(
   eventId: string,
   files: UploadImageInput[]
 ): Promise<ActionResult & { photos?: UploadedPhoto[] }> {
-  await requirePermission("can_manage_packages");
+  await requireModule("events", ["create", "update"]);
 
   if (!Array.isArray(files)) return { ok: false, error: GENERIC_ERROR_MESSAGE };
   if (files.length === 0) return { ok: true, photos: [] };
@@ -102,7 +102,7 @@ export async function uploadEventPhotos(
 
 /** Deletes a gallery photo's row, then its R2 object. */
 export async function deleteEventPhoto(photoId: string): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("events", ["create", "update"]);
 
   const supabase = await createClient();
 
@@ -131,7 +131,7 @@ export async function reorderEventPhotos(
   eventId: string,
   order: { id: string; displayOrder: number }[]
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("events", ["create", "update"]);
 
   const isValidOrder =
     Array.isArray(order) &&

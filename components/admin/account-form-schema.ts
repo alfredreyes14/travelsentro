@@ -1,6 +1,13 @@
 import { z } from "zod";
 
 /**
+ * Per-module grid of { read, create, update, delete } booleans. Unknown
+ * modules/actions are dropped on save (normalizePermissions()), so the
+ * shape is checked loosely here.
+ */
+const permissionsField = z.record(z.string(), z.record(z.string(), z.boolean()));
+
+/**
  * Fields shared by both create and edit forms. Email/password are
  * intentionally NOT part of this shared shape — email is set once at
  * creation (disabled in edit mode) and password changes are out of scope
@@ -9,11 +16,7 @@ import { z } from "zod";
 const baseAccountFields = {
   name: z.string().min(1, "Please enter a name"),
   role: z.enum(["admin", "staff"]),
-  canManagePackages: z.boolean(),
-  canMessageCustomers: z.boolean(),
-  canEditCrm: z.boolean(),
-  canManageVouchers: z.boolean(),
-  canManageQuotes: z.boolean(),
+  permissions: permissionsField,
 };
 
 export const createAccountSchema = z.object({

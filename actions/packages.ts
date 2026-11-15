@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { packagePath } from "@/lib/packages/package-url";
 import type { ActionResult } from "@/lib/action-result";
@@ -118,7 +119,7 @@ async function writePackageChildren(
 export async function createDraftPackage(): Promise<void> {
   // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
   // second independent layer (T-02-18).
-  await requirePermission("can_manage_packages");
+  await requireModule("packages", "create");
 
   const supabase = await createClient();
 
@@ -159,7 +160,10 @@ export async function updatePackage(
   id: string,
   values: PackageFormValues
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  // Create alone may only finish a never-saved draft (see
+  // createDraftPackage); editing a saved package needs update. RLS enforces
+  // the same rule on packages and its child tables.
+  const profile = await requireModule("packages", ["create", "update"]);
 
   const parsed = packageFormSchema.safeParse(values);
   if (!parsed.success) {
@@ -167,6 +171,17 @@ export async function updatePackage(
   }
 
   const supabase = await createClient();
+
+  if (!can(profile, "packages", "update")) {
+    const { data: draft } = await supabase
+      .from("packages")
+      .select("destination_id")
+      .eq("id", id)
+      .single();
+    if (!draft || draft.destination_id !== null) {
+      return { ok: false, error: "You don't have permission to edit saved packages." };
+    }
+  }
 
   // Checked against the row as it is BEFORE this save, so a package's first
   // save can't also publish/feature it.
@@ -230,7 +245,7 @@ export async function updatePackage(
  * still succeeds, since the admin only asked to leave the form.
  */
 export async function discardDraftPackage(id: string): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("packages", ["create", "delete"]);
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -258,7 +273,7 @@ export async function discardDraftPackage(id: string): Promise<ActionResult> {
 export async function softDeletePackage(id: string): Promise<ActionResult> {
   // AUTH-05 — gate independent of D-13's nav hiding; RLS (02-01) is the
   // second independent layer (T-02-15).
-  await requirePermission("can_manage_packages");
+  await requireModule("packages", "delete");
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -282,7 +297,7 @@ export async function publishPackage(
   id: string,
   isPublished: boolean
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("packages", "update");
 
   const supabase = await createClient();
 
@@ -322,7 +337,7 @@ export async function featurePackage(
   id: string,
   isFeatured: boolean
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("packages", "update");
 
   const supabase = await createClient();
 

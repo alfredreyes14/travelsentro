@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useCan } from "@/components/admin/permissions-provider";
 
 export type SoaListItem = {
   id: string;
@@ -69,6 +70,7 @@ export function NextDueCell({ date }: { date: string | null }) {
 }
 
 export function SoaTable({ statements }: { statements: SoaListItem[] }) {
+  const canDelete = useCan("soa", "delete");
   const [pendingDelete, setPendingDelete] = useState<SoaListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -175,9 +177,11 @@ export function SoaTable({ statements }: { statements: SoaListItem[] }) {
                   >
                     Download
                   </Button>
-                  <Button variant="destructive" size="sm" onClick={() => setPendingDelete(soa)}>
-                    Delete
-                  </Button>
+                  {canDelete ? (
+                    <Button variant="destructive" size="sm" onClick={() => setPendingDelete(soa)}>
+                      Delete
+                    </Button>
+                  ) : null}
                 </div>
               </TableCell>
             </TableRow>

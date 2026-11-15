@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { quoteRowToFormValues } from "@/lib/quotes/quote-row";
 import { PageHeader } from "@/components/admin/page-header";
@@ -17,7 +17,7 @@ export default async function EditQuotePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requirePermissionOrRedirect("can_manage_quotes");
+  await requireModuleOrRedirect("quotes");
 
   const { id } = await params;
   const supabase = await createClient();

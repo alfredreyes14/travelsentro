@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { deleteObject } from "@/lib/storage/r2-client";
 import type { ActionResult } from "@/lib/action-result";
@@ -20,7 +20,7 @@ const GENERIC_ERROR_MESSAGE =
 export async function createSlide(
   imageStoragePath: string
 ): Promise<ActionResult & { id?: string }> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "create");
 
   if (!imageStoragePath.startsWith("hero-slides/")) {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
@@ -58,7 +58,7 @@ export async function createSlide(
  * from the homepage, which is what the admin asked for.
  */
 export async function deleteSlide(id: string): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "delete");
 
   const supabase = await createClient();
 
@@ -91,7 +91,7 @@ export async function deleteSlide(id: string): Promise<ActionResult> {
 export async function reorderSlides(
   order: { id: string; sortOrder: number }[]
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "update");
 
   const supabase = await createClient();
   const results = await Promise.all(

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { deleteObject } from "@/lib/storage/r2-client";
 import type { ActionResult } from "@/lib/action-result";
@@ -90,7 +90,7 @@ async function takenSlugs(supabase: Supabase, base: string): Promise<Set<string>
 export async function createEvent(
   values: EventFormValues
 ): Promise<ActionResult & { id?: string }> {
-  await requirePermission("can_manage_packages");
+  await requireModule("events", "create");
 
   const columns = toColumns(values);
   if (!columns) return { ok: false, error: GENERIC_ERROR_MESSAGE };
@@ -121,7 +121,7 @@ export async function createEvent(
 
 /** Updates an event. Never touches the slug. Removes a replaced cover from R2. */
 export async function updateEvent(id: string, values: EventFormValues): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("events", "update");
 
   const columns = toColumns(values);
   if (!columns) return { ok: false, error: GENERIC_ERROR_MESSAGE };
@@ -153,7 +153,7 @@ export async function updateEvent(id: string, values: EventFormValues): Promise<
 }
 
 export async function setEventPublished(id: string, published: boolean): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("events", "update");
   if (typeof published !== "boolean") return { ok: false, error: GENERIC_ERROR_MESSAGE };
 
   const supabase = await createClient();
@@ -182,7 +182,7 @@ export async function setEventPublished(id: string, published: boolean): Promise
 }
 
 export async function setEventFeatured(id: string, featured: boolean): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("events", "update");
   if (typeof featured !== "boolean") return { ok: false, error: GENERIC_ERROR_MESSAGE };
 
   const supabase = await createClient();
@@ -201,7 +201,7 @@ export async function setEventFeatured(id: string, featured: boolean): Promise<A
 
 /** Deletes an event (its photo rows cascade), then its R2 objects. */
 export async function deleteEvent(id: string): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("events", "delete");
 
   const supabase = await createClient();
 

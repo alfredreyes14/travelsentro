@@ -15,12 +15,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type AdminPermissions = {
-  canManagePackages: boolean;
-  canManageUsers: boolean;
-  canManageVouchers: boolean;
-  canManageQuotes: boolean;
-};
+import { can, isAdmin, type PermissionSubject } from "@/lib/auth/permissions";
+
+/** The signed-in account; each link shows when it may read that module. */
+export type AdminPermissions = PermissionSubject;
 
 export type NavLink = {
   href: string;
@@ -46,9 +44,9 @@ export function isNavGroup(entry: NavGroup | NavLink): entry is NavGroup {
   return "items" in entry;
 }
 
-// D-13: entries are hidden entirely (not disabled) when the permission is
-// absent. Server-side enforcement still happens independently via
-// requirePermission()/requireAdmin() (AUTH-05).
+// D-13: entries are hidden entirely (not disabled) without View permission
+// for that module. Server-side enforcement still happens independently via
+// requireModuleOrRedirect()/requireAdminOrRedirect() and RLS (AUTH-05).
 export const ADMIN_NAV: NavSection[] = [
   {
     entries: [
@@ -57,13 +55,10 @@ export const ADMIN_NAV: NavSection[] = [
         label: "Sales",
         icon: BriefcaseBusinessIcon,
         items: [
-          // CRM-03: universal read -- every authenticated Admin/Staff sees
-          // "Leads" regardless of can_edit_crm, deliberately NOT gated.
-          { href: "/admin/crm", label: "Leads", icon: ContactIcon, show: () => true },
-          { href: "/admin/quotes", label: "Quotes", icon: FileTextIcon, show: (p) => p.canManageQuotes },
-          // Statements of Account share the Quotes permission -- no new toggle.
-          { href: "/admin/soa", label: "Statements (SOA)", icon: ReceiptTextIcon, show: (p) => p.canManageQuotes },
-          { href: "/admin/vouchers", label: "Vouchers", icon: TicketIcon, show: (p) => p.canManageVouchers },
+          { href: "/admin/crm", label: "Leads", icon: ContactIcon, show: (p) => can(p, "leads", "read") },
+          { href: "/admin/quotes", label: "Quotes", icon: FileTextIcon, show: (p) => can(p, "quotes", "read") },
+          { href: "/admin/soa", label: "Statements (SOA)", icon: ReceiptTextIcon, show: (p) => can(p, "soa", "read") },
+          { href: "/admin/vouchers", label: "Vouchers", icon: TicketIcon, show: (p) => can(p, "vouchers", "read") },
         ],
       },
       {
@@ -71,20 +66,18 @@ export const ADMIN_NAV: NavSection[] = [
         label: "Tours",
         icon: PlaneIcon,
         items: [
-          { href: "/admin/packages", label: "Packages", icon: PackageIcon, show: (p) => p.canManagePackages },
-          { href: "/admin/packages/destinations", label: "Destinations", icon: MapPinIcon, show: (p) => p.canManagePackages },
+          { href: "/admin/packages", label: "Packages", icon: PackageIcon, show: (p) => can(p, "packages", "read") },
+          { href: "/admin/packages/destinations", label: "Destinations", icon: MapPinIcon, show: (p) => can(p, "destinations", "read") },
         ],
       },
       {
         id: "website",
         label: "Website",
         icon: GlobeIcon,
-        // T-06-21: Content, Events and Partners all reuse canManagePackages
-        // -- no new permission toggle.
         items: [
-          { href: "/admin/content", label: "Content", icon: LayoutTemplateIcon, show: (p) => p.canManagePackages },
-          { href: "/admin/events", label: "Events", icon: CalendarDaysIcon, show: (p) => p.canManagePackages },
-          { href: "/admin/partners", label: "Partners", icon: HandshakeIcon, show: (p) => p.canManagePackages },
+          { href: "/admin/content", label: "Content", icon: LayoutTemplateIcon, show: (p) => can(p, "content", "read") },
+          { href: "/admin/events", label: "Events", icon: CalendarDaysIcon, show: (p) => can(p, "events", "read") },
+          { href: "/admin/partners", label: "Partners", icon: HandshakeIcon, show: (p) => can(p, "partners", "read") },
         ],
       },
     ],
@@ -92,7 +85,7 @@ export const ADMIN_NAV: NavSection[] = [
   {
     label: "Settings",
     entries: [
-      { href: "/admin/users", label: "Users", icon: UsersIcon, show: (p) => p.canManageUsers },
+      { href: "/admin/users", label: "Users", icon: UsersIcon, show: (p) => isAdmin(p) },
     ],
   },
 ];

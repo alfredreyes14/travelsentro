@@ -11,6 +11,7 @@ import {
   EVENT_IMAGE_LIMIT_MESSAGE,
   isAcceptedEventImage,
 } from "@/lib/events/image-limits";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const EVENT_PHOTO_ACTIONS: PhotoManagerActions = {
   upload: uploadEventPhotos,
@@ -35,13 +36,17 @@ export function EventGalleryManager({
   eventId: string;
   initialPhotos: PhotoManagerPhoto[];
 }) {
+  // Upload, delete and reorder need Events Create or Edit.
+  const canManage = useCan("events", ["create", "update"]);
   return (
-    <PhotoManager
-      ownerId={eventId}
-      initialPhotos={initialPhotos}
-      actions={EVENT_PHOTO_ACTIONS}
-      accept={EVENT_IMAGE_ACCEPT}
-      validateFile={validateEventPhoto}
-    />
+    <fieldset disabled={!canManage} className="contents">
+      <PhotoManager
+        ownerId={eventId}
+        initialPhotos={initialPhotos}
+        actions={EVENT_PHOTO_ACTIONS}
+        accept={EVENT_IMAGE_ACCEPT}
+        validateFile={validateEventPhoto}
+      />
+    </fieldset>
   );
 }

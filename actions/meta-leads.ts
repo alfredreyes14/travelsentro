@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { scheduleMetaSync } from "@/lib/meta-sync/schedule";
 import {
   isMetaLeadSyncEnabled,
@@ -17,11 +17,11 @@ export type MetaLeadSyncActionResult =
 
 /**
  * The CRM's "Sync Meta leads" button: the same run as the nightly cron, on
- * demand. Production only (see isMetaLeadSyncEnabled); needs can_edit_crm,
+ * demand. Production only (see isMetaLeadSyncEnabled); needs Leads Create,
  * since it creates and updates contacts.
  */
 export async function syncMetaLeadsNow(): Promise<MetaLeadSyncActionResult> {
-  const profile = await requirePermission("can_edit_crm");
+  const profile = await requireModule("leads", "create");
 
   if (!isMetaLeadSyncEnabled()) {
     return { ok: false, error: "Meta lead sync only runs on the live site." };

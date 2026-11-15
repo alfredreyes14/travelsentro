@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import type { ActionResult } from "@/lib/action-result";
 import { contactLogSchema, type ContactLogValues } from "@/lib/crm/contact-logs";
 import { createClient } from "@/lib/supabase/server";
@@ -24,7 +24,7 @@ export async function logContact(
   contactId: string,
   values: ContactLogValues
 ): Promise<ActionResult> {
-  const profile = await requirePermission("can_edit_crm");
+  const profile = await requireModule("leads", "update");
 
   const id = z.uuid().safeParse(contactId);
   const parsed = contactLogSchema.safeParse(values);
@@ -60,7 +60,7 @@ export async function deleteContactLog(
   contactId: string,
   logId: string
 ): Promise<ActionResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "delete");
 
   const ids = z.object({ contactId: z.uuid(), logId: z.uuid() }).safeParse({ contactId, logId });
   if (!ids.success) return { ok: false, error: DELETE_ERROR_MESSAGE };

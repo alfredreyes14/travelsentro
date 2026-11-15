@@ -55,12 +55,12 @@ function useGuardedNavigate() {
   };
 }
 
-export function AdminNav(permissions: AdminPermissions) {
+export function AdminNav({ subject }: { subject: AdminPermissions }) {
   const pathname = usePathname();
   const { state, isMobile } = useSidebar();
   const iconOnly = state === "collapsed" && !isMobile;
 
-  const sections = visibleNav(permissions);
+  const sections = visibleNav(subject);
   const activeHref = findActiveLink(pathname)?.href;
   const activeGroupId = sections
     .flatMap((s) => s.entries)

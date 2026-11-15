@@ -1,6 +1,6 @@
 "use server";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { uploadObject, deleteObject } from "@/lib/storage/r2-client";
 import { extensionFromMimeType } from "@/lib/storage/image-extension";
 import type { ActionResult } from "@/lib/action-result";
@@ -43,7 +43,7 @@ export async function uploadSiteContentImage(
   folder: (typeof ALLOWED_FOLDERS)[number],
   file: UploadImageInput
 ): Promise<ActionResult & { storagePath?: string }> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", ["create", "update"]);
 
   if (!ALLOWED_FOLDERS.includes(folder)) {
     return { ok: false, error: GENERIC_ERROR_MESSAGE };
@@ -73,7 +73,7 @@ export async function uploadSiteContentImage(
 export async function deleteSiteContentImage(
   storagePath: string
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", ["create", "update", "delete"]);
 
   const isWithinAllowedFolder = ALLOWED_FOLDERS.some((folder) =>
     storagePath.startsWith(`${folder}/`)

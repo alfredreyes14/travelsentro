@@ -7,7 +7,7 @@ import { createClient } from "@supabase/supabase-js";
  * already authenticated its caller some other way -- today just the Meta
  * lead sync (lib/meta-leads/run-sync.ts), reached from the cron route
  * after its CRON_SECRET check or the "Sync Meta leads" Server Action after
- * requirePermission("can_edit_crm"). Never use
+ * requireModule("leads", ...). Never use
  * it to serve a request on behalf of a staff member or visitor.
  */
 export function createServiceClient() {

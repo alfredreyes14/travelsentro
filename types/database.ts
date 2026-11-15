@@ -995,42 +995,30 @@ export type Database = {
       };
       profiles: {
         Row: {
-          can_edit_crm: boolean;
-          can_manage_packages: boolean;
-          can_manage_quotes: boolean;
-          can_manage_vouchers: boolean;
-          can_message_customers: boolean;
           created_at: string;
           email: string;
           id: string;
           is_active: boolean;
           name: string | null;
+          permissions: Json;
           role: string;
         };
         Insert: {
-          can_edit_crm?: boolean;
-          can_manage_packages?: boolean;
-          can_manage_quotes?: boolean;
-          can_manage_vouchers?: boolean;
-          can_message_customers?: boolean;
           created_at?: string;
           email: string;
           id: string;
           is_active?: boolean;
           name?: string | null;
+          permissions?: Json;
           role?: string;
         };
         Update: {
-          can_edit_crm?: boolean;
-          can_manage_packages?: boolean;
-          can_manage_quotes?: boolean;
-          can_manage_vouchers?: boolean;
-          can_message_customers?: boolean;
           created_at?: string;
           email?: string;
           id?: string;
           is_active?: boolean;
           name?: string | null;
+          permissions?: Json;
           role?: string;
         };
         Relationships: [];
@@ -1521,7 +1509,11 @@ export type Database = {
           email: string;
         }[];
       };
-      has_permission: { Args: { perm: string; uid: string }; Returns: boolean };
+      has_module_permission: {
+        Args: { action: string; module: string; uid: string };
+        Returns: boolean;
+      };
+      is_admin: { Args: { uid: string }; Returns: boolean };
       link_messenger_by_token: {
         Args: { p_psid: string; p_token: string };
         Returns: { contact_id: string; package_name: string | null }[];

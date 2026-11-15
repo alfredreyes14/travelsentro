@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { createElement } from "react";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import {
   FROM_EMAIL,
@@ -53,7 +53,7 @@ export async function sendIndividualEmail(
   contactId: string,
   values: { subject: string; body: string }
 ): Promise<ActionResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsed = emailComposeSchema.safeParse(values);
   if (!parsed.success) {
@@ -121,7 +121,7 @@ export async function sendIndividualSms(
   contactId: string,
   values: { body: string }
 ): Promise<ActionResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsed = smsComposeSchema.safeParse(values);
   if (!parsed.success) {
@@ -189,7 +189,7 @@ export async function sendIndividualSms(
  * actual rolling-window enforcement, NOT a calendar-day boundary).
  */
 export async function getRemainingEmailQuota(): Promise<number> {
-  await requirePermission("can_message_customers");
+  await requireModule("messages", "create");
 
   return remainingEmailQuota(await createClient());
 }
@@ -199,13 +199,13 @@ export async function getRemainingEmailQuota(): Promise<number> {
  * (T-04-10/D-03) rather than trusting the client-submitted id list, so a
  * stale client selection can never bypass the opted_out filter. Quota is
  * inlined here (not via getRemainingEmailQuota()) to avoid a second
- * requirePermission() round-trip.
+ * requireModule() round-trip.
  */
 export async function sendBulkEmail(
   contactIds: string[],
   values: { subject: string; body: string }
 ): Promise<BulkSendResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsedIds = recipientIdsSchema.safeParse(contactIds);
   const parsedValues = emailComposeSchema.safeParse(values);
@@ -300,7 +300,7 @@ export async function sendBulkSms(
   contactIds: string[],
   values: { body: string }
 ): Promise<BulkSendResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsedIds = recipientIdsSchema.safeParse(contactIds);
   const parsedValues = smsComposeSchema.safeParse(values);
@@ -368,18 +368,18 @@ export async function sendBulkSms(
 /**
  * MSG-05 -- staff-manual opt-out toggle (the second of D-02's two opt-out
  * paths, alongside the self-service unsubscribe link in
- * app/unsubscribe/page.tsx). Gated on can_edit_crm (NOT
- * can_message_customers) since this is a contact-record edit, not a message
+ * app/unsubscribe/page.tsx). Gated on Leads Edit (NOT the Messages
+ * permission) since this is a contact-record edit, not a message
  * send, per 04-CONTEXT.md's explicit Claude's-Discretion note -- mirrors
  * updateStage/updateContact in actions/crm.ts. Reuses the existing
- * "can_edit_crm can update contacts" RLS policy from 03-01; opted_out is
+ * "leads update contacts" RLS policy; opted_out is
  * just another column on contacts, no new policy needed.
  */
 export async function updateOptOut(
   contactId: string,
   optedOut: boolean
 ): Promise<ActionResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "update");
 
   const supabase = await createClient();
 

@@ -5,7 +5,8 @@ import { formatDistanceToNow } from "date-fns";
 import { MessengerPhrases, type StagePhrase } from "@/components/admin/messenger-phrases";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getProfile } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { isMetaLeadSyncEnabled } from "@/lib/meta-leads/run-sync";
 import { toContactStage } from "@/lib/crm/stage";
 import { createClient } from "@/lib/supabase/server";
@@ -24,8 +25,8 @@ function isStale(lastSyncedAt: string | null): boolean {
  * checked, and the saved-reply rules that move leads forward.
  */
 export default async function MessengerSettingsPage() {
-  const profile = await getProfile();
-  const canEdit = profile.role === "admin" || profile.can_edit_crm;
+  const profile = await requireModuleOrRedirect("leads");
+  const canEdit = can(profile, "leads", "update");
   const supabase = await createClient();
 
   const [phrasesResult, stateResult] = await Promise.all([

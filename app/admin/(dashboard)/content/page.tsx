@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import { formatPackagePrice } from "@/lib/packages/format-price";
@@ -58,7 +58,7 @@ type UpsellItemRow = Database["public"]["Tables"]["upsell_items"]["Row"] & {
 export default async function AdminContentPage() {
   // AUTH-05 (T-06-21) -- gate independent of Task 2's nav hiding; RLS is the
   // second, independent enforcement layer.
-  await requirePermissionOrRedirect("can_manage_packages");
+  await requireModuleOrRedirect("content");
 
   const supabase = await createClient();
 
@@ -163,12 +163,11 @@ export default async function AdminContentPage() {
     updatedAt: bookingTermsRow?.updated_at ?? null,
   };
 
-  // Unlike the public anon client, an authenticated can_manage_packages
-  // session's `packages` RLS policy ("manage_packages can read all
-  // packages") has no is_published/deleted_at condition, so `row.packages`
-  // is never null here just because a package was unpublished or
-  // soft-deleted -- it's still returned in full. `isHidden` surfaces that
-  // state explicitly (rendered as a badge in UpsellItemsList) so an admin
+  // With Packages View (admins always), the `packages` RLS policy has no
+  // is_published/deleted_at condition, so `row.packages` is returned even
+  // for an unpublished or soft-deleted package. Without Packages View only
+  // live packages come back, and items on hidden ones are skipped below.
+  // `isHidden` surfaces that state explicitly (rendered as a badge in UpsellItemsList) so an admin
   // can see -- and still remove -- an item the public popup has already
   // silently dropped, rather than this list looking identical to a fully
   // live one and contradicting the page's own "changes go live on the

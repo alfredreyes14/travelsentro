@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useCan } from "@/components/admin/permissions-provider";
 
 export type QuoteListItem = {
   id: string;
@@ -35,6 +36,7 @@ export type QuoteListItem = {
 };
 
 export function QuoteTable({ quotes }: { quotes: QuoteListItem[] }) {
+  const canDelete = useCan("quotes", "delete");
   const [pendingDelete, setPendingDelete] = useState<QuoteListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -93,13 +95,15 @@ export function QuoteTable({ quotes }: { quotes: QuoteListItem[] }) {
                   >
                     Download PDF
                   </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setPendingDelete(quote)}
-                  >
-                    Delete
-                  </Button>
+                  {canDelete ? (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setPendingDelete(quote)}
+                    >
+                      Delete
+                    </Button>
+                  ) : null}
                 </div>
               </TableCell>
             </TableRow>

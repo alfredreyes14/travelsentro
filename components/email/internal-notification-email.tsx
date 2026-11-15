@@ -2,7 +2,7 @@ import { Body, Button, Container, Head, Heading, Html, Preview, Text } from "rea
 
 /**
  * Internal staff notification email (AUTO-02) -- sent bcc'd to every
- * active Admin/Staff with can_message_customers=true, per D-06/T-03-09.
+ * active Admin, or Staff with Messages permission, per D-06/T-03-09.
  */
 export function InternalNotificationEmail({
   name,

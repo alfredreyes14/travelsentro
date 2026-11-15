@@ -48,7 +48,8 @@ export async function login(values: {
   // redirect() throws a special NEXT_REDIRECT error — this must stay outside
   // the try/catch above (there is none) so it's never swallowed (Task 2/
   // T-02-10).
-  redirect("/admin/packages");
+  // /admin sends each account to the first page it can open.
+  redirect("/admin");
 }
 
 export async function logout(): Promise<void> {

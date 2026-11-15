@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { getProfile } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import {
   MetaLeadSyncLog,
@@ -29,8 +30,8 @@ function toStatus(status: string, startedAt: string, now: number): SyncRunStatus
 
 /** Every Meta lead sync run (nightly cron and the "Sync Meta leads" button). */
 export default async function MetaLeadSyncLogPage() {
-  // Read access matches the Leads page: any signed-in staff member.
-  const profile = await getProfile();
+  // Read access matches the Leads page: Leads View.
+  const profile = await requireModuleOrRedirect("leads");
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -77,7 +78,7 @@ export default async function MetaLeadSyncLogPage() {
     <MetaLeadSyncLog
       runs={runs}
       loadError={error ? "Couldn't load the sync log. Please refresh the page." : null}
-      canSync={profile.role === "admin" || profile.can_edit_crm}
+      canSync={can(profile, "leads", "create")}
       syncEnabled={isMetaLeadSyncEnabled()}
     />
   );

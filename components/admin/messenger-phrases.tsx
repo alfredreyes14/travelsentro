@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { STAGE_LABELS, type ContactStage } from "@/lib/crm/stage";
+import { useCan } from "@/components/admin/permissions-provider";
 
 export type StagePhrase = { id: string; phrase: string; stage: ContactStage };
 
@@ -31,6 +32,7 @@ export function MessengerPhrases({
   phrases: StagePhrase[];
   canEdit: boolean;
 }) {
+  const canDelete = useCan("leads", "delete");
   const router = useRouter();
   const [phrase, setPhrase] = useState("");
   const [stage, setStage] = useState<string>("quotation");
@@ -72,7 +74,7 @@ export function MessengerPhrases({
               <span className="flex-1">&ldquo;{p.phrase}&rdquo;</span>
               <span className="text-muted-foreground">moves to</span>
               <ContactStageChip stage={p.stage} />
-              {canEdit ? (
+              {canDelete ? (
                 <Button
                   variant="ghost"
                   size="icon"

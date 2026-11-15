@@ -36,6 +36,7 @@ import {
   FOLLOW_UP_SEQUENCE_LABELS,
   MESSENGER_FOLLOW_UP_GAP_DAYS,
 } from "@/lib/follow-ups/templates";
+import { useCan } from "@/components/admin/permissions-provider";
 
 export type QuoteSuggestionItem = { contactId: string; name: string; at: string };
 export type UnmatchedChatItem = {
@@ -273,6 +274,7 @@ function UnmatchedChatRow({
   run: (action: () => Promise<ActionResult>, success: string) => void;
 }) {
   const [lead, setLead] = useState<LeadOption | null>(null);
+  const canCreate = useCan("leads", "create");
   const name = chat.name ?? "Unknown name";
 
   return (
@@ -337,15 +339,19 @@ function UnmatchedChatRow({
           >
             Match to lead
           </Button>
-          <span className="text-sm text-muted-foreground">or</span>
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={isPending}
-            onClick={() => run(() => addLeadFromChat(chat.psid), `${name} added as a new lead.`)}
-          >
-            Add as new lead
-          </Button>
+          {canCreate ? (
+            <>
+              <span className="text-sm text-muted-foreground">or</span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isPending}
+                onClick={() => run(() => addLeadFromChat(chat.psid), `${name} added as a new lead.`)}
+              >
+                Add as new lead
+              </Button>
+            </>
+          ) : null}
           <Button
             size="sm"
             variant="ghost"

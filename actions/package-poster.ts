@@ -1,6 +1,6 @@
 "use server";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 import type { PackageFormValues } from "@/components/admin/package-form-schema";
@@ -30,7 +30,7 @@ export async function extractPackageFromPoster(input: {
   mimeType: string;
 }): Promise<PosterExtractionResult> {
   // AUTH-05 — same gate as every other package write path.
-  await requirePermission("can_manage_packages");
+  await requireModule("packages", ["create", "update"]);
 
   const supabase = await createClient();
   const { data: destinationRows, error: destinationsError } = await supabase

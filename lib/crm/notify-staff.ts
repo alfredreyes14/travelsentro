@@ -15,7 +15,7 @@ type NotifyStaffParams = {
 
 /**
  * AUTO-02/D-06 fan-out: bcc's the internal notification email to every
- * active profile with role='admin' or can_message_customers=true, via
+ * active profile with role='admin' or Messages permission, via
  * get_notification_recipients() (03-01's least-privilege, email-only
  * SECURITY DEFINER RPC) -- avoids needing a service-role client here
  * (03-RESEARCH.md Pitfall 5).

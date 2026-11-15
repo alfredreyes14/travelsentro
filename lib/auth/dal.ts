@@ -4,16 +4,10 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { can, type Action, type Module } from "@/lib/auth/permissions";
 import type { Tables } from "@/types/database";
 
 export type Profile = Tables<"profiles">;
-
-export type Permission =
-  | "can_manage_packages"
-  | "can_message_customers"
-  | "can_edit_crm"
-  | "can_manage_vouchers"
-  | "can_manage_quotes";
 
 /**
  * Server-only Data Access Layer (DAL) — re-validates the session (getUser(),
@@ -53,12 +47,18 @@ export const getProfile = cache(async (): Promise<Profile> => {
   return profile;
 });
 
-export async function requirePermission(
-  perm: Permission
+/**
+ * Throws unless the caller may do `action` (or any of `action`, when an
+ * array) in `module`. Admins pass every check. RLS enforces the same rules
+ * independently (has_module_permission()).
+ */
+export async function requireModule(
+  module: Module,
+  action: Action | readonly Action[]
 ): Promise<Profile> {
   const profile = await getProfile();
 
-  if (profile.role !== "admin" && !profile[perm]) {
+  if (!can(profile, module, action)) {
     throw new Error("Forbidden");
   }
 
@@ -76,20 +76,21 @@ export async function requireAdmin(): Promise<Profile> {
 }
 
 /**
- * redirect()-based counterpart to requirePermission(), for use in Server
+ * redirect()-based counterpart to requireModule(), for use in Server
  * Component page renders (not Server Actions). Mirrors getProfile()'s
  * existing redirect("/admin/login") pattern above -- redirect() is called
  * as a bare statement, never inside a try/catch, so Next's internal
- * NEXT_REDIRECT signal is never swallowed. requirePermission() itself is
- * left untouched for actions/{packages,users,package-photos}.ts's Server
- * Action call sites, which depend on the throw being a catchable rejection.
+ * NEXT_REDIRECT signal is never swallowed. requireModule() itself throws
+ * instead, since Server Action call sites depend on the throw being a
+ * catchable rejection.
  */
-export async function requirePermissionOrRedirect(
-  perm: Permission
+export async function requireModuleOrRedirect(
+  module: Module,
+  action: Action | readonly Action[] = "read"
 ): Promise<Profile> {
   const profile = await getProfile();
 
-  if (profile.role !== "admin" && !profile[perm]) {
+  if (!can(profile, module, action)) {
     redirect("/admin/forbidden");
   }
 
@@ -99,7 +100,7 @@ export async function requirePermissionOrRedirect(
 /**
  * redirect()-based counterpart to requireAdmin(), for use in Server
  * Component page renders (not Server Actions). See
- * requirePermissionOrRedirect() above for rationale.
+ * requireModuleOrRedirect() above for rationale.
  */
 export async function requireAdminOrRedirect(): Promise<Profile> {
   const profile = await getProfile();

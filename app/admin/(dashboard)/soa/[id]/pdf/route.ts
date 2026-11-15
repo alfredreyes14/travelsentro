@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { contentDisposition } from "@/lib/crm/documents";
 import { fetchSoaForPdf, renderSoaPdf } from "@/lib/pdf/soa-pdf";
 import { statementToPrintValues } from "@/lib/soa/soa-row";
@@ -16,7 +16,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await requirePermissionOrRedirect("can_manage_quotes");
+  await requireModuleOrRedirect("soa");
 
   const { id } = await params;
   const download = new URL(request.url).searchParams.get("download") === "1";

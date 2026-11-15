@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { getPublicImageUrl } from "@/lib/storage/image-url";
 import {
@@ -19,7 +19,7 @@ type DestinationRow = Database["public"]["Tables"]["destinations"]["Row"];
 export default async function AdminDestinationsPage() {
   // AUTH-05 — gate independent of nav hiding; RLS is the second,
   // independent enforcement layer (mirrors every other admin page).
-  await requirePermissionOrRedirect("can_manage_packages");
+  await requireModuleOrRedirect("destinations");
 
   const supabase = await createClient();
 
