@@ -12,7 +12,6 @@ import {
   type MessengerChatOption,
 } from "@/components/admin/contact-messenger-link";
 import type {
-  CrmDetailClosure,
   CrmDetailContactLog,
   CrmDetailInquiry,
   CrmDetailMessage,
@@ -65,12 +64,6 @@ type ContactDetail = ContactRow & {
   > & {
     message_clicks: { target: string; created_at: string }[];
   })[];
-  follow_up_closures: {
-    id: string;
-    sequence: string;
-    follow_ups_sent: number;
-    created_at: string;
-  }[];
   contact_logs: Pick<
     ContactLogRow,
     "id" | "channel" | "note" | "contacted_at" | "logged_by_name"
@@ -97,7 +90,7 @@ export default async function CrmContactPage({
     supabase
       .from("contacts")
       .select(
-        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name, kind, follow_up_sequence, follow_up_step, click_count, message_clicks(target, created_at)), follow_up_closures(id, sequence, follow_ups_sent, created_at), contact_logs(id, channel, note, contacted_at, logged_by_name)"
+        "*, inquiries(id, contact_id, request_id, message, created_at, package_id, source, source_details, packages(id, name, slug)), messages(id, channel, subject, body, status, created_at, sent_by_name, kind, follow_up_sequence, follow_up_step, click_count, message_clicks(target, created_at)), contact_logs(id, channel, note, contacted_at, logged_by_name)"
       )
       .eq("id", id)
       .order("created_at", { referencedTable: "inquiries", ascending: false })
@@ -202,12 +195,6 @@ export default async function CrmContactPage({
     sequence: followUpProgress?.sequence ?? followUpSequenceFor(contact.client_type, contact.stage),
     step: (followUpProgress?.sentCount ?? 0) + 1,
   };
-  const closures: CrmDetailClosure[] = (contact.follow_up_closures ?? []).map((c) => ({
-    id: c.id,
-    created_at: c.created_at,
-    sequence: toFollowUpSequence(c.sequence),
-    followUpsSent: c.follow_ups_sent,
-  }));
   if (chatsResult.error) {
     console.error("Failed to load Messenger chats:", chatsResult.error.message);
   }
@@ -389,7 +376,6 @@ export default async function CrmContactPage({
       messages={detailMessages}
       followUp={{ ...nextFollowUp, packageName: latestPackageName }}
       followUpProgress={followUpProgress}
-      closures={closures}
       messengerSlot={messengerSlot}
       contactLogs={detailContactLogs}
       lastContact={lastContact}

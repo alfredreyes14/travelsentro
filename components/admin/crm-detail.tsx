@@ -13,7 +13,6 @@ import {
   ContactActivity,
   type CrmDetailContactLog,
   type CrmDetailInquiry,
-  type CrmDetailClosure,
   type CrmDetailMessage,
 } from "./contact-activity";
 import { FollowUpBadge } from "./follow-up-badge";
@@ -102,7 +101,6 @@ export function CrmDetail({
   messages,
   followUp,
   followUpProgress,
-  closures,
   messengerSlot,
   contactLogs,
   lastContact,
@@ -120,8 +118,6 @@ export function CrmDetail({
   followUp: ComposeFollowUp;
   /** The current sequence's progress, for the badge next to the stage. */
   followUpProgress?: FollowUpProgress;
-  /** Times the automation moved this contact to Lost. */
-  closures: CrmDetailClosure[];
   /** Linking the contact to their Messenger chat. */
   messengerSlot?: ReactNode;
   contactLogs: CrmDetailContactLog[];
@@ -433,7 +429,6 @@ export function CrmDetail({
         inquiries={inquiries}
         messages={messages}
         contactLogs={contactLogs}
-        closures={closures}
         canEdit={canEdit}
       />
 

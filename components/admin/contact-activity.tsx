@@ -35,14 +35,12 @@ import {
   type InquirySource,
   type MetaLeadSourceDetails,
 } from "@/lib/crm/inquiry-source";
-import { STAGE_CHIP_CLASSNAME } from "@/lib/crm/stage";
 import { CHAT_TARGET_LABELS, type ChatTarget } from "@/lib/follow-ups/links";
 import {
   FOLLOW_UP_SEQUENCE_LABELS,
   FOLLOW_UP_STEP_COUNT,
   type FollowUpSequence,
 } from "@/lib/follow-ups/templates";
-import { cn } from "@/lib/utils";
 
 export type CrmDetailInquiry = {
   id: string;
@@ -81,16 +79,7 @@ export type CrmDetailContactLog = {
 type ActivityItem =
   | ({ kind: "inquiry" } & CrmDetailInquiry)
   | ({ kind: "message" } & CrmDetailMessage)
-  | ({ kind: "log" } & CrmDetailContactLog)
-  | ({ kind: "auto_lost" } & CrmDetailClosure);
-
-/** The follow-up automation moving this contact to Lost (follow_up_closures). */
-export type CrmDetailClosure = {
-  id: string;
-  created_at: string;
-  sequence: FollowUpSequence;
-  followUpsSent: number;
-};
+  | ({ kind: "log" } & CrmDetailContactLog);
 
 function DeleteLogButton({ contactId, logId }: { contactId: string; logId: string }) {
   const router = useRouter();
@@ -130,22 +119,18 @@ export function ContactActivity({
   inquiries,
   messages,
   contactLogs,
-  closures = [],
   canEdit,
 }: {
   contactId: string;
   inquiries: CrmDetailInquiry[];
   messages: CrmDetailMessage[];
   contactLogs: CrmDetailContactLog[];
-  /** When the follow-up automation moved this contact to Lost, if it did. */
-  closures?: CrmDetailClosure[];
   canEdit: boolean;
 }) {
   const activity: ActivityItem[] = [
     ...inquiries.map((i) => ({ kind: "inquiry" as const, ...i })),
     ...messages.map((m) => ({ kind: "message" as const, ...m })),
     ...contactLogs.map((l) => ({ kind: "log" as const, ...l })),
-    ...closures.map((c) => ({ kind: "auto_lost" as const, ...c })),
   ].sort(
     (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
   );
@@ -179,20 +164,7 @@ export function ContactActivity({
                     {format(new Date(item.created_at), "MMM d, yyyy h:mm a")}
                   </TooltipContent>
                 </Tooltip>
-                {item.kind === "auto_lost" ? (
-                  <>
-                    <Badge
-                      variant="outline"
-                      className={cn("w-fit", STAGE_CHIP_CLASSNAME.lost)}
-                    >
-                      Moved to Lost automatically
-                    </Badge>
-                    <p className="text-base leading-[1.5]">
-                      No reply after {item.followUpsSent} follow-ups (
-                      {FOLLOW_UP_SEQUENCE_LABELS[item.sequence]}).
-                    </p>
-                  </>
-                ) : item.kind === "inquiry" ? (
+                {item.kind === "inquiry" ? (
                   <>
                     {item.source === "meta_lead_ad" ? (
                       <div className="flex flex-wrap items-center gap-2">

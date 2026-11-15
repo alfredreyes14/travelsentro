@@ -23,7 +23,6 @@ import {
   FOLLOW_UP_GAP_DAYS,
   FOLLOW_UP_SEQUENCES,
   FOLLOW_UP_STEP_COUNT,
-  LOST_AFTER_DAYS,
   followUpAngle,
   followUpEmailTemplate,
   followUpMessengerTemplate,
@@ -113,7 +112,6 @@ check(
 check("gaps: 1, 3, 5, 10 days", [...FOLLOW_UP_GAP_DAYS], [1, 3, 5, 10]);
 check("emails land on day 1, 4, 9, 19", FOLLOW_UP_GAP_DAYS.reduce<number[]>((acc, gap) => [...acc, (acc.at(-1) ?? 0) + gap], []), [1, 4, 9, 19]);
 check("4 steps", FOLLOW_UP_STEP_COUNT, 4);
-check("lost 3 days after the last email", LOST_AFTER_DAYS, 3);
 check("Messenger-only leads: day 1 and day 4 (Meta's 7-day limit)", [...MESSENGER_FOLLOW_UP_GAP_DAYS], [1, 3]);
 
 // ---------------------------------------------------------------- sequences

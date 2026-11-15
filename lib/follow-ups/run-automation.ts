@@ -7,21 +7,16 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { sendFollowUpEmails, type FollowUpEmailItem } from "./send";
 import {
   FOLLOW_UP_GAP_DAYS,
-  FOLLOW_UP_STEP_COUNT,
-  LOST_AFTER_DAYS,
-  MESSENGER_FOLLOW_UP_GAP_DAYS,
   followUpEmailTemplate,
   toFollowUpSequence,
 } from "./templates";
 
 /**
- * The daily lead follow-up run (app/api/cron/follow-ups):
- *   1. moves B2C contacts who got a whole sequence and never clicked to
- *      Lost (close_unconverted_follow_ups()), then
- *   2. emails every B2C contact at New or Quotation whose next step is due
- *      (list_due_follow_ups()), within what's left of the shared Resend
- *      quota. The stage picks the sequence: New -> no_reply, Quotation ->
- *      quote (lib/follow-ups/templates.ts).
+ * The daily lead follow-up run (app/api/cron/follow-ups): emails every B2C
+ * contact at New or Quotation whose next step is due (list_due_follow_ups()),
+ * within what's left of the shared Resend quota. The stage picks the
+ * sequence: New -> no_reply, Quotation -> quote (lib/follow-ups/templates.ts).
+ * Leads are never moved to Lost automatically; staff do that by hand.
  *
  * On by default; FOLLOW_UPS_ENABLED=false switches it off. Vercel only runs
  * crons on production, so staging never emails leads on its own.
@@ -42,7 +37,6 @@ export type FollowUpRunResult = {
   sent: number;
   failed: number;
   limit: number;
-  closedAsLost: number;
   skippedReason?: "disabled" | "quota";
 };
 
@@ -61,25 +55,15 @@ function siteOrigin(): string {
 
 export async function runFollowUpAutomation(): Promise<FollowUpRunResult> {
   if (!isFollowUpAutomationEnabled()) {
-    return { due: 0, sent: 0, failed: 0, limit: 0, closedAsLost: 0, skippedReason: "disabled" };
+    return { due: 0, sent: 0, failed: 0, limit: 0, skippedReason: "disabled" };
   }
 
   const supabase = createServiceClient();
 
-  const { data: closedAsLost, error: closeError } = await supabase.rpc(
-    "close_unconverted_follow_ups",
-    {
-      p_step_count: FOLLOW_UP_STEP_COUNT,
-      p_grace_days: LOST_AFTER_DAYS,
-      p_messenger_step_count: MESSENGER_FOLLOW_UP_GAP_DAYS.length,
-    }
-  );
-  if (closeError) throw new Error(`close_unconverted_follow_ups failed: ${closeError.message}`);
-
   const quotaLeft = (await remainingEmailQuota(supabase)) - QUOTA_RESERVE;
   const limit = Math.min(envNumber("FOLLOW_UP_DAILY_LIMIT", DEFAULT_DAILY_LIMIT), quotaLeft);
   if (limit <= 0) {
-    const result = { due: 0, sent: 0, failed: 0, limit: 0, closedAsLost: closedAsLost ?? 0, skippedReason: "quota" as const };
+    const result = { due: 0, sent: 0, failed: 0, limit: 0, skippedReason: "quota" as const };
     console.log("Follow-up automation:", result);
     return result;
   }
@@ -125,7 +109,6 @@ export async function runFollowUpAutomation(): Promise<FollowUpRunResult> {
     sent: summary.sent,
     failed: summary.failed,
     limit,
-    closedAsLost: closedAsLost ?? 0,
   };
   console.log("Follow-up automation:", result);
   return result;

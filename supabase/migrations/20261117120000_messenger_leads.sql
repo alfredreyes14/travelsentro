@@ -14,11 +14,11 @@
 --     them sent, which logs a messages row with channel 'messenger'. Meta
 --     only lets a Page message someone within 7 days of their last
 --     message, so these sequences have 2 steps (day 1, day 4).
--- (6) A customer writing in Messenger restarts the follow-up clock, and a
---     customer who wrote after the last follow-up is never moved to Lost.
+-- (6) A customer writing in Messenger restarts the follow-up clock.
 --
--- Replaces list_due_follow_ups(), close_unconverted_follow_ups(),
--- record_messenger_inbound(), record_messenger_staff_message(),
+-- Leads are never moved to Lost automatically: staff do that by hand.
+--
+-- Replaces list_due_follow_ups(), record_messenger_inbound(), record_messenger_staff_message(),
 -- unlink_messenger_thread() and contacts_set_stage_changed_at() from the
 -- lead_follow_ups and meta_stage_sync migrations.
 
@@ -493,57 +493,3 @@ as $$
   order by c.stage_changed_at desc
   limit p_limit;
 $$;
-
--- Lost after the whole sequence: 4 follow-ups for leads with an email,
--- p_messenger_step_count (2) for leads reached only on Messenger. Never
--- for a lead who wrote to us after the last follow-up.
-drop function public.close_unconverted_follow_ups(integer, integer);
-
-create function public.close_unconverted_follow_ups(
-  p_step_count integer,
-  p_grace_days integer,
-  p_messenger_step_count integer default 2
-)
-returns integer
-language plpgsql
-security invoker
-set search_path = public
-as $$
-declare
-  v_count integer;
-begin
-  with due as (
-    select c.id, fp.sequence, fp.sent_count
-    from contacts c
-    join follow_up_progress fp on fp.contact_id = c.id
-    left join messenger_threads t on t.psid = c.messenger_psid
-    where c.client_type = 'b2c'
-      and c.stage in ('new', 'quotation')
-      and fp.clicked = false
-      and fp.sent_count >= case
-        when nullif(trim(coalesce(c.email, '')), '') is null then p_messenger_step_count
-        else p_step_count
-      end
-      and fp.last_sent_at
-        <= now() - make_interval(days => p_grace_days) + interval '12 hours'
-      and (t.last_inbound_at is null or t.last_inbound_at <= fp.last_sent_at)
-  ),
-  closed as (
-    insert into follow_up_closures (contact_id, sequence, follow_ups_sent)
-    select id, sequence, sent_count from due
-    returning contact_id
-  )
-  update contacts c
-  set stage = 'lost'
-  from closed
-  where c.id = closed.contact_id;
-
-  get diagnostics v_count = row_count;
-  return v_count;
-end;
-$$;
-
-revoke execute on function public.close_unconverted_follow_ups(integer, integer, integer)
-  from public, anon, authenticated;
-grant execute on function public.close_unconverted_follow_ups(integer, integer, integer)
-  to service_role;

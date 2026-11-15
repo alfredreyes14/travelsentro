@@ -8,6 +8,8 @@ export const E2E_ENV = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ?? "",
   SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
   NEXT_PUBLIC_SITE_URL: `http://localhost:${PORT}`,
+  // Required by next.config.ts; the tests never load stored images.
+  NEXT_PUBLIC_R2_PUBLIC_URL: "https://images.e2e.invalid",
   // Production behaviour (Meta lead/Messenger syncs only run there), but
   // every outside service is the fake one.
   VERCEL_ENV: "production",

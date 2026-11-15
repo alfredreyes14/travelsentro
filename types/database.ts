@@ -409,38 +409,6 @@ export type Database = {
         Update: { id?: boolean; launched_at?: string };
         Relationships: [];
       };
-      follow_up_closures: {
-        Row: {
-          contact_id: string;
-          created_at: string;
-          follow_ups_sent: number;
-          id: string;
-          sequence: string;
-        };
-        Insert: {
-          contact_id: string;
-          created_at?: string;
-          follow_ups_sent: number;
-          id?: string;
-          sequence: string;
-        };
-        Update: {
-          contact_id?: string;
-          created_at?: string;
-          follow_ups_sent?: number;
-          id?: string;
-          sequence?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "follow_up_closures_contact_id_fkey";
-            columns: ["contact_id"];
-            isOneToOne: false;
-            referencedRelation: "contacts";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       inquiries: {
         Row: {
           contact_id: string;
@@ -1546,10 +1514,6 @@ export type Database = {
       claim_meta_outbox: {
         Args: { p_limit: number };
         Returns: Database["public"]["Tables"]["meta_outbox"]["Row"][];
-      };
-      close_unconverted_follow_ups: {
-        Args: { p_grace_days: number; p_messenger_step_count?: number; p_step_count: number };
-        Returns: number;
       };
       get_notification_recipients: {
         Args: Record<PropertyKey, never>;

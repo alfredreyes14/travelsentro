@@ -113,7 +113,7 @@ test("the daily run only emails leads from the last 3 weeks on its first run", a
   await expect(page.getByText("Following up 1 of 4")).toBeVisible();
 });
 
-test("a lead who never responds to all 4 follow-ups moves to Lost", async ({ request, page }) => {
+test("a lead who never responds stays put after all 4 follow-ups, for staff to move by hand", async ({ request, page }) => {
   const lead = await seedLead({ daysOld: 25 });
   const sentDaysAgo = [24, 21, 16, 6];
   const { error } = await db()
@@ -134,8 +134,9 @@ test("a lead who never responds to all 4 follow-ups moves to Lost", async ({ req
 
   const { status, body } = await runCron(request, "/api/cron/follow-ups");
   expect(status, JSON.stringify(body)).toBe(200);
-  expect((await contact(lead.id)).stage).toBe("lost");
+  expect((await contact(lead.id)).stage).toBe("new");
+  expect((await sentEmails()).map((e) => e.to)).not.toContain(lead.email); // no 5th email
 
   await page.goto(`/admin/crm/${lead.id}`);
-  await expect(page.getByText("Moved to Lost automatically")).toBeVisible();
+  await expect(page.getByText("All 4 follow-ups sent")).toBeVisible();
 });

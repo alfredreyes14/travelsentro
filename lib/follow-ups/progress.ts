@@ -71,7 +71,7 @@ export function followUpBadge(
     return {
       label: `All ${FOLLOW_UP_STEP_COUNT} follow-ups sent`,
       tone: "done",
-      detail: `${sequence}: no tap yet. Moves to Lost 3 days after the last one unless they reply.`,
+      detail: `${sequence}: no tap yet. Move them to Lost by hand if you're done with this lead.`,
     };
   }
 

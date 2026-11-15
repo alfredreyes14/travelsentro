@@ -13,7 +13,6 @@
 -- (2) messages follow-up columns: kind, sequence, step, a per-message
 --     tracking token (the capability inside the email/SMS link), clicks.
 -- (3) message_clicks -- one row per recorded click on a follow-up link.
--- (4) follow_up_closures -- each time the automation moved a lead to Lost.
 -- (5) follow_up_sequence_for() -- which sequence a contact is in.
 -- (6) advance_stage_for_follow_up() -- internal, forward-only stage move.
 -- (7) mark_follow_ups_sent() -- staff/cron call after a send (B2B moves).
@@ -21,8 +20,6 @@
 -- (9) follow_up_progress -- per contact, the current sequence's progress
 --     (for badges and step numbering).
 -- (10) list_due_follow_ups() -- the daily automation's work list.
--- (11) close_unconverted_follow_ups() -- no reply after the whole sequence
---      -> Lost.
 -- (12) follow_up_settings -- when follow-ups went live, for the one-time
 --      backlog limit in list_due_follow_ups().
 -- (13) A CRM quote linked to a contact moves it to Quotation.
@@ -102,25 +99,6 @@ create index message_clicks_contact_id_idx on message_clicks(contact_id);
 
 -- Read-only for staff. Writes go through record_follow_up_click() only.
 create policy "authenticated staff can read message clicks" on message_clicks
-  for select to authenticated using (true);
-
--- ============================================================================
--- (4) follow_up_closures
--- ============================================================================
-create table follow_up_closures (
-  id uuid primary key default gen_random_uuid(),
-  contact_id uuid not null references contacts(id) on delete cascade,
-  sequence text not null check (sequence in ('no_reply', 'quote')),
-  follow_ups_sent integer not null,
-  created_at timestamptz not null default now()
-);
-
-alter table follow_up_closures enable row level security;
-
-create index follow_up_closures_contact_id_idx on follow_up_closures(contact_id);
-
--- Read-only for staff. Written by close_unconverted_follow_ups() only.
-create policy "authenticated staff can read follow-up closures" on follow_up_closures
   for select to authenticated using (true);
 
 -- ============================================================================
@@ -459,59 +437,6 @@ $$;
 revoke execute on function public.list_due_follow_ups(integer[], integer, integer, integer)
   from public, anon, authenticated;
 grant execute on function public.list_due_follow_ups(integer[], integer, integer, integer)
-  to service_role;
-
--- ============================================================================
--- (11) close_unconverted_follow_ups()
---
--- B2C contacts still at the stage their sequence ran at (New / Quotation)
--- who got at least p_step_count follow-ups there, never clicked, and whose
--- last one is p_grace_days old (half a day of slack) move to Lost, with a
--- follow_up_closures row for the Activity timeline. A contact staff move
--- or reopen has a new stage_changed_at, so it starts with a clean count
--- and is never closed on old follow-ups. Returns how many moved.
--- ============================================================================
-create function public.close_unconverted_follow_ups(
-  p_step_count integer,
-  p_grace_days integer
-)
-returns integer
-language plpgsql
-security invoker
-set search_path = public
-as $$
-declare
-  v_count integer;
-begin
-  with due as (
-    select c.id, fp.sequence, fp.sent_count
-    from contacts c
-    join follow_up_progress fp on fp.contact_id = c.id
-    where c.client_type = 'b2c'
-      and c.stage in ('new', 'quotation')
-      and fp.clicked = false
-      and fp.sent_count >= p_step_count
-      and fp.last_sent_at
-        <= now() - make_interval(days => p_grace_days) + interval '12 hours'
-  ),
-  closed as (
-    insert into follow_up_closures (contact_id, sequence, follow_ups_sent)
-    select id, sequence, sent_count from due
-    returning contact_id
-  )
-  update contacts c
-  set stage = 'lost'
-  from closed
-  where c.id = closed.contact_id;
-
-  get diagnostics v_count = row_count;
-  return v_count;
-end;
-$$;
-
-revoke execute on function public.close_unconverted_follow_ups(integer, integer)
-  from public, anon, authenticated;
-grant execute on function public.close_unconverted_follow_ups(integer, integer)
   to service_role;
 
 -- ============================================================================

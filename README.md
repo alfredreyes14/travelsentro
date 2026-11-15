@@ -71,8 +71,9 @@ New → Inquiry → Quotation → Confirmation / Lost.
 
 - **Schedule:** gaps of 1, 3, 5 and 10 days from the previous follow-up
   (counting from when the lead entered the stage), so day 1, 4, 9 and 19.
-  3 days after the 4th with no tap, the lead moves to **Lost** (shown on
-  Activity). A tap on an old link brings a Lost lead back.
+  Leads are never moved to Lost automatically: after the 4th, the badge
+  reads "All 4 follow-ups sent" and staff decide. A tap on an old link
+  brings a Lost lead back.
 - **Counting:** only follow-ups sent since the lead entered its current
   stage count, so moving a lead (e.g. New → Quotation) starts the next
   sequence fresh.

@@ -58,15 +58,12 @@ export type FollowUpAngle = {
 /**
  * Days to wait before each automatic step, counted from the previous
  * follow-up (step 1: from when the contact entered the stage). Emails land
- * on day 1, 4, 9 and 19. A contact who never clicks moves to Lost
- * LOST_AFTER_DAYS after the last one (close_unconverted_follow_ups()).
+ * on day 1, 4, 9 and 19. Leads who never respond stay where they are until
+ * staff move them (e.g. to Lost) by hand.
  */
 export const FOLLOW_UP_GAP_DAYS = [1, 3, 5, 10] as const;
 
 export const FOLLOW_UP_STEP_COUNT = FOLLOW_UP_GAP_DAYS.length;
-
-/** Days after the last follow-up before a contact who never clicked moves to Lost. */
-export const LOST_AFTER_DAYS = 3;
 
 type SequenceCopy = {
   /** One per automatic step (FOLLOW_UP_STEP_COUNT). */
@@ -318,7 +315,7 @@ export function followUpMessengerTemplate(sequence: FollowUpSequence, step: numb
 /**
  * Leads reached only on Messenger: Meta lets a Page message someone up to
  * 7 days after their last message, so their sequence is 2 steps (day 1 and
- * day 4) and they move to Lost after it (close_unconverted_follow_ups()).
+ * day 4).
  */
 export const MESSENGER_FOLLOW_UP_GAP_DAYS = [1, 3] as const;
 export const MESSENGER_WINDOW_DAYS = 7;
