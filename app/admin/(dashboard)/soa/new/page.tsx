@@ -16,6 +16,10 @@ export const metadata: Metadata = {
   title: "New SOA | TravelSentro Admin",
 };
 
+// extractSoaLineItemsFromPoster inherits this page's segment config; same
+// 2-minute cap as the quote page (60s client timeout + 1 retry).
+export const maxDuration = 120;
+
 /**
  * ?kind=previous opens the "previous SOA" form; ?contactId= presets the
  * linked contact (used by the contact page's buttons).

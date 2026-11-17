@@ -23,6 +23,10 @@ export const metadata: Metadata = {
   title: "Edit SOA | TravelSentro Admin",
 };
 
+// extractSoaLineItemsFromPoster inherits this page's segment config; same
+// 2-minute cap as the quote page (60s client timeout + 1 retry).
+export const maxDuration = 120;
+
 export default async function EditSoaPage({
   params,
 }: {
