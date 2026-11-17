@@ -21,6 +21,8 @@ import {
   type InstallmentStatus,
 } from "@/lib/soa/totals";
 import type { SoaVoucherOption } from "@/lib/soa/soa-options";
+import { isBlankSoaLineItem, type SoaPosterLineItem } from "@/lib/soa/poster-mapping";
+import { SoaPosterImportButton } from "./soa-poster-import-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,6 +132,21 @@ export function SoaLineItemsFields({ onRequestRemove }: { onRequestRemove: Reque
   const items = useFieldArray({ control: form.control, name: "lineItems" });
   const totals = useLiveTotals();
 
+  /** Appends poster items; the untouched blank starter row is dropped first. */
+  function importFromPoster(imported: SoaPosterLineItem[]) {
+    const rows = imported.map((item) => ({
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice ?? BLANK_NUMBER,
+    }));
+    const current = form.getValues("lineItems");
+    if (current.length === 1 && isBlankSoaLineItem(current[0])) {
+      items.replace(rows);
+    } else {
+      items.append(rows, { shouldFocus: false });
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
       {items.fields.map((field, index) => (
@@ -197,17 +214,19 @@ export function SoaLineItemsFields({ onRequestRemove }: { onRequestRemove: Reque
           </div>
         </div>
       ))}
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        className="self-start"
-        onClick={() =>
-          items.append({ description: "", quantity: 1, unitPrice: BLANK_NUMBER })
-        }
-      >
-        Add line item
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() =>
+            items.append({ description: "", quantity: 1, unitPrice: BLANK_NUMBER })
+          }
+        >
+          Add line item
+        </Button>
+        <SoaPosterImportButton onImport={importFromPoster} />
+      </div>
       <ArrayError
         message={
           form.formState.errors.lineItems?.message ??
