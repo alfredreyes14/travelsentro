@@ -97,6 +97,15 @@ export async function rewindMessengerSync(minutes = 120) {
   if (error) throw error;
 }
 
+/** What the fake Claude returns for the next poster reads. */
+export async function setPosterExtraction(extraction: Record<string, unknown>) {
+  await fetch(`${MOCK}/__poster`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(extraction),
+  });
+}
+
 // ------------------------------------------------ crons
 
 export async function runCron(request: APIRequestContext, path: string) {

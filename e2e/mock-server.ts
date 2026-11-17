@@ -6,11 +6,13 @@
  *   /resend/*      Resend: accepts emails, returns ids
  *   /semaphore     Semaphore SMS: accepts texts
  *   /graph/v25.0/* Meta Graph API: Messenger conversations (set by tests)
+ *   /anthropic/v1/messages  Claude: answers poster reads with the set extraction
  *
  * Tests read what was "sent" and set up Messenger chats through:
  *   GET  /__requests          everything received so far
  *   POST /__reset             forget requests, clear chats
  *   POST /__conversations     the chats the Conversations API returns
+ *   POST /__poster            what the next poster reads return
  */
 import { createServer, type IncomingMessage } from "node:http";
 
@@ -19,6 +21,7 @@ const PORT = Number(process.env.MOCK_PORT ?? 4010);
 type Recorded = { method: string; path: string; body: unknown; at: string };
 let requests: Recorded[] = [];
 let conversations: unknown[] = [];
+let posterExtraction: unknown = null;
 let nextId = 1;
 
 async function readBody(req: IncomingMessage): Promise<unknown> {
@@ -46,6 +49,11 @@ const server = createServer(async (req, res) => {
   if (url.pathname === "/__reset") {
     requests = [];
     conversations = [];
+    posterExtraction = null;
+    return json(200, { ok: true });
+  }
+  if (url.pathname === "/__poster") {
+    posterExtraction = body;
     return json(200, { ok: true });
   }
   if (url.pathname === "/__conversations") {
@@ -80,6 +88,24 @@ const server = createServer(async (req, res) => {
         created_at: new Date().toISOString(),
       }))
     );
+  }
+
+  // ---- Anthropic Messages API (poster reads). The structured output is the
+  // text block's JSON, as the real API returns it.
+  if (url.pathname === "/anthropic/v1/messages") {
+    if (posterExtraction === null) {
+      return json(500, { type: "error", error: { type: "api_error", message: "no poster set" } });
+    }
+    return json(200, {
+      id: `msg_mock_${nextId++}`,
+      type: "message",
+      role: "assistant",
+      model: (body as { model?: string })?.model ?? "mock",
+      content: [{ type: "text", text: JSON.stringify(posterExtraction), citations: null }],
+      stop_reason: "end_turn",
+      stop_sequence: null,
+      usage: { input_tokens: 1, output_tokens: 1 },
+    });
   }
 
   // ---- Meta Graph API

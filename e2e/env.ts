@@ -24,5 +24,7 @@ export const E2E_ENV = {
   META_GRAPH_URL: `${MOCK}/graph`,
   MESSENGER_PAGE_ACCESS_TOKEN: "e2e-fake-page-token",
   MESSENGER_APP_SECRET: "e2e-fake-app-secret",
+  ANTHROPIC_API_KEY: "sk-ant-e2e-fake",
+  ANTHROPIC_BASE_URL: `${MOCK}/anthropic`,
 };
 

@@ -102,6 +102,7 @@ export function SoaPosterImportButton({
       <input
         ref={inputRef}
         type="file"
+        aria-label="Poster image"
         accept={ACCEPTED_POSTER_MIME_TYPES.join(",")}
         className="hidden"
         onChange={handleFileChange}
