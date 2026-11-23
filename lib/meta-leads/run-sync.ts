@@ -3,7 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { SITE_URL } from "@/lib/constants";
-import { sendInternalNotificationEmails } from "@/lib/crm/notify-staff";
+import { sendInternalNotificationEmailsBatch } from "@/lib/crm/notify-staff";
 import { createServiceClient } from "@/lib/supabase/service";
 
 import { describeLeadFailures, describeSyncError } from "./errors";
@@ -71,16 +71,20 @@ function lookbackDays(): number {
   return Number.isFinite(days) && days > 0 ? days : DEFAULT_LOOKBACK_DAYS;
 }
 
-async function notifyStaff(outcome: LeadOutcome): Promise<void> {
-  const { parsed, formName, contactId } = outcome;
-  const source = `Meta lead ad${formName ? ` (${formName})` : ""}`;
-  await sendInternalNotificationEmails({
-    name: parsed.name ?? "Facebook lead",
-    email: parsed.email ?? "",
-    phone: parsed.phone ?? "",
-    message: parsed.message ? `${source}\n\n${parsed.message}` : source,
-    crmUrl: `${SITE_URL}/admin/crm/${contactId}`,
-  });
+/** One staff alert per new lead, sent together. Never throws. */
+async function notifyStaff(outcomes: LeadOutcome[]): Promise<void> {
+  await sendInternalNotificationEmailsBatch(
+    outcomes.map(({ parsed, formName, contactId }) => {
+      const source = `Meta lead ad${formName ? ` (${formName})` : ""}`;
+      return {
+        name: parsed.name ?? "Facebook lead",
+        email: parsed.email ?? "",
+        phone: parsed.phone ?? "",
+        message: parsed.message ? `${source}\n\n${parsed.message}` : source,
+        crmUrl: `${SITE_URL}/admin/crm/${contactId}`,
+      };
+    })
+  );
 }
 
 /** Inserts the 'running' log row. Logging never blocks the sync itself. */
@@ -199,17 +203,10 @@ export async function runMetaLeadSync(
     throw new MetaLeadSyncRunError(described.message, status, err);
   }
 
-  // sendInternalNotificationEmails logs its own failures and never throws.
-  for (const outcome of added.slice(0, MAX_ALERTS_PER_RUN)) {
-    await notifyStaff(outcome);
-  }
-  const alertsSkipped = Math.max(0, added.length - MAX_ALERTS_PER_RUN);
-  if (alertsSkipped > 0) {
-    console.warn(`Meta lead sync: ${alertsSkipped} new lead(s) saved without a staff email`);
-  }
-
   const described = leadErrors.length > 0 ? describeLeadFailures(leadErrors, summary.pulled) : null;
   const status = statusFor(summary, described !== null);
+  // Logged before the staff emails, so a slow email can't leave the run
+  // looking unfinished.
   await finishLog(supabase, runId, {
     status,
     summary,
@@ -217,6 +214,12 @@ export async function runMetaLeadSync(
     errorDetail: described?.detail,
     leadErrors,
   });
+
+  await notifyStaff(added.slice(0, MAX_ALERTS_PER_RUN));
+  const alertsSkipped = Math.max(0, added.length - MAX_ALERTS_PER_RUN);
+  if (alertsSkipped > 0) {
+    console.warn(`Meta lead sync: ${alertsSkipped} new lead(s) saved without a staff email`);
+  }
 
   const result: MetaLeadSyncResult = {
     ...summary,

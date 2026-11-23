@@ -53,3 +53,46 @@ export async function sendInternalNotificationEmails(
     console.error("Internal notification email failed", err);
   }
 }
+
+/**
+ * Same alert as sendInternalNotificationEmails(), for several inquiries at
+ * once: one recipient lookup and one Resend Batch API call per 100 alerts,
+ * instead of two round trips per alert. Used by the Meta lead sync, which
+ * can add many leads in one run.
+ *
+ * Best-effort like the single version: logs and returns on failure.
+ */
+export async function sendInternalNotificationEmailsBatch(
+  list: NotifyStaffParams[]
+): Promise<void> {
+  if (list.length === 0) return;
+
+  const supabase = await createClient();
+  const { data: recipients, error } = await supabase.rpc("get_notification_recipients");
+
+  if (error || !recipients?.length) {
+    console.error("get_notification_recipients failed", error);
+    return;
+  }
+  const bcc = recipients.map((r: { email: string }) => r.email);
+
+  for (let i = 0; i < list.length; i += 100) {
+    try {
+      const result = await resend.batch.send(
+        list.slice(i, i + 100).map((params) => ({
+          from: FROM_EMAIL,
+          // See sendInternalNotificationEmails: the audience is in bcc.
+          to: FROM_EMAIL,
+          bcc,
+          subject: `New inquiry from ${params.name}`,
+          react: createElement(InternalNotificationEmail, params),
+        }))
+      );
+      if (result.error) {
+        console.error("Internal notification emails failed", result.error);
+      }
+    } catch (err) {
+      console.error("Internal notification emails failed", err);
+    }
+  }
+}

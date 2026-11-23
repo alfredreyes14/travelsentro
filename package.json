@@ -41,7 +41,9 @@
     "verify:quote-pdf": "tsx --env-file=.env.local scripts/verify-quote-pdf.ts",
     "import:meta-leads": "tsx --env-file=.env.local scripts/import-meta-leads.ts",
     "verify:meta-leads": "tsx scripts/verify-meta-leads.ts",
-    "verify:soa": "tsx scripts/verify-soa.ts"
+    "verify:soa": "tsx scripts/verify-soa.ts",
+    "verify:meta-lead-sync": "tsx scripts/verify-meta-lead-sync.ts",
+    "e2e:meta-lead-sync": "tsx scripts/e2e-meta-lead-sync.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.122.0",
