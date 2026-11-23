@@ -5,12 +5,16 @@
  *
  *   /resend/*      Resend: accepts emails, returns ids
  *   /semaphore     Semaphore SMS: accepts texts
- *   /graph/v25.0/* Meta Graph API: Messenger conversations (set by tests)
+ *   /graph/v25.0/* Meta Graph API: Messenger conversations and lead ad
+ *                  forms/leads (set by tests)
  *
  * Tests read what was "sent" and set up Messenger chats through:
  *   GET  /__requests          everything received so far
  *   POST /__reset             forget requests, clear chats
  *   POST /__conversations     the chats the Conversations API returns
+ *   POST /__lead-forms        { forms: [{ id, name, leads }], error? }: the
+ *                             lead forms and leads the lead sync reads; with
+ *                             `error`, every lead request fails with it
  */
 import { createServer, type IncomingMessage } from "node:http";
 
@@ -19,6 +23,8 @@ const PORT = Number(process.env.MOCK_PORT ?? 4010);
 type Recorded = { method: string; path: string; body: unknown; at: string };
 let requests: Recorded[] = [];
 let conversations: unknown[] = [];
+type LeadForm = { id: string; name: string; leads: unknown[] };
+let leadForms: { forms: LeadForm[]; error?: { status: number; body: unknown } } = { forms: [] };
 let nextId = 1;
 
 async function readBody(req: IncomingMessage): Promise<unknown> {
@@ -46,6 +52,11 @@ const server = createServer(async (req, res) => {
   if (url.pathname === "/__reset") {
     requests = [];
     conversations = [];
+    leadForms = { forms: [] };
+    return json(200, { ok: true });
+  }
+  if (url.pathname === "/__lead-forms") {
+    leadForms = (body as typeof leadForms) ?? { forms: [] };
     return json(200, { ok: true });
   }
   if (url.pathname === "/__conversations") {
@@ -85,6 +96,18 @@ const server = createServer(async (req, res) => {
   // ---- Meta Graph API
   if (url.pathname.endsWith("/conversations")) {
     return json(200, { data: conversations });
+  }
+  if (url.pathname.endsWith("/leadgen_forms") || url.pathname.endsWith("/leads")) {
+    if (leadForms.error) return json(leadForms.error.status, leadForms.error.body);
+    if (url.pathname.endsWith("/leadgen_forms")) {
+      return json(200, { data: leadForms.forms.map(({ id, name }) => ({ id, name, status: "ACTIVE" })) });
+    }
+    // /graph/v25.0/{form-id}/leads, in pages of 100 like Meta.
+    const formId = url.pathname.split("/").at(-2);
+    const leads = leadForms.forms.find((f) => f.id === formId)?.leads ?? [];
+    const offset = Number(url.searchParams.get("offset") ?? 0);
+    const next = offset + 100 < leads.length ? `${url.origin}${url.pathname}?offset=${offset + 100}` : undefined;
+    return json(200, { data: leads.slice(offset, offset + 100), paging: next ? { next } : {} });
   }
   if (url.pathname.startsWith("/graph/")) {
     return json(200, { data: [] });

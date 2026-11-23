@@ -88,6 +88,35 @@ export async function setConversations(conversations: unknown[]) {
   });
 }
 
+/** One lead as Meta's /{form-id}/leads returns it. */
+export type FakeMetaLead = { id: string; [field: string]: unknown };
+
+export function metaLead(id: string, formId: string, name: string, extra: Record<string, unknown> = {}): FakeMetaLead {
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, ".");
+  return {
+    id,
+    created_time: new Date().toISOString().replace("Z", "+0000"),
+    form_id: formId,
+    field_data: [
+      { name: "full_name", values: [name] },
+      { name: "email", values: [`${slug}@example.com`] },
+      { name: "which_china_package_do_you_want_to_avail?", values: ["Beijing 5D4N"] },
+    ],
+    ...extra,
+  };
+}
+
+type FakeLeadForm = { id: string; name: string; leads: unknown[] };
+
+/** The lead forms (and their leads) the Meta lead sync reads next. */
+export async function setLeadForms(forms: FakeLeadForm[], error?: { status: number; body: unknown }) {
+  await fetch(`${MOCK}/__lead-forms`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ forms, error }),
+  });
+}
+
 /** Makes the next Messenger check read chats from the last `minutes`. */
 export async function rewindMessengerSync(minutes = 120) {
   const { error } = await db()

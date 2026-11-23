@@ -10,9 +10,8 @@
 import type { MetaLead } from "./lead";
 
 const GRAPH_API_VERSION = "v25.0";
-// META_GRAPH_API_URL points the sync at a fake Graph API for end-to-end
-// tests (scripts/e2e-meta-lead-sync.ts). Never set it on a real deployment.
-const GRAPH = `${process.env.META_GRAPH_API_URL || "https://graph.facebook.com"}/${GRAPH_API_VERSION}`;
+// META_GRAPH_URL points the sync at a fake Meta in end-to-end tests (e2e/).
+const GRAPH = `${process.env.META_GRAPH_URL || "https://graph.facebook.com"}/${GRAPH_API_VERSION}`;
 
 // The minimum needed to save a lead (leads_retrieval).
 const CORE_LEAD_FIELDS = "id,created_time,form_id,field_data";

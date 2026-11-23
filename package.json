@@ -43,7 +43,6 @@
     "verify:meta-leads": "tsx scripts/verify-meta-leads.ts",
     "verify:soa": "tsx scripts/verify-soa.ts",
     "verify:meta-lead-sync": "tsx scripts/verify-meta-lead-sync.ts",
-    "e2e:meta-lead-sync": "tsx scripts/e2e-meta-lead-sync.ts",
     "verify:follow-ups": "tsx scripts/verify-follow-ups.ts",
     "verify:meta-sync": "tsx scripts/verify-meta-sync.ts",
     "setup:meta-sync": "tsx --env-file=.env.local scripts/setup-meta-sync.ts",
