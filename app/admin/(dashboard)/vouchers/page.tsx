@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/admin/page-header";
 import {
@@ -23,7 +23,7 @@ type VoucherRow = Database["public"]["Tables"]["vouchers"]["Row"] & {
 export default async function AdminVouchersPage() {
   // AUTH-05 — gate independent of nav hiding; RLS is the second, independent
   // enforcement layer (mirrors every other admin page).
-  await requirePermissionOrRedirect("can_manage_vouchers");
+  await requireModuleOrRedirect("vouchers");
 
   const supabase = await createClient();
 

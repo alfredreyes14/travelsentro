@@ -61,6 +61,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { FormActionBar } from "@/components/admin/form-action-bar";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -133,6 +134,11 @@ export function PackageForm({
   // here has to clear it -- otherwise Cancel would discard a package the
   // admin just saved.
   const [isDraft, setIsDraft] = useState(isUnsavedDraft);
+  // Create alone can only finish a never-saved draft; saved packages need
+  // Edit. Without either the form is read-only.
+  const canUpdate = useCan("packages", "update");
+  const canCreate = useCan("packages", "create");
+  const canSave = canUpdate || (isDraft && canCreate);
 
   // Base UI's <SelectValue> renders the raw value unless the root is given an
   // items map, which would show the destination's UUID in the trigger.
@@ -241,54 +247,56 @@ export function PackageForm({
             keepMounted
             className="flex flex-col gap-4 pt-4"
           >
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      type="text"
-                      placeholder="Batad Rice Terraces Trek"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="destinationId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Destination</FormLabel>
-                  <Select
-                    items={destinationItems}
-                    value={field.value || ""}
-                    onValueChange={field.onChange}
-                  >
+            <fieldset disabled={!canSave} className="contents">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
                     <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select a destination" />
-                      </SelectTrigger>
+                      <Input
+                        {...field}
+                        type="text"
+                        placeholder="Batad Rice Terraces Trek"
+                      />
                     </FormControl>
-                    <SelectContent>
-                      {destinations.map((destination) => (
-                        <SelectItem key={destination.id} value={destination.id}>
-                          {destination.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <PricingFields />
+              <FormField
+                control={form.control}
+                name="destinationId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Destination</FormLabel>
+                    <Select
+                      items={destinationItems}
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a destination" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {destinations.map((destination) => (
+                          <SelectItem key={destination.id} value={destination.id}>
+                            {destination.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <PricingFields />
+            </fieldset>
           </TabsContent>
 
           <TabsContent
@@ -296,7 +304,9 @@ export function PackageForm({
             keepMounted
             className="flex flex-col gap-4 pt-4"
           >
-            <TravelDatesFields onRequestRemove={requestRemove} />
+            <fieldset disabled={!canSave} className="contents">
+              <TravelDatesFields onRequestRemove={requestRemove} />
+            </fieldset>
           </TabsContent>
 
           <TabsContent
@@ -304,7 +314,9 @@ export function PackageForm({
             keepMounted
             className="flex flex-col gap-4 pt-4"
           >
-            <ItineraryDaysFields onRequestRemove={requestRemove} />
+            <fieldset disabled={!canSave} className="contents">
+              <ItineraryDaysFields onRequestRemove={requestRemove} />
+            </fieldset>
           </TabsContent>
 
           <TabsContent
@@ -312,12 +324,14 @@ export function PackageForm({
             keepMounted
             className="flex flex-col gap-4 pt-4"
           >
-            <PhotoManager
-              ownerId={packageId}
-              initialPhotos={initialPhotos}
-              actions={PACKAGE_PHOTO_ACTIONS}
-              checkWatermark
-            />
+            <fieldset disabled={!canSave} className="contents">
+              <PhotoManager
+                ownerId={packageId}
+                initialPhotos={initialPhotos}
+                actions={PACKAGE_PHOTO_ACTIONS}
+                checkWatermark
+              />
+            </fieldset>
           </TabsContent>
 
           <TabsContent
@@ -325,7 +339,9 @@ export function PackageForm({
             keepMounted
             className="flex flex-col gap-6 pt-4"
           >
-            <LabelListsFields onRequestRemove={requestRemove} />
+            <fieldset disabled={!canSave} className="contents">
+              <LabelListsFields onRequestRemove={requestRemove} />
+            </fieldset>
           </TabsContent>
         </Tabs>
         </Card>
@@ -344,7 +360,7 @@ export function PackageForm({
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={isDraft}
+                      disabled={isDraft || !canUpdate}
                     />
                   </FormControl>
                   <FormLabel className="font-normal">Published</FormLabel>
@@ -360,7 +376,7 @@ export function PackageForm({
                     <Switch
                       checked={field.value}
                       onCheckedChange={field.onChange}
-                      disabled={isDraft}
+                      disabled={isDraft || !canUpdate}
                     />
                   </FormControl>
                   <FormLabel className="font-normal">Featured</FormLabel>
@@ -383,13 +399,15 @@ export function PackageForm({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              size="lg"
-              disabled={isSubmitting || isLeaving}
-            >
-              {isSubmitting ? "Saving..." : "Save Changes"}
-            </Button>
+            {canSave ? (
+              <Button
+                type="submit"
+                size="lg"
+                disabled={isSubmitting || isLeaving}
+              >
+                {isSubmitting ? "Saving..." : "Save Changes"}
+              </Button>
+            ) : null}
           </div>
         </FormActionBar>
 

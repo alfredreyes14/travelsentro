@@ -220,6 +220,11 @@ function firstIssue(values: unknown): string {
 check("a contact with an email is valid", firstIssue(VALID), "OK");
 check("phone only is valid", firstIssue({ ...VALID, email: "", phone: "0917 123 4567" }), "OK");
 check("neither email nor phone", firstIssue({ ...VALID, email: "", phone: "  " }), "email");
+check(
+  "neither, but linked to a Messenger chat",
+  firstIssue({ ...VALID, email: "", phone: "", hasMessengerChat: true }),
+  "OK"
+);
 check("a blank name", firstIssue({ ...VALID, name: "   " }), "name");
 check("a malformed email", firstIssue({ ...VALID, email: "maria@" }), "email");
 const cased = contactFormSchema.safeParse({ ...VALID, email: "  Jane@Gmail.COM " });
@@ -286,6 +291,7 @@ check(
     otherPhones: [],
     contractStart: "2026-01-01",
     contractEnd: "",
+    hasMessengerChat: false,
   }
 );
 

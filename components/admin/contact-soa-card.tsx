@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const SOA_ERROR_MESSAGE =
   "Something went wrong updating that statement. Please try again.";
@@ -44,7 +45,7 @@ export type UnlinkedSoa = {
 
 /**
  * The SOAs billed to one contact (B2C or B2B), with their totals. Rendered
- * only for viewers with can_manage_quotes (the page decides), since
+ * only for viewers with SOA View (the page decides), since
  * statements aren't readable without it.
  */
 export function ContactSoaCard({
@@ -56,6 +57,8 @@ export function ContactSoaCard({
   statements: ContactSoa[];
   unlinkedStatements: UnlinkedSoa[];
 }) {
+  const canCreate = useCan("soa", "create");
+  const canUpdate = useCan("soa", "update");
   const [isLinkOpen, setIsLinkOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -92,24 +95,30 @@ export function ContactSoaCard({
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle>Statements of Account</CardTitle>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" size="sm" onClick={() => setIsLinkOpen(true)}>
-            Link existing
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            nativeButton={false}
-            render={<Link href={`/admin/soa/new?kind=previous&contactId=${contactId}`} />}
-          >
-            Add previous SOA
-          </Button>
-          <Button
-            size="sm"
-            nativeButton={false}
-            render={<Link href={`/admin/soa/new?contactId=${contactId}`} />}
-          >
-            New SOA
-          </Button>
+          {canUpdate ? (
+            <Button variant="secondary" size="sm" onClick={() => setIsLinkOpen(true)}>
+              Link existing
+            </Button>
+          ) : null}
+          {canCreate ? (
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                nativeButton={false}
+                render={<Link href={`/admin/soa/new?kind=previous&contactId=${contactId}`} />}
+              >
+                Add previous SOA
+              </Button>
+              <Button
+                size="sm"
+                nativeButton={false}
+                render={<Link href={`/admin/soa/new?contactId=${contactId}`} />}
+              >
+                New SOA
+              </Button>
+            </>
+          ) : null}
         </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 text-sm">
@@ -160,16 +169,18 @@ export function ContactSoaCard({
                   >
                     View
                   </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() =>
-                      run(() => unlinkSoaFromContact(soa.id, contactId), `${soa.soaNo} unlinked.`)
-                    }
-                  >
-                    Unlink
-                  </Button>
+                  {canUpdate ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={isPending}
+                      onClick={() =>
+                        run(() => unlinkSoaFromContact(soa.id, contactId), `${soa.soaNo} unlinked.`)
+                      }
+                    >
+                      Unlink
+                    </Button>
+                  ) : null}
                 </li>
               ))}
             </ul>

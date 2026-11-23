@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
+import { scheduleMetaSync } from "@/lib/meta-sync/schedule";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 import {
@@ -72,7 +73,7 @@ export async function createContact(
   clientType: ClientType,
   values: ContactFormValues
 ): Promise<ContactActionResult> {
-  const profile = await requirePermission("can_edit_crm");
+  const profile = await requireModule("leads", "create");
 
   const parsed = contactFormSchema.safeParse(values);
   if (!isClientType(clientType) || !parsed.success) {
@@ -113,7 +114,7 @@ export async function updateContact(
   id: string,
   values: ContactFormValues
 ): Promise<ContactActionResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "update");
 
   const parsed = contactFormSchema.safeParse(values);
   if (!parsed.success) return { ok: false, error: INVALID_MESSAGE };
@@ -151,7 +152,7 @@ export async function updateStage(
   id: string,
   stage: ContactStage
 ): Promise<ActionResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "update");
 
   if (!isStageForType("b2c", stage) && !isStageForType("b2b", stage)) {
     return { ok: false, error: STAGE_ERROR_MESSAGE };
@@ -173,6 +174,7 @@ export async function updateStage(
   }
   if (!data || data.length === 0) return { ok: false, error: GONE_MESSAGE };
 
+  scheduleMetaSync();
   revalidatePath("/admin/crm");
   revalidatePath(`/admin/crm/${id}`);
   return { ok: true };
@@ -188,7 +190,7 @@ export async function convertContactType(
   clientType: ClientType,
   stage: ContactStage
 ): Promise<ActionResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "update");
 
   const parsed = convertSchema.safeParse({ clientType, stage });
   if (!parsed.success) return { ok: false, error: INVALID_MESSAGE };
@@ -206,6 +208,7 @@ export async function convertContactType(
   }
   if (!data || data.length === 0) return { ok: false, error: GONE_MESSAGE };
 
+  scheduleMetaSync();
   revalidatePath("/admin/crm");
   revalidatePath(`/admin/crm/${id}`);
   return { ok: true };

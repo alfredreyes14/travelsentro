@@ -1,4 +1,4 @@
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { renderItineraryPdf } from "@/lib/pdf/itinerary-pdf";
 import { fetchQuoteForPdf, quoteToPdfData } from "@/lib/pdf/quote-pdf";
 import { createClient } from "@/lib/supabase/server";
@@ -14,7 +14,7 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await requirePermissionOrRedirect("can_manage_quotes");
+  await requireModuleOrRedirect("quotes");
 
   const { id } = await params;
   const supabase = await createClient();

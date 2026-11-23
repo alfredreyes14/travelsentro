@@ -50,6 +50,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -93,6 +94,9 @@ function toFormValues(event?: EventRecord): EventFormValues {
  * create moves to the edit page, where gallery photos can be added.
  */
 export function EventForm({ event }: { event?: EventRecord }) {
+  const canCreate = useCan("events", "create");
+  const canUpdate = useCan("events", "update");
+  const canSave = event ? canUpdate : canCreate;
   const router = useRouter();
   const { runGuarded } = useNavigationGuard();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -195,221 +199,225 @@ export function EventForm({ event }: { event?: EventRecord }) {
         className="flex flex-col gap-6"
         noValidate
       >
-        <Card className="gap-4 p-5 sm:p-8">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input {...field} type="text" placeholder="e.g. PTAA Travel Fair 2026" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="eventType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Type</FormLabel>
-                <Select items={TYPE_ITEMS} value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="w-full sm:w-64">
-                      <SelectValue placeholder="Choose a type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {TYPE_ITEMS.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
-                        {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid gap-4 sm:grid-cols-2">
+        <fieldset disabled={!canSave} className="contents">
+          <Card className="gap-4 p-5 sm:p-8">
             <FormField
               control={form.control}
-              name="startDate"
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Start date</FormLabel>
+                  <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input {...field} type="date" />
+                    <Input {...field} type="text" placeholder="e.g. PTAA Travel Fair 2026" />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
             <FormField
               control={form.control}
-              name="endDate"
+              name="eventType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>End date (optional)</FormLabel>
-                  <FormControl>
-                    <Input {...field} type="date" />
-                  </FormControl>
-                  <FormDescription>Leave blank for a one-day event.</FormDescription>
+                  <FormLabel>Type</FormLabel>
+                  <Select items={TYPE_ITEMS} value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="w-full sm:w-64">
+                        <SelectValue placeholder="Choose a type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {TYPE_ITEMS.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-          </div>
 
-          <FormField
-            control={form.control}
-            name="venue"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Venue</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="text"
-                    placeholder="e.g. SMX Convention Center, Pasay — Booth 112"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="startDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Start date</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="endDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>End date (optional)</FormLabel>
+                    <FormControl>
+                      <Input {...field} type="date" />
+                    </FormControl>
+                    <FormDescription>Leave blank for a one-day event.</FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-          <FormField
-            control={form.control}
-            name="summary"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Short summary (optional)</FormLabel>
-                <FormControl>
-                  <Textarea {...field} rows={2} />
-                </FormControl>
-                <FormDescription>1–2 sentences, shown on event cards.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full write-up (optional)</FormLabel>
-                <FormControl>
-                  <Textarea {...field} rows={8} />
-                </FormControl>
-                <FormDescription>Shown on the event page. Line breaks are kept.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="coverStoragePath"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Cover photo</FormLabel>
-                {field.value ? (
-                  <div className="flex flex-wrap items-center gap-3">
-                    {/* Plain <img> -- admin thumbnail, mirrors partner-form.tsx. */}
-                    <img
-                      src={getPublicImageUrl(field.value)}
-                      alt=""
-                      className="aspect-video w-48 rounded-md object-cover ring-1 ring-foreground/10"
+            <FormField
+              control={form.control}
+              name="venue"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Venue</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="text"
+                      placeholder="e.g. SMX Convention Center, Pasay — Booth 112"
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => field.onChange("")}
-                    >
-                      Remove cover
-                    </Button>
-                  </div>
-                ) : null}
-                <FormControl>
-                  <input
-                    type="file"
-                    accept={EVENT_IMAGE_ACCEPT}
-                    disabled={isUploadingCover}
-                    onChange={(changeEvent) =>
-                      handleCoverChange(changeEvent, (storagePath) =>
-                        field.onChange(storagePath)
-                      )
-                    }
-                    className="text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-secondary-foreground"
-                  />
-                </FormControl>
-                <FormDescription>
-                  {isUploadingCover
-                    ? "Uploading..."
-                    : "JPG, PNG or WebP, up to 6 MB. Required to publish."}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="linkUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Link (optional)</FormLabel>
-                <FormControl>
-                  <Input
-                    {...field}
-                    type="url"
-                    inputMode="url"
-                    placeholder="https://facebook.com/..."
-                  />
-                </FormControl>
-                <FormDescription>
-                  For example the Facebook post or the organizer&apos;s page.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </Card>
+            <FormField
+              control={form.control}
+              name="summary"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Short summary (optional)</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} rows={2} />
+                  </FormControl>
+                  <FormDescription>1–2 sentences, shown on event cards.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full write-up (optional)</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} rows={8} />
+                  </FormControl>
+                  <FormDescription>Shown on the event page. Line breaks are kept.</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="coverStoragePath"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cover photo</FormLabel>
+                  {field.value ? (
+                    <div className="flex flex-wrap items-center gap-3">
+                      {/* Plain <img> -- admin thumbnail, mirrors partner-form.tsx. */}
+                      <img
+                        src={getPublicImageUrl(field.value)}
+                        alt=""
+                        className="aspect-video w-48 rounded-md object-cover ring-1 ring-foreground/10"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => field.onChange("")}
+                      >
+                        Remove cover
+                      </Button>
+                    </div>
+                  ) : null}
+                  <FormControl>
+                    <input
+                      type="file"
+                      accept={EVENT_IMAGE_ACCEPT}
+                      disabled={isUploadingCover}
+                      onChange={(changeEvent) =>
+                        handleCoverChange(changeEvent, (storagePath) =>
+                          field.onChange(storagePath)
+                        )
+                      }
+                      className="text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-secondary-foreground"
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {isUploadingCover
+                      ? "Uploading..."
+                      : "JPG, PNG or WebP, up to 6 MB. Required to publish."}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="linkUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Link (optional)</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="url"
+                      inputMode="url"
+                      placeholder="https://facebook.com/..."
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    For example the Facebook post or the organizer&apos;s page.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </Card>
+        </fieldset>
 
         <FormActionBar className="flex-wrap justify-between">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-            <FormField
-              control={form.control}
-              name="isPublished"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center gap-2">
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <FormLabel className="font-normal">Published</FormLabel>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="isFeatured"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center gap-2">
-                  <FormControl>
-                    <Switch checked={field.value} onCheckedChange={field.onChange} />
-                  </FormControl>
-                  <FormLabel className="font-normal">Show on homepage</FormLabel>
-                </FormItem>
-              )}
-            />
-          </div>
+          <fieldset disabled={!canSave} className="contents">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <FormField
+                control={form.control}
+                name="isPublished"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center gap-2">
+                    <FormControl>
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="font-normal">Published</FormLabel>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="isFeatured"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center gap-2">
+                    <FormControl>
+                      <Switch checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <FormLabel className="font-normal">Show on homepage</FormLabel>
+                  </FormItem>
+                )}
+              />
+            </div>
+          </fieldset>
           <div className="flex items-center gap-3">
             <Button
               type="button"
@@ -420,9 +428,11 @@ export function EventForm({ event }: { event?: EventRecord }) {
             >
               Cancel
             </Button>
-            <Button type="submit" size="lg" disabled={isSubmitting || isUploadingCover}>
-              {isSubmitting ? "Saving..." : event ? "Save Changes" : "Create Event"}
-            </Button>
+            {canSave ? (
+              <Button type="submit" size="lg" disabled={isSubmitting || isUploadingCover}>
+                {isSubmitting ? "Saving..." : event ? "Save Changes" : "Create Event"}
+              </Button>
+            ) : null}
           </div>
         </FormActionBar>
 

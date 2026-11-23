@@ -22,6 +22,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -41,6 +42,7 @@ export function BookingTermsForm({
 }: {
   initialTerms: BookingTermsRecord;
 }) {
+  const canUpdate = useCan("content", "update");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [updatedAt, setUpdatedAt] = useState(initialTerms.updatedAt);
 
@@ -85,6 +87,7 @@ export function BookingTermsForm({
                   {...field}
                   placeholder="Enter your booking terms and conditions"
                   className="min-h-96"
+                  readOnly={!canUpdate}
                 />
               </FormControl>
               <p className="text-sm text-muted-foreground">
@@ -109,13 +112,15 @@ export function BookingTermsForm({
               ? `Last updated ${formatManilaDate(updatedAt)}`
               : "Not saved yet"}
           </p>
-          <Button
-            type="submit"
-            size="lg"
-            disabled={isSubmitting || !form.formState.isDirty}
-          >
-            {isSubmitting ? "Saving..." : "Save Changes"}
-          </Button>
+          {canUpdate ? (
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isSubmitting || !form.formState.isDirty}
+            >
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
+          ) : null}
         </div>
       </form>
     </Form>

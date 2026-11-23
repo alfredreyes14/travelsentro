@@ -11,6 +11,12 @@ import {
   getRemainingEmailQuota,
 } from "@/actions/messages";
 import {
+  sendBulkFollowUpEmail,
+  sendBulkFollowUpText,
+  sendFollowUpEmail,
+  sendFollowUpText,
+} from "@/actions/follow-ups";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -34,6 +40,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Tooltip,
@@ -41,6 +48,17 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { withEmail } from "@/lib/crm/contact-label";
+import { SITE_URL } from "@/lib/constants";
+import {
+  FOLLOW_UP_COPY,
+  FOLLOW_UP_SEQUENCE_LABELS,
+  FOLLOW_UP_STEP_COUNT,
+  followUpAngle,
+  type FollowUpSequence,
+  followUpEmailTemplate,
+  followUpSmsTemplate,
+  trackedLinkLength,
+} from "@/lib/follow-ups/templates";
 
 type ComposeContact = {
   id: string;
@@ -51,6 +69,22 @@ type ComposeContact = {
 };
 
 type ActiveTab = "email" | "sms";
+
+/**
+ * Follow-up mode: drafts start from the follow-up templates for the
+ * contact's sequence and next step, emails get tracked chat buttons, texts
+ * a tracked link (actions/follow-ups.ts). Parents key the dialog on the
+ * sequence and step so the draft refreshes after each send.
+ */
+export type ComposeFollowUp = {
+  sequence: FollowUpSequence;
+  step: number;
+  packageName?: string | null;
+};
+
+// The appended link's length, for the SMS counter (staging's host is a bit
+// longer; close enough for a segment estimate).
+const SMS_LINK_LENGTH = trackedLinkLength(SITE_URL);
 
 /**
  * Shared individual/bulk Email+SMS compose UI (D-06/UI-SPEC's explicit "one
@@ -67,27 +101,41 @@ export function MessageComposeDialog({
   open,
   onOpenChange,
   onSuccess,
+  followUp,
 }: {
   contacts: ComposeContact[];
   mode: "individual" | "bulk";
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  followUp?: ComposeFollowUp;
 }) {
+  const draft = followUp
+    ? {
+        ...followUpEmailTemplate(followUp.sequence, followUp.step, followUp.packageName),
+        sms: followUpSmsTemplate(followUp.sequence, followUp.step),
+      }
+    : { subject: "", body: "", sms: "" };
+
   // null = staff haven't picked a tab yet, so the default below applies.
   const [tabChoice, setTabChoice] = useState<ActiveTab | null>(null);
-  const [subject, setSubject] = useState("");
-  const [emailBody, setEmailBody] = useState("");
-  const [smsBody, setSmsBody] = useState("");
+  const [subject, setSubject] = useState(draft.subject);
+  const [emailBody, setEmailBody] = useState(draft.body);
+  const [smsBody, setSmsBody] = useState(draft.sms);
+  // Bulk follow-ups: each lead gets their own next message (default), or
+  // staff write one custom message for everyone.
+  const [perLeadChoice, setPerLeadChoice] = useState(true);
+  const perLead = mode === "bulk" && Boolean(followUp) && perLeadChoice;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [quotaBanner, setQuotaBanner] = useState<string | null>(null);
 
   const primaryContact = contacts[0];
+  const verb = followUp ? "Follow up with" : "Message";
   const title =
     mode === "individual"
-      ? `Message ${primaryContact?.name ?? ""}`
-      : `Message ${contacts.length} contacts`;
+      ? `${verb} ${primaryContact?.name ?? ""}`
+      : `${verb} ${contacts.length} contacts`;
 
   const emailDisabled = mode === "individual" && !primaryContact?.email?.trim();
   const smsDisabled = mode === "individual" && !primaryContact?.phone;
@@ -96,12 +144,13 @@ export function MessageComposeDialog({
   const emailRecipientCount = withEmail(contacts).length;
   const noEmailCount = contacts.length - emailRecipientCount;
   const noPhoneCount = contacts.filter((c) => !c.phone).length;
-  const smsSegments = Math.max(1, Math.ceil(smsBody.length / 160));
+  const smsLength = smsBody.length + (followUp ? SMS_LINK_LENGTH : 0);
+  const smsSegments = Math.max(1, Math.ceil(smsLength / 160));
 
   function resetForm() {
-    setSubject("");
-    setEmailBody("");
-    setSmsBody("");
+    setSubject(draft.subject);
+    setEmailBody(draft.body);
+    setSmsBody(draft.sms);
     setQuotaBanner(null);
     setIsConfirmOpen(false);
     setTabChoice(null);
@@ -117,19 +166,19 @@ export function MessageComposeDialog({
   async function handleIndividualSubmit() {
     setIsSubmitting(true);
     try {
+      const sendEmail = followUp ? sendFollowUpEmail : sendIndividualEmail;
+      const sendSms = followUp ? sendFollowUpText : sendIndividualSms;
       const result =
         activeTab === "email"
-          ? await sendIndividualEmail(primaryContact.id, {
-              subject,
-              body: emailBody,
-            })
-          : await sendIndividualSms(primaryContact.id, { body: smsBody });
+          ? await sendEmail(primaryContact.id, { subject, body: emailBody })
+          : await sendSms(primaryContact.id, { body: smsBody });
 
       if (result.ok) {
+        const what = activeTab === "email" ? "Email" : "Text";
         toast.success(
-          activeTab === "email"
-            ? `Email sent to ${primaryContact.name}.`
-            : `Text sent to ${primaryContact.name}.`
+          followUp
+            ? `Follow-up ${what.toLowerCase()} sent to ${primaryContact.name}.`
+            : `${what} sent to ${primaryContact.name}.`
         );
         resetForm();
         onOpenChange(false);
@@ -169,10 +218,20 @@ export function MessageComposeDialog({
     setIsSubmitting(true);
     try {
       const contactIds = contacts.map((c) => c.id);
-      const result =
-        activeTab === "email"
-          ? await sendBulkEmail(contactIds, { subject, body: emailBody })
-          : await sendBulkSms(contactIds, { body: smsBody });
+      const emailValues = { subject, body: emailBody };
+      const smsValues = { body: smsBody };
+      let result;
+      if (followUp) {
+        result =
+          activeTab === "email"
+            ? await sendBulkFollowUpEmail(contactIds, perLead ? null : emailValues)
+            : await sendBulkFollowUpText(contactIds, perLead ? null : smsValues);
+      } else {
+        result =
+          activeTab === "email"
+            ? await sendBulkEmail(contactIds, emailValues)
+            : await sendBulkSms(contactIds, smsValues);
+      }
 
       if (result.ok) {
         const { sent, failed, total } = result;
@@ -211,6 +270,36 @@ export function MessageComposeDialog({
             This contact has opted out of bulk messages. Individual messages
             are still delivered normally.
           </p>
+        ) : null}
+
+        {followUp ? (
+          <p className="text-sm text-muted-foreground">
+            {mode === "individual"
+              ? `${FOLLOW_UP_SEQUENCE_LABELS[followUp.sequence]} · follow-up ${followUp.step} · ${followUpAngle(followUp.sequence, followUp.step).label}. `
+              : ""}
+            Emails get &ldquo;Chat on Messenger&rdquo; and &ldquo;Chat on
+            WhatsApp&rdquo; buttons; texts get a chat link. A tap moves a
+            lead at New to Inquiry, and brings a Lost lead back. It counts
+            toward the {FOLLOW_UP_STEP_COUNT} automatic follow-ups.
+          </p>
+        ) : null}
+
+        {mode === "bulk" && followUp ? (
+          <label className="flex items-start gap-2">
+            <Switch
+              checked={perLeadChoice}
+              onCheckedChange={setPerLeadChoice}
+            />
+            <span className="flex flex-col">
+              <span className="text-sm font-semibold">
+                Send each lead their next follow-up
+              </span>
+              <span className="text-sm text-muted-foreground">
+                Every follow-up has its own message, so nobody gets the same
+                one twice. Turn off to write one message for everyone.
+              </span>
+            </span>
+          </label>
         ) : null}
 
         <Tabs
@@ -255,6 +344,10 @@ export function MessageComposeDialog({
                 will be skipped.
               </p>
             ) : null}
+            {perLead ? (
+              <PerLeadMessages />
+            ) : (
+              <>
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="message-subject"
@@ -282,9 +375,12 @@ export function MessageComposeDialog({
                 onChange={(e) => setEmailBody(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Use {"{{name}}"} to insert the contact&apos;s name.
+                Use {"{{name}}"} to insert the contact&apos;s name
+                {followUp ? " (in the subject too)" : ""}.
               </p>
             </div>
+              </>
+            )}
           </TabsContent>
 
           <TabsContent value="sms" className="flex flex-col gap-3 pt-2">
@@ -294,6 +390,9 @@ export function MessageComposeDialog({
                 will be skipped.
               </p>
             ) : null}
+            {perLead ? (
+              <PerLeadMessages sms />
+            ) : (
             <div className="flex flex-col gap-1.5">
               <label
                 htmlFor="message-sms-body"
@@ -308,15 +407,23 @@ export function MessageComposeDialog({
                 onChange={(e) => setSmsBody(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                {smsBody.length}/160 characters · {smsSegments} segment(s)
+                {smsLength}/160 characters
+                {followUp ? " (with link)" : ""} · {smsSegments} segment(s)
               </p>
-              {mode === "bulk" ? (
+              {followUp ? (
+                <p className="text-xs text-muted-foreground">
+                  A tracked Messenger link is added at the end. Use{" "}
+                  {"{{name}}"} to insert the contact&apos;s name.
+                </p>
+              ) : null}
+              {mode === "bulk" && !followUp ? (
                 <p className="text-xs text-muted-foreground">
                   Bulk SMS sends the same message to everyone —{" "}
                   {"{{name}}"} isn&apos;t supported for text messages.
                 </p>
               ) : null}
             </div>
+            )}
           </TabsContent>
         </Tabs>
 
@@ -336,9 +443,7 @@ export function MessageComposeDialog({
         >
           {isSubmitting
             ? "Sending..."
-            : activeTab === "email"
-              ? "Send Email"
-              : "Send SMS"}
+            : `Send ${followUp ? "Follow-up " : ""}${activeTab === "email" ? "Email" : "SMS"}`}
         </Button>
       </DialogContent>
 
@@ -370,5 +475,34 @@ export function MessageComposeDialog({
         </AlertDialog>
       ) : null}
     </Dialog>
+  );
+}
+
+/** What each lead gets when bulk follow-ups pick the message per lead. */
+function PerLeadMessages({ sms = false }: { sms?: boolean }) {
+  return (
+    <div className="flex flex-col gap-2 rounded-lg bg-muted/50 p-3 text-sm">
+      <p>
+        Each lead gets the {sms ? "text" : "email"} for their next follow-up,
+        based on their stage:
+      </p>
+      {(["no_reply", "quote"] as const).map((sequence) => (
+        <div key={sequence} className="flex flex-col gap-0.5">
+          <span className="font-semibold">
+            {sequence === "quote" ? "At Quotation" : "At New and other stages"}{" "}
+            — {FOLLOW_UP_SEQUENCE_LABELS[sequence]}
+          </span>
+          <ol className="list-decimal pl-5 text-muted-foreground">
+            {FOLLOW_UP_COPY[sequence].steps.map((angle) => (
+              <li key={angle.label}>{angle.label}</li>
+            ))}
+          </ol>
+        </div>
+      ))}
+      <p className="text-muted-foreground">
+        After follow-up {FOLLOW_UP_STEP_COUNT}, extra angles take turns, so
+        nobody gets the same message twice in a row.
+      </p>
+    </div>
   );
 }

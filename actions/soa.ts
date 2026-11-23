@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createElement } from "react";
 import { z } from "zod";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 import {
@@ -77,7 +77,7 @@ export async function createSoaFileUpload(file: {
   type: string;
   size: number;
 }): Promise<SoaUploadStart> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("soa", ["create", "update"]);
 
   const checked = checkDocument({
     name: String(file?.name ?? ""),
@@ -162,7 +162,7 @@ async function verifyUploadedFile(
 export async function createSoa(
   values: SoaFormValues
 ): Promise<ActionResult & { id?: string }> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("soa", "create");
 
   const parsed = soaFormSchema.safeParse(values);
   if (!parsed.success) return { ok: false, error: INVALID_MESSAGE };
@@ -187,7 +187,7 @@ export async function updateSoa(
   id: string,
   values: SoaFormValues
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("soa", "update");
 
   const parsed = soaFormSchema.safeParse(values);
   if (!parsed.success) return { ok: false, error: INVALID_MESSAGE };
@@ -215,7 +215,7 @@ export async function createPreviousSoa(
   values: PreviousSoaFormValues,
   file: SoaFileChange
 ): Promise<ActionResult & { id?: string }> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("soa", "create");
 
   const parsed = previousSoaFormSchema.safeParse(values);
   if (!parsed.success) return { ok: false, error: INVALID_MESSAGE };
@@ -249,7 +249,7 @@ export async function updatePreviousSoa(
   values: PreviousSoaFormValues,
   file: SoaFileChange
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("soa", "update");
 
   const parsed = previousSoaFormSchema.safeParse(values);
   if (!parsed.success) return { ok: false, error: INVALID_MESSAGE };
@@ -301,7 +301,7 @@ export async function updatePreviousSoa(
 }
 
 export async function deleteSoa(id: string): Promise<ActionResult> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("soa", "delete");
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -338,7 +338,7 @@ export async function linkSoaToContact(
   soaId: string,
   contactId: string
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("soa", "update");
 
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -368,7 +368,7 @@ export async function unlinkSoaFromContact(
   soaId: string,
   contactId: string
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("soa", "update");
 
   const supabase = await createClient();
   const { error } = await supabase
@@ -422,7 +422,7 @@ export async function sendSoaEmail(
   soaId: string,
   values: SoaEmailValues
 ): Promise<ActionResult> {
-  const profile = await requirePermission("can_manage_quotes");
+  const profile = await requireModule("soa", "update");
 
   const parsed = soaEmailSchema.safeParse(values);
   if (!idSchema.safeParse(soaId).success || !parsed.success) {

@@ -28,6 +28,7 @@ import {
   checkDocument,
   formatBytes,
 } from "@/lib/crm/documents";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const UPLOAD_ERROR_MESSAGE =
   "Something went wrong uploading. Please try again.";
@@ -44,7 +45,7 @@ export type ContactDocument = {
 
 /**
  * A B2B client's documents. Anyone who can see the contact can open one;
- * uploading and deleting need can_edit_crm. Files travel browser -> R2
+ * uploading needs Leads Edit and deleting Leads Delete. Files travel browser -> R2
  * directly through a presigned URL, then are confirmed with the server.
  */
 export function ContactDocumentsCard({
@@ -56,6 +57,7 @@ export function ContactDocumentsCard({
   documents: ContactDocument[];
   canEdit: boolean;
 }) {
+  const canDelete = useCan("leads", "delete");
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploadingName, setUploadingName] = useState<string | null>(null);
@@ -201,7 +203,7 @@ export function ContactDocumentsCard({
                     {format(new Date(document.createdAt), "MMM d, yyyy")}
                   </p>
                 </div>
-                {canEdit ? (
+                {canDelete ? (
                   <Button
                     variant="ghost"
                     size="icon"

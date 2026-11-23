@@ -1,6 +1,6 @@
 "use server";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import type { ActionResult } from "@/lib/action-result";
 import type { QuoteFormValues } from "@/components/admin/quote-form-schema";
 import { extractPosterData } from "@/lib/packages/extract-poster";
@@ -21,7 +21,7 @@ export async function extractQuoteFromPoster(input: {
   base64: string;
   mimeType: string;
 }): Promise<QuotePosterResult> {
-  await requirePermission("can_manage_quotes");
+  await requireModule("quotes", ["create", "update"]);
 
   const extracted = await extractPosterData({ ...input, destinationNames: [] });
   if (!extracted.ok) return extracted;

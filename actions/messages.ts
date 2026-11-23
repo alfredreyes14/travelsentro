@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { randomUUID } from "node:crypto";
 import { createElement } from "react";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import {
   FROM_EMAIL,
@@ -18,6 +18,7 @@ import {
 } from "@/lib/sms/semaphore";
 import { applyNameTemplate } from "@/lib/crm/messages";
 import { withEmail } from "@/lib/crm/contact-label";
+import { remainingEmailQuota } from "@/lib/crm/email-quota";
 import { signContactId } from "@/lib/unsubscribe-token";
 import { CustomerMessageEmail } from "@/components/email/customer-message-email";
 import {
@@ -31,6 +32,8 @@ import type { ActionResult } from "@/lib/action-result";
 const SEND_ERROR_MESSAGE = "Couldn't send the message. Please try again.";
 const NO_ELIGIBLE_RECIPIENTS_MESSAGE =
   "No eligible contacts to message — all selected contacts are opted out or missing the required contact info.";
+const UNSUBSCRIBED_MESSAGE =
+  "This contact unsubscribed, so they can't be messaged.";
 const OPT_OUT_ERROR_MESSAGE =
   "Something went wrong updating this contact's opt-out status. Please try again.";
 
@@ -41,15 +44,16 @@ export type BulkSendResult =
 /**
  * MSG-01/MSG-06 -- individual email send. Awaited inline, never scheduled
  * as background work (04-RESEARCH.md Pitfall 4, T-04-11): a staff-initiated send
- * must surface a real failure via toast, not a false success. Individual
- * sends are never filtered by opted_out (Open Question 1) and never carry
- * an unsubscribe footer (04-02's design -- that's bulk-only).
+ * must surface a real failure via toast, not a false success. A contact
+ * who unsubscribed (opted_out) gets nothing, not even individual sends.
+ * Individual sends never carry an unsubscribe footer (04-02's design --
+ * that's bulk-only).
  */
 export async function sendIndividualEmail(
   contactId: string,
   values: { subject: string; body: string }
 ): Promise<ActionResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsed = emailComposeSchema.safeParse(values);
   if (!parsed.success) {
@@ -60,12 +64,16 @@ export async function sendIndividualEmail(
 
   const { data: contact, error: contactError } = await supabase
     .from("contacts")
-    .select("id, name, email")
+    .select("id, name, email, opted_out")
     .eq("id", contactId)
     .single();
 
   if (contactError || !contact) {
     return { ok: false, error: SEND_ERROR_MESSAGE };
+  }
+
+  if (contact.opted_out) {
+    return { ok: false, error: UNSUBSCRIBED_MESSAGE };
   }
 
   if (!contact.email?.trim()) {
@@ -113,7 +121,7 @@ export async function sendIndividualSms(
   contactId: string,
   values: { body: string }
 ): Promise<ActionResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsed = smsComposeSchema.safeParse(values);
   if (!parsed.success) {
@@ -124,12 +132,16 @@ export async function sendIndividualSms(
 
   const { data: contact, error: contactError } = await supabase
     .from("contacts")
-    .select("id, name, phone")
+    .select("id, name, phone, opted_out")
     .eq("id", contactId)
     .single();
 
   if (contactError || !contact) {
     return { ok: false, error: SEND_ERROR_MESSAGE };
+  }
+
+  if (contact.opted_out) {
+    return { ok: false, error: UNSUBSCRIBED_MESSAGE };
   }
 
   if (!contact.phone) {
@@ -177,17 +189,9 @@ export async function sendIndividualSms(
  * actual rolling-window enforcement, NOT a calendar-day boundary).
  */
 export async function getRemainingEmailQuota(): Promise<number> {
-  await requirePermission("can_message_customers");
+  await requireModule("messages", "create");
 
-  const supabase = await createClient();
-
-  const { count } = await supabase
-    .from("messages")
-    .select("id", { count: "exact", head: true })
-    .eq("channel", "email")
-    .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-
-  return Math.max(0, 100 - (count ?? 0));
+  return remainingEmailQuota(await createClient());
 }
 
 /**
@@ -195,13 +199,13 @@ export async function getRemainingEmailQuota(): Promise<number> {
  * (T-04-10/D-03) rather than trusting the client-submitted id list, so a
  * stale client selection can never bypass the opted_out filter. Quota is
  * inlined here (not via getRemainingEmailQuota()) to avoid a second
- * requirePermission() round-trip.
+ * requireModule() round-trip.
  */
 export async function sendBulkEmail(
   contactIds: string[],
   values: { subject: string; body: string }
 ): Promise<BulkSendResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsedIds = recipientIdsSchema.safeParse(contactIds);
   const parsedValues = emailComposeSchema.safeParse(values);
@@ -226,13 +230,7 @@ export async function sendBulkEmail(
     return { ok: false, error: NO_ELIGIBLE_RECIPIENTS_MESSAGE };
   }
 
-  const { count } = await supabase
-    .from("messages")
-    .select("id", { count: "exact", head: true })
-    .eq("channel", "email")
-    .gte("created_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-
-  const remaining = Math.max(0, 100 - (count ?? 0));
+  const remaining = await remainingEmailQuota(supabase);
 
   if (contacts.length > remaining) {
     return {
@@ -302,7 +300,7 @@ export async function sendBulkSms(
   contactIds: string[],
   values: { body: string }
 ): Promise<BulkSendResult> {
-  const profile = await requirePermission("can_message_customers");
+  const profile = await requireModule("messages", "create");
 
   const parsedIds = recipientIdsSchema.safeParse(contactIds);
   const parsedValues = smsComposeSchema.safeParse(values);
@@ -370,18 +368,18 @@ export async function sendBulkSms(
 /**
  * MSG-05 -- staff-manual opt-out toggle (the second of D-02's two opt-out
  * paths, alongside the self-service unsubscribe link in
- * app/unsubscribe/page.tsx). Gated on can_edit_crm (NOT
- * can_message_customers) since this is a contact-record edit, not a message
+ * app/unsubscribe/page.tsx). Gated on Leads Edit (NOT the Messages
+ * permission) since this is a contact-record edit, not a message
  * send, per 04-CONTEXT.md's explicit Claude's-Discretion note -- mirrors
  * updateStage/updateContact in actions/crm.ts. Reuses the existing
- * "can_edit_crm can update contacts" RLS policy from 03-01; opted_out is
+ * "leads update contacts" RLS policy; opted_out is
  * just another column on contacts, no new policy needed.
  */
 export async function updateOptOut(
   contactId: string,
   optedOut: boolean
 ): Promise<ActionResult> {
-  await requirePermission("can_edit_crm");
+  await requireModule("leads", "update");
 
   const supabase = await createClient();
 

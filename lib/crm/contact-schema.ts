@@ -45,6 +45,9 @@ export const contactFormSchema = z
     otherPhones: z.array(labeledValueSchema).max(10, "Up to 10 extra numbers"),
     contractStart: z.string().trim(),
     contractEnd: z.string().trim(),
+    // Read-only context, not a field: a lead linked to a Messenger chat may
+    // have neither email nor phone (the database enforces the same rule).
+    hasMessengerChat: z.boolean().optional(),
   })
   .superRefine((values, ctx) => {
     if (values.email && !EMAIL_PATTERN.test(values.email)) {
@@ -54,7 +57,7 @@ export const contactFormSchema = z
         message: "Please enter a valid email address",
       });
     }
-    if (!values.email && !values.phone) {
+    if (!values.email && !values.phone && !values.hasMessengerChat) {
       ctx.addIssue({
         code: "custom",
         path: ["email"],
@@ -155,6 +158,7 @@ export type ContactRowFields = {
   other_phones: unknown;
   contract_start: string | null;
   contract_end: string | null;
+  messenger_psid?: string | null;
 };
 
 export function contactRowToFormValues(row: ContactRowFields): ContactFormValues {
@@ -171,6 +175,7 @@ export function contactRowToFormValues(row: ContactRowFields): ContactFormValues
     otherPhones: parseLabeledList(row.other_phones),
     contractStart: row.contract_start ?? "",
     contractEnd: row.contract_end ?? "",
+    hasMessengerChat: Boolean(row.messenger_psid),
   };
 }
 

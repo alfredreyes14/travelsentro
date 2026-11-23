@@ -150,16 +150,19 @@ export type Database = {
           created_by_name: string | null;
           email: string | null;
           id: string;
+          messenger_psid: string | null;
           name: string;
           opted_out: boolean;
           other_emails: Json;
           other_phones: Json;
           phone: string | null;
+          quote_suggested_at: string | null;
           rep_name: string | null;
           rep_position: string | null;
           services_availed: string[];
           services_other: string | null;
           stage: string;
+          stage_changed_at: string;
           tags: string[];
           updated_at: string;
           updated_by: string | null;
@@ -174,16 +177,19 @@ export type Database = {
           created_by_name?: string | null;
           email?: string | null;
           id?: string;
+          messenger_psid?: string | null;
           name: string;
           opted_out?: boolean;
           other_emails?: Json;
           other_phones?: Json;
           phone?: string | null;
+          quote_suggested_at?: string | null;
           rep_name?: string | null;
           rep_position?: string | null;
           services_availed?: string[];
           services_other?: string | null;
           stage?: string;
+          stage_changed_at?: string;
           tags?: string[];
           updated_at?: string;
           updated_by?: string | null;
@@ -198,16 +204,19 @@ export type Database = {
           created_by_name?: string | null;
           email?: string | null;
           id?: string;
+          messenger_psid?: string | null;
           name?: string;
           opted_out?: boolean;
           other_emails?: Json;
           other_phones?: Json;
           phone?: string | null;
+          quote_suggested_at?: string | null;
           rep_name?: string | null;
           rep_position?: string | null;
           services_availed?: string[];
           services_other?: string | null;
           stage?: string;
+          stage_changed_at?: string;
           tags?: string[];
           updated_at?: string;
           updated_by?: string | null;
@@ -394,6 +403,12 @@ export type Database = {
         };
         Relationships: [];
       };
+      follow_up_settings: {
+        Row: { id: boolean; launched_at: string };
+        Insert: { id?: boolean; launched_at?: string };
+        Update: { id?: boolean; launched_at?: string };
+        Relationships: [];
+      };
       inquiries: {
         Row: {
           contact_id: string;
@@ -477,45 +492,105 @@ export type Database = {
           },
         ];
       };
+      message_clicks: {
+        Row: {
+          contact_id: string;
+          created_at: string;
+          id: string;
+          message_id: string;
+          target: string;
+        };
+        Insert: {
+          contact_id: string;
+          created_at?: string;
+          id?: string;
+          message_id: string;
+          target: string;
+        };
+        Update: {
+          contact_id?: string;
+          created_at?: string;
+          id?: string;
+          message_id?: string;
+          target?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "message_clicks_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "message_clicks_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       messages: {
         Row: {
           batch_id: string | null;
           body: string;
           channel: string;
+          click_count: number;
           contact_id: string;
           created_at: string;
+          first_clicked_at: string | null;
+          follow_up_sequence: string | null;
+          follow_up_step: number | null;
           id: string;
+          kind: string;
+          last_clicked_at: string | null;
           provider_message_id: string | null;
           sent_by: string | null;
           sent_by_name: string | null;
           status: string;
           subject: string | null;
+          tracking_token: string | null;
         };
         Insert: {
           batch_id?: string | null;
           body: string;
           channel: string;
+          click_count?: number;
           contact_id: string;
           created_at?: string;
+          first_clicked_at?: string | null;
+          follow_up_sequence?: string | null;
+          follow_up_step?: number | null;
           id?: string;
+          kind?: string;
+          last_clicked_at?: string | null;
           provider_message_id?: string | null;
           sent_by?: string | null;
           sent_by_name?: string | null;
           status?: string;
           subject?: string | null;
+          tracking_token?: string | null;
         };
         Update: {
           batch_id?: string | null;
           body?: string;
           channel?: string;
+          click_count?: number;
           contact_id?: string;
           created_at?: string;
+          first_clicked_at?: string | null;
+          follow_up_sequence?: string | null;
+          follow_up_step?: number | null;
           id?: string;
+          kind?: string;
+          last_clicked_at?: string | null;
           provider_message_id?: string | null;
           sent_by?: string | null;
           sent_by_name?: string | null;
           status?: string;
           subject?: string | null;
+          tracking_token?: string | null;
         };
         Relationships: [
           {
@@ -693,6 +768,142 @@ export type Database = {
           },
         ];
       };
+      messenger_stage_phrases: {
+        Row: {
+          created_at: string;
+          created_by_name: string | null;
+          id: string;
+          phrase: string;
+          stage: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by_name?: string | null;
+          id?: string;
+          phrase: string;
+          stage: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by_name?: string | null;
+          id?: string;
+          phrase?: string;
+          stage?: string;
+        };
+        Relationships: [];
+      };
+      messenger_sync_state: {
+        Row: {
+          id: boolean;
+          last_result: Json | null;
+          last_synced_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: boolean;
+          last_result?: Json | null;
+          last_synced_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: boolean;
+          last_result?: Json | null;
+          last_synced_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      messenger_threads: {
+        Row: {
+          chat_link: string | null;
+          contact_id: string | null;
+          created_at: string;
+          ignored_at: string | null;
+          last_inbound_at: string | null;
+          last_outbound_at: string | null;
+          last_snippet: string | null;
+          name: string | null;
+          pending_stage: string | null;
+          psid: string;
+        };
+        Insert: {
+          chat_link?: string | null;
+          contact_id?: string | null;
+          created_at?: string;
+          ignored_at?: string | null;
+          last_inbound_at?: string | null;
+          last_outbound_at?: string | null;
+          last_snippet?: string | null;
+          name?: string | null;
+          pending_stage?: string | null;
+          psid: string;
+        };
+        Update: {
+          chat_link?: string | null;
+          contact_id?: string | null;
+          created_at?: string;
+          ignored_at?: string | null;
+          last_inbound_at?: string | null;
+          last_outbound_at?: string | null;
+          last_snippet?: string | null;
+          name?: string | null;
+          pending_stage?: string | null;
+          psid?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "messenger_threads_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      meta_outbox: {
+        Row: {
+          attempts: number;
+          claimed_at: string | null;
+          contact_id: string;
+          created_at: string;
+          id: number;
+          kind: string;
+          last_error: string | null;
+          payload: Json;
+          sent_at: string | null;
+        };
+        Insert: {
+          attempts?: number;
+          claimed_at?: string | null;
+          contact_id: string;
+          created_at?: string;
+          id?: never;
+          kind: string;
+          last_error?: string | null;
+          payload: Json;
+          sent_at?: string | null;
+        };
+        Update: {
+          attempts?: number;
+          claimed_at?: string | null;
+          contact_id?: string;
+          created_at?: string;
+          id?: never;
+          kind?: string;
+          last_error?: string | null;
+          payload?: Json;
+          sent_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "meta_outbox_contact_id_fkey";
+            columns: ["contact_id"];
+            isOneToOne: false;
+            referencedRelation: "contacts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       packages: {
         Row: {
           created_at: string;
@@ -784,42 +995,30 @@ export type Database = {
       };
       profiles: {
         Row: {
-          can_edit_crm: boolean;
-          can_manage_packages: boolean;
-          can_manage_quotes: boolean;
-          can_manage_vouchers: boolean;
-          can_message_customers: boolean;
           created_at: string;
           email: string;
           id: string;
           is_active: boolean;
           name: string | null;
+          permissions: Json;
           role: string;
         };
         Insert: {
-          can_edit_crm?: boolean;
-          can_manage_packages?: boolean;
-          can_manage_quotes?: boolean;
-          can_manage_vouchers?: boolean;
-          can_message_customers?: boolean;
           created_at?: string;
           email: string;
           id: string;
           is_active?: boolean;
           name?: string | null;
+          permissions?: Json;
           role?: string;
         };
         Update: {
-          can_edit_crm?: boolean;
-          can_manage_packages?: boolean;
-          can_manage_quotes?: boolean;
-          can_manage_vouchers?: boolean;
-          can_message_customers?: boolean;
           created_at?: string;
           email?: string;
           id?: string;
           is_active?: boolean;
           name?: string | null;
+          permissions?: Json;
           role?: string;
         };
         Relationships: [];
@@ -1285,16 +1484,79 @@ export type Database = {
         };
         Relationships: [];
       };
+      follow_up_progress: {
+        Row: {
+          clicked: boolean;
+          contact_id: string;
+          failed_count: number;
+          last_sent_at: string | null;
+          sent_count: number;
+          sequence: string;
+        };
+        Relationships: [];
+      };
     };
     Functions: {
+      add_lead_from_chat: { Args: { p_psid: string }; Returns: string | null };
+      apply_inbox_stage: { Args: { p_psid: string; p_stage: string }; Returns: string | null };
+      claim_meta_outbox: {
+        Args: { p_limit: number };
+        Returns: Database["public"]["Tables"]["meta_outbox"]["Row"][];
+      };
       get_notification_recipients: {
         Args: Record<PropertyKey, never>;
         Returns: {
           email: string;
         }[];
       };
-      has_permission: { Args: { perm: string; uid: string }; Returns: boolean };
+      has_module_permission: {
+        Args: { action: string; module: string; uid: string };
+        Returns: boolean;
+      };
+      is_admin: { Args: { uid: string }; Returns: boolean };
+      link_messenger_by_token: {
+        Args: { p_psid: string; p_token: string };
+        Returns: { contact_id: string; package_name: string | null }[];
+      };
+      link_messenger_thread: { Args: { p_contact_id: string; p_psid: string }; Returns: boolean };
       list_contact_tags: { Args: Record<PropertyKey, never>; Returns: string[] };
+      list_due_messenger_follow_ups: {
+        Args: { p_gap_days: number[]; p_window_days?: number };
+        Returns: {
+          chat_link: string | null;
+          contact_id: string;
+          last_inbound_at: string;
+          name: string;
+          next_step: number;
+          package_name: string | null;
+          sequence: string;
+        }[];
+      };
+      list_due_follow_ups: {
+        Args: {
+          p_backlog_days?: number;
+          p_gap_days: number[];
+          p_limit: number;
+          p_max_lead_age_days: number;
+        };
+        Returns: {
+          contact_id: string;
+          email: string;
+          name: string;
+          next_step: number;
+          package_name: string | null;
+          sequence: string;
+        }[];
+      };
+      mark_follow_ups_sent: { Args: { p_message_ids: string[] }; Returns: undefined };
+      record_follow_up_click: {
+        Args: { p_target: string; p_token: string };
+        Returns: {
+          channel: string;
+          contact_name: string;
+          package_slug: string | null;
+        }[];
+      };
       record_inquiry: {
         Args: {
           p_email: string;
@@ -1326,7 +1588,32 @@ export type Database = {
           is_new: boolean;
         }[];
       };
+      record_messenger_inbound: {
+        Args: {
+          p_chat_link?: string | null;
+          p_emails: string[];
+          p_name: string | null;
+          p_phone_keys: string[];
+          p_psid: string;
+          p_sent_at?: string;
+          p_snippet: string;
+        };
+        Returns: { contact_id: string | null; linked_now: boolean; moved_to: string | null }[];
+      };
+      record_messenger_staff_message: {
+        Args: {
+          p_chat_link?: string | null;
+          p_has_image?: boolean;
+          p_name: string | null;
+          p_psid: string;
+          p_sent_at?: string;
+          p_text: string;
+        };
+        Returns: string | null;
+      };
+      set_messenger_thread_ignored: { Args: { p_ignored: boolean; p_psid: string }; Returns: undefined };
       set_contact_opted_out: { Args: { p_contact_id: string }; Returns: undefined };
+      unlink_messenger_thread: { Args: { p_contact_id: string }; Returns: undefined };
       write_package_children: {
         Args: { p_inclusions: Json; p_itinerary: Json; p_package_id: string; p_travel_dates: Json };
         Returns: undefined;

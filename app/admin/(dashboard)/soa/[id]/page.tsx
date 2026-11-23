@@ -3,7 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { format } from "date-fns";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { loadSoaFormOptions } from "@/lib/soa/soa-options";
 import {
@@ -22,12 +23,16 @@ export const metadata: Metadata = {
   title: "Edit SOA | TravelSentro Admin",
 };
 
+// extractSoaLineItemsFromPoster inherits this page's segment config; same
+// 2-minute cap as the quote page (60s client timeout + 1 retry).
+export const maxDuration = 120;
+
 export default async function EditSoaPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const profile = await requirePermissionOrRedirect("can_manage_quotes");
+  const profile = await requireModuleOrRedirect("soa");
 
   const { id } = await params;
   const supabase = await createClient();
@@ -48,7 +53,7 @@ export default async function EditSoaPage({
 
   const soa = soaResult.data;
   const kind = toSoaKind(soa.kind);
-  const canCreateContact = profile.role === "admin" || profile.can_edit_crm;
+  const canCreateContact = can(profile, "leads", "create");
   const linkedContact = options.contacts.find((c) => c.id === soa.contact_id) ?? null;
   const linkedQuote = options.quotes.find((q) => q.id === soa.quote_id) ?? null;
 

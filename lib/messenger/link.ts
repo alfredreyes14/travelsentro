@@ -13,6 +13,13 @@ import { FACEBOOK_PAGE_USERNAME } from "@/lib/constants";
 export const GENERAL_MESSENGER_REF = "general";
 
 /**
+ * Ref prefix for a follow-up email's "Chat on Messenger" button:
+ * fu_<tracking token>. The webhook uses the token to link the chat to the
+ * contact (lib/meta-sync/messenger.ts). Package slugs never start with it.
+ */
+export const FOLLOW_UP_REF_PREFIX = "fu_";
+
+/**
  * Builds an m.me deep link that opens Messenger directly into a chat with
  * the Page, instead of FacebookCta's previous outbound link to the Page
  * itself (D-04 follow-up). packageSlug rides along as Messenger's `ref`

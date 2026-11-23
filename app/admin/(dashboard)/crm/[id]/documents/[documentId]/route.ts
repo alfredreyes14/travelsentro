@@ -1,23 +1,21 @@
 import { redirect } from "next/navigation";
 
-import { getProfile } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
 import { contentDisposition } from "@/lib/crm/documents";
 import { presignDownload } from "@/lib/storage/r2-private";
 import { createClient } from "@/lib/supabase/server";
 
 /**
  * Opens one contact document. The file lives in a private bucket, so this
- * validates the session (any active staff member may read, the same rule
- * as the contact itself -- CRM-03), finds the document through the
+ * requires Leads View (the same rule as the contact itself), finds the document through the
  * caller's own Supabase client so RLS applies, and redirects to a link
- * that expires in 5 minutes. getProfile() redirects a logged-out visitor
- * to the login page.
+ * that expires in 5 minutes. A logged-out visitor is sent to the login page.
  */
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string; documentId: string }> }
 ) {
-  await getProfile();
+  await requireModuleOrRedirect("leads");
 
   const { id, documentId } = await params;
   const supabase = await createClient();

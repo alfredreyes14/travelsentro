@@ -1,4 +1,6 @@
-export const MESSAGE_CHANNELS = ["email", "sms"] as const;
+// "messenger": a follow-up staff sent by hand in Messenger and marked sent
+// (actions/messenger-todo.ts). The CRM never sends Messenger messages itself.
+export const MESSAGE_CHANNELS = ["email", "sms", "messenger"] as const;
 
 export type MessageChannel = (typeof MESSAGE_CHANNELS)[number];
 
@@ -9,6 +11,7 @@ export type MessageStatus = (typeof MESSAGE_STATUSES)[number];
 export const CHANNEL_LABELS: Record<MessageChannel, string> = {
   email: "Emailed",
   sms: "Texted",
+  messenger: "Messaged on Messenger",
 };
 
 // Only merge-tag supported for message bodies (bulk email personalization,

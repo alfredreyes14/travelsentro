@@ -8,7 +8,9 @@
  * flag -- verify against a real account during end-of-phase human
  * verification, per this plan's Task 2 human-check).
  */
-const SEMAPHORE_ENDPOINT = "https://semaphore.co/api/v4/messages";
+// SEMAPHORE_ENDPOINT points at a fake Semaphore in end-to-end tests (e2e/).
+const SEMAPHORE_ENDPOINT =
+  process.env.SEMAPHORE_ENDPOINT || "https://semaphore.co/api/v4/messages";
 
 type SemaphoreMessage = {
   message_id: string;

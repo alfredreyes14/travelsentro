@@ -4,7 +4,13 @@ import { useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
-import { MailIcon, MessageSquareIcon, PhoneIcon, Trash2Icon } from "lucide-react";
+import {
+  MailIcon,
+  MessageSquareIcon,
+  MousePointerClickIcon,
+  PhoneIcon,
+  Trash2Icon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { deleteContactLog } from "@/actions/contact-logs";
@@ -29,6 +35,13 @@ import {
   type InquirySource,
   type MetaLeadSourceDetails,
 } from "@/lib/crm/inquiry-source";
+import { CHAT_TARGET_LABELS, type ChatTarget } from "@/lib/follow-ups/links";
+import {
+  FOLLOW_UP_SEQUENCE_LABELS,
+  FOLLOW_UP_STEP_COUNT,
+  type FollowUpSequence,
+} from "@/lib/follow-ups/templates";
+import { useCan } from "@/components/admin/permissions-provider";
 
 export type CrmDetailInquiry = {
   id: string;
@@ -48,6 +61,10 @@ export type CrmDetailMessage = {
   status: MessageStatus;
   created_at: string;
   sent_by_name: string | null;
+  /** Set for follow-ups: which follow-up this was (1, 2, ...). */
+  followUp: { sequence: FollowUpSequence; step: number } | null;
+  /** Tracked chat-button clicks, oldest first. */
+  clicks: { target: ChatTarget; createdAt: string }[];
 };
 
 /** A contact made outside the panel, logged by staff (contact_logs). */
@@ -103,14 +120,13 @@ export function ContactActivity({
   inquiries,
   messages,
   contactLogs,
-  canEdit,
 }: {
   contactId: string;
   inquiries: CrmDetailInquiry[];
   messages: CrmDetailMessage[];
   contactLogs: CrmDetailContactLog[];
-  canEdit: boolean;
 }) {
+  const canDelete = useCan("leads", "delete");
   const activity: ActivityItem[] = [
     ...inquiries.map((i) => ({ kind: "inquiry" as const, ...i })),
     ...messages.map((m) => ({ kind: "message" as const, ...m })),
@@ -202,7 +218,7 @@ export function ContactActivity({
                       <span className="text-sm text-muted-foreground">
                         Contacted via {CONTACT_LOG_CHANNEL_LABELS[item.channel]}
                       </span>
-                      {canEdit ? (
+                      {canDelete ? (
                         <DeleteLogButton contactId={contactId} logId={item.id} />
                       ) : null}
                     </div>
@@ -226,13 +242,26 @@ export function ContactActivity({
                       <span className="text-sm text-muted-foreground">
                         {CHANNEL_LABELS[item.channel]}
                       </span>
+                      {item.followUp !== null ? (
+                        <Badge variant="outline">
+                          {FOLLOW_UP_SEQUENCE_LABELS[item.followUp.sequence]} ·{" "}
+                          {item.followUp.step <= FOLLOW_UP_STEP_COUNT
+                            ? `${item.followUp.step} of ${FOLLOW_UP_STEP_COUNT}`
+                            : `#${item.followUp.step}`}
+                        </Badge>
+                      ) : null}
                     </div>
                     {item.channel === "email" && item.subject ? (
                       <p className="text-base leading-[1.5] font-semibold">
                         {item.subject}
                       </p>
                     ) : null}
-                    <p className="text-base leading-[1.5]">{item.body}</p>
+                    <p className="text-base leading-[1.5] whitespace-pre-line">
+                      {item.body}
+                    </p>
+                    {item.followUp !== null && item.status === "sent" && item.channel !== "messenger" ? (
+                      <FollowUpClicks clicks={item.clicks} />
+                    ) : null}
                     {item.status === "failed" ? (
                       <Badge variant="destructive" className="w-fit">
                         Failed to send
@@ -248,6 +277,44 @@ export function ContactActivity({
           ))}
         </ol>
       )}
+    </div>
+  );
+}
+
+/** "Clicked Messenger 2 hours ago · 3 clicks", or "Not clicked yet". */
+function FollowUpClicks({
+  clicks,
+}: {
+  clicks: { target: ChatTarget; createdAt: string }[];
+}) {
+  if (clicks.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">Chat link not clicked yet</p>
+    );
+  }
+
+  const first = clicks[0];
+  const targets = [...new Set(clicks.map((c) => CHAT_TARGET_LABELS[c.target]))];
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <MousePointerClickIcon className="size-4 text-green-700" />
+      <span className="font-semibold text-green-700">
+        Clicked to chat on {targets.join(" and ")}
+      </span>
+      <Tooltip>
+        <TooltipTrigger
+          render={<span className="text-muted-foreground" />}
+        >
+          {formatDistanceToNow(new Date(first.createdAt), { addSuffix: true })}
+        </TooltipTrigger>
+        <TooltipContent>
+          First click {format(new Date(first.createdAt), "MMM d, yyyy h:mm a")}
+        </TooltipContent>
+      </Tooltip>
+      {clicks.length > 1 ? (
+        <span className="text-muted-foreground">· {clicks.length} clicks</span>
+      ) : null}
     </div>
   );
 }

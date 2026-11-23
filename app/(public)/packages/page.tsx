@@ -223,7 +223,7 @@ export default async function PackagesPage({
   //
   // .eq("destinations.is_active", true) is kept here even though RLS also
   // scopes anonymous visitors to is_active = true destinations, because RLS
-  // grants authenticated can_manage_packages users read access to ALL
+  // grants authenticated Packages View users read access to ALL
   // destinations -- without this query-layer filter, an admin browsing this
   // nominally public page would see packages for an inactive destination
   // that an anonymous visitor cannot, diverging from the destinationName

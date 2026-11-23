@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { formatPackagePrice } from "@/lib/packages/format-price";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const QUOTE_ERROR_MESSAGE =
   "Something went wrong updating that quote. Please try again.";
@@ -38,7 +39,7 @@ export type UnlinkedQuote = {
 
 /**
  * The quotes written for one contact. Rendered only for viewers with
- * can_manage_quotes (the page decides), since quotes are not readable
+ * Quotes View (the page decides), since quotes are not readable
  * without it.
  */
 export function ContactQuotesCard({
@@ -50,6 +51,8 @@ export function ContactQuotesCard({
   quotes: ContactQuote[];
   unlinkedQuotes: UnlinkedQuote[];
 }) {
+  const canCreate = useCan("quotes", "create");
+  const canUpdate = useCan("quotes", "update");
   const [isLinkOpen, setIsLinkOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
@@ -83,20 +86,24 @@ export function ContactQuotesCard({
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
         <CardTitle>Quotes</CardTitle>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsLinkOpen(true)}
-          >
-            Link existing
-          </Button>
-          <Button
-            size="sm"
-            nativeButton={false}
-            render={<Link href={`/admin/quotes/new?contactId=${contactId}`} />}
-          >
-            New quote
-          </Button>
+          {canUpdate ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsLinkOpen(true)}
+            >
+              Link existing
+            </Button>
+          ) : null}
+          {canCreate ? (
+            <Button
+              size="sm"
+              nativeButton={false}
+              render={<Link href={`/admin/quotes/new?contactId=${contactId}`} />}
+            >
+              New quote
+            </Button>
+          ) : null}
         </div>
       </CardHeader>
       <CardContent className="text-sm">
@@ -122,19 +129,21 @@ export function ContactQuotesCard({
                 <span className="text-muted-foreground">
                   Updated {format(new Date(quote.updatedAt), "MMM d, yyyy")}
                 </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={isPending}
-                  onClick={() =>
-                    run(
-                      () => unlinkQuoteFromContact(quote.id, contactId),
-                      `${quote.quoteNo} unlinked.`
-                    )
-                  }
-                >
-                  Unlink
-                </Button>
+                {canUpdate ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={isPending}
+                    onClick={() =>
+                      run(
+                        () => unlinkQuoteFromContact(quote.id, contactId),
+                        `${quote.quoteNo} unlinked.`
+                      )
+                    }
+                  >
+                    Unlink
+                  </Button>
+                ) : null}
               </li>
             ))}
           </ul>

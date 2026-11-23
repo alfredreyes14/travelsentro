@@ -18,23 +18,7 @@ import {
 import { useSidebar } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { useNavigationGuard } from "./navigation-guard";
-
-const SECTION_LABELS: { prefix: string; label: string }[] = [
-  // Most specific prefix first so nested routes (e.g. the Destinations
-  // sub-route under /admin/packages) resolve to their own label instead of
-  // the parent section's.
-  { prefix: "/admin/packages/destinations", label: "Destinations" },
-  { prefix: "/admin/packages", label: "Packages" },
-  { prefix: "/admin/content", label: "Content" },
-  { prefix: "/admin/crm", label: "Contacts" },
-  { prefix: "/admin/users", label: "Users" },
-];
-
-function getSectionLabel(pathname: string) {
-  return SECTION_LABELS.find(
-    ({ prefix }) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  )?.label;
-}
+import { findActiveLink } from "./admin-nav-config";
 
 function getInitials(name: string | null, email: string) {
   const source = (name?.trim() || email).trim();
@@ -63,7 +47,7 @@ export function AdminTopbar({
   const pathname = usePathname();
   const { toggleSidebar } = useSidebar();
   const { runGuarded } = useNavigationGuard();
-  const sectionLabel = getSectionLabel(pathname);
+  const sectionLabel = findActiveLink(pathname)?.label;
   const initials = getInitials(name, email);
 
   return (

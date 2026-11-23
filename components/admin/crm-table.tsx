@@ -25,6 +25,7 @@ import {
 } from "@tanstack/react-table";
 
 import { ContactStageChip } from "./contact-stage-chip";
+import { FollowUpBadge } from "./follow-up-badge";
 import { ContractEndChip } from "./contract-end-chip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ import {
 } from "@/components/ui/tooltip";
 import { SERVICE_LABELS, type ServiceKey } from "@/lib/crm/services";
 import { STAGES_BY_TYPE, type ClientType, type ContactStage } from "@/lib/crm/stage";
+import type { FollowUpProgress } from "@/lib/follow-ups/progress";
 
 const PAGE_SIZES = [10, 25, 50, 100] as const;
 const DEFAULT_PAGE_SIZE = 25;
@@ -63,6 +65,9 @@ export type AdminContactListItem = {
   phone: string | null;
   clientType: ClientType;
   stage: ContactStage;
+  followUp?: FollowUpProgress;
+  /** Staff sent a picture in the lead's chat: "Mark as Quotation?". */
+  quoteSuggestedAt?: string | null;
   tags: string[];
   opted_out: boolean;
   servicesAvailed: ServiceKey[];
@@ -238,6 +243,25 @@ function LastContact({ contact }: { contact: AdminContactListItem }) {
   );
 }
 
+function StageCell({ contact }: { contact: AdminContactListItem }) {
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <ContactStageChip stage={contact.stage} />
+      <FollowUpBadge
+        progress={contact.followUp}
+        clientType={contact.clientType}
+        stage={contact.stage}
+        optedOut={contact.opted_out}
+      />
+      {contact.quoteSuggestedAt ? (
+        <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-800">
+          Quote sent? Check Messenger to-do
+        </Badge>
+      ) : null}
+    </div>
+  );
+}
+
 const stageColumn: ColumnDef<AdminContactListItem> = {
   accessorKey: "stage",
   header: ({ column }) => <SortableHeader label="Stage" column={column} />,
@@ -246,7 +270,7 @@ const stageColumn: ColumnDef<AdminContactListItem> = {
     const order = STAGES_BY_TYPE[a.original.clientType];
     return order.indexOf(a.original.stage) - order.indexOf(b.original.stage);
   },
-  cell: ({ row }) => <ContactStageChip stage={row.original.stage} />,
+  cell: ({ row }) => <StageCell contact={row.original} />,
 };
 
 const inquiryDateColumn: ColumnDef<AdminContactListItem> = {
@@ -466,7 +490,7 @@ export function CrmTable({
                       : (contact.email ?? contact.phone ?? "—")}
                   </p>
                 </div>
-                <ContactStageChip stage={contact.stage} />
+                <StageCell contact={contact} />
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-1">
                 {type === "b2b" && contact.contractEnd ? (

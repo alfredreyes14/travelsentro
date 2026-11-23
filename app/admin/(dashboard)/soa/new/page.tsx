@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { requirePermissionOrRedirect } from "@/lib/auth/dal";
+import { requireModuleOrRedirect } from "@/lib/auth/dal";
+import { can } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { loadSoaFormOptions } from "@/lib/soa/soa-options";
 import { PageHeader } from "@/components/admin/page-header";
@@ -15,6 +16,10 @@ export const metadata: Metadata = {
   title: "New SOA | TravelSentro Admin",
 };
 
+// extractSoaLineItemsFromPoster inherits this page's segment config; same
+// 2-minute cap as the quote page (60s client timeout + 1 retry).
+export const maxDuration = 120;
+
 /**
  * ?kind=previous opens the "previous SOA" form; ?contactId= presets the
  * linked contact (used by the contact page's buttons).
@@ -24,13 +29,13 @@ export default async function NewSoaPage({
 }: {
   searchParams: Promise<{ contactId?: string; kind?: string }>;
 }) {
-  const profile = await requirePermissionOrRedirect("can_manage_quotes");
+  const profile = await requireModuleOrRedirect("soa", "create");
   const { contactId, kind } = await searchParams;
   const isPrevious = kind === "previous";
 
   const supabase = await createClient();
   const { contacts, vouchers, quotes, existingTags } = await loadSoaFormOptions(supabase);
-  const canCreateContact = profile.role === "admin" || profile.can_edit_crm;
+  const canCreateContact = can(profile, "leads", "create");
 
   // Only a contact that really exists is preset.
   const preset = contactId ? contacts.find((c) => c.id === contactId) : undefined;

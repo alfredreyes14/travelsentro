@@ -387,7 +387,7 @@ export async function renderSoaPdf(data: SoaPdfData, logoSrc: string): Promise<B
   return renderToBuffer(<SoaPdfDocument data={data} logoSrc={logoSrc} />);
 }
 
-/** RLS (can_manage_quotes) decides visibility; unauthorized callers get null. */
+/** RLS (SOA View) decides visibility; unauthorized callers get null. */
 export async function fetchSoaForPdf(
   supabase: SupabaseClient<Database>,
   id: string

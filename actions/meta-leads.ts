@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
+import { scheduleMetaSync } from "@/lib/meta-sync/schedule";
 import {
   isMetaLeadSyncEnabled,
   MetaLeadSyncRunError,
@@ -16,11 +17,11 @@ export type MetaLeadSyncActionResult =
 
 /**
  * The CRM's "Sync Meta leads" button: the same run as the nightly cron, on
- * demand. Production only (see isMetaLeadSyncEnabled); needs can_edit_crm,
+ * demand. Production only (see isMetaLeadSyncEnabled); needs Leads Create,
  * since it creates and updates contacts.
  */
 export async function syncMetaLeadsNow(): Promise<MetaLeadSyncActionResult> {
-  const profile = await requirePermission("can_edit_crm");
+  const profile = await requireModule("leads", "create");
 
   if (!isMetaLeadSyncEnabled()) {
     return { ok: false, error: "Meta lead sync only runs on the live site." };
@@ -32,6 +33,8 @@ export async function syncMetaLeadsNow(): Promise<MetaLeadSyncActionResult> {
       userId: profile.id,
       userName: profile.name || profile.email,
     });
+    // New Meta leads queue their first Conversions API event; send them.
+    scheduleMetaSync();
     // "layout" also covers /admin/crm/sync-log.
     revalidatePath("/admin/crm", "layout");
     return { ok: true, result };

@@ -31,6 +31,17 @@ export const resend = new Resend(
 export const FROM_EMAIL =
   process.env.RESEND_FROM_EMAIL || "TravelSentro <onboarding@resend.dev>";
 
+/**
+ * FROM_EMAIL's address under another display name, e.g.
+ * "Alfred from TravelSentro <no-reply@travelsentro.com>". Characters that
+ * would break the header (quotes, angle brackets, line breaks) are dropped.
+ */
+export function fromWithName(displayName: string): string {
+  const address = FROM_EMAIL.match(/<([^>]+)>/)?.[1] ?? FROM_EMAIL.trim();
+  const name = displayName.replace(/["<>\r\n]/g, "").replace(/\s+/g, " ").trim();
+  return name ? `"${name}" <${address}>` : address;
+}
+
 function chunkArray<T>(arr: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < arr.length; i += size) {
@@ -64,13 +75,13 @@ export type BatchEmailResult = { id: string | null; error: string | null };
  * call to this function in try/catch.
  */
 export async function sendBatchEmails(
-  items: { to: string; subject: string; react: ReactElement }[]
+  items: { to: string; subject: string; react: ReactElement; from?: string }[]
 ): Promise<BatchEmailResult[]> {
   const results: { id: string | null; error: string | null }[] = [];
 
   for (const chunk of chunkArray(items, 100)) {
     const response = await resend.batch.send(
-      chunk.map((item) => ({ from: FROM_EMAIL, ...item })),
+      chunk.map((item) => ({ ...item, from: item.from ?? FROM_EMAIL })),
       { batchValidation: "permissive" }
     );
 

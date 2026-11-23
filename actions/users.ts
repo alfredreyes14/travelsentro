@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient as createServiceRoleClient } from "@supabase/supabase-js";
 
 import { requireAdmin } from "@/lib/auth/dal";
+import { normalizePermissions } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 import type { Database } from "@/types/database";
@@ -29,12 +30,17 @@ async function ensureWebSocketPolyfill() {
 type AccountInput = {
   name: string;
   role: "admin" | "staff";
-  canManagePackages: boolean;
-  canMessageCustomers: boolean;
-  canEditCrm: boolean;
-  canManageVouchers: boolean;
-  canManageQuotes: boolean;
+  /** Per-module grid from the account form; see lib/auth/permissions.ts. */
+  permissions: unknown;
 };
+
+/**
+ * Admins bypass every check (lib/auth/permissions.ts), so they store none;
+ * staff store exactly the granted actions, with View implied by the others.
+ */
+function storedPermissions(values: AccountInput) {
+  return values.role === "admin" ? {} : normalizePermissions(values.permissions);
+}
 
 export async function createAccount(
   values: AccountInput & { email: string; password: string }
@@ -83,11 +89,7 @@ export async function createAccount(
     .update({
       name: values.name,
       role: values.role,
-      can_manage_packages: values.canManagePackages,
-      can_message_customers: values.canMessageCustomers,
-      can_edit_crm: values.canEditCrm,
-      can_manage_vouchers: values.canManageVouchers,
-      can_manage_quotes: values.canManageQuotes,
+      permissions: storedPermissions(values),
     })
     .eq("id", created.user.id);
 
@@ -143,11 +145,7 @@ export async function updateAccount(
     .update({
       name: values.name,
       role: values.role,
-      can_manage_packages: values.canManagePackages,
-      can_message_customers: values.canMessageCustomers,
-      can_edit_crm: values.canEditCrm,
-      can_manage_vouchers: values.canManageVouchers,
-      can_manage_quotes: values.canManageQuotes,
+      permissions: storedPermissions(values),
     })
     .eq("id", id);
 

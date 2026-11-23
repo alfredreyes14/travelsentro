@@ -32,6 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Switch } from "@/components/ui/switch";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -49,6 +50,8 @@ export function PackageListCard({
   onMutated: () => void;
   onDeleted: (id: string) => void;
 }) {
+  const canUpdate = useCan("packages", "update");
+  const canDelete = useCan("packages", "delete");
   const [isPublished, setIsPublished] = useState(item.isPublished);
   const [isFeatured, setIsFeatured] = useState(item.isFeatured);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -142,7 +145,7 @@ export function PackageListCard({
                 <Switch
                   checked={isPublished}
                   onCheckedChange={handlePublishChange}
-                  disabled={isPending || (item.isUnsavedDraft && !isPublished)}
+                  disabled={!canUpdate || isPending || (item.isUnsavedDraft && !isPublished)}
                 />
                 <span className="text-sm text-muted-foreground">
                   Published
@@ -155,7 +158,7 @@ export function PackageListCard({
                 <Switch
                   checked={isFeatured}
                   onCheckedChange={handleFeatureChange}
-                  disabled={isPending || (item.isUnsavedDraft && !isFeatured)}
+                  disabled={!canUpdate || isPending || (item.isUnsavedDraft && !isFeatured)}
                 />
                 <span className="text-sm text-muted-foreground">
                   Featured
@@ -175,19 +178,21 @@ export function PackageListCard({
               <DropdownMenuItem
                 render={<Link href={`/admin/packages/${item.id}`} />}
               >
-                Edit
+                {canUpdate ? "Edit" : "View"}
               </DropdownMenuItem>
               <DropdownMenuItem
                 render={<a href={`/admin/packages/${item.id}/pdf`} download />}
               >
                 Download Full Itinerary
               </DropdownMenuItem>
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => setIsDeleteOpen(true)}
-              >
-                Delete
-              </DropdownMenuItem>
+              {canDelete ? (
+                <DropdownMenuItem
+                  variant="destructive"
+                  onClick={() => setIsDeleteOpen(true)}
+                >
+                  Delete
+                </DropdownMenuItem>
+              ) : null}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

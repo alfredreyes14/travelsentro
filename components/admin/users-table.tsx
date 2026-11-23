@@ -44,6 +44,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { Profile } from "@/lib/auth/dal";
+import { permissionSummary } from "@/components/admin/account-permissions";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -116,7 +117,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
           <DialogTrigger render={<Button />}>
             Add Staff Account
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add Staff Account</DialogTitle>
             </DialogHeader>
@@ -181,23 +182,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
                         {profile.role === "admin" ? (
                           <Badge variant="outline">All</Badge>
                         ) : (
-                          <>
-                            {profile.can_manage_packages && (
-                              <Badge variant="outline">Packages</Badge>
-                            )}
-                            {profile.can_message_customers && (
-                              <Badge variant="outline">Messages</Badge>
-                            )}
-                            {profile.can_edit_crm && (
-                              <Badge variant="outline">CRM</Badge>
-                            )}
-                            {profile.can_manage_vouchers && (
-                              <Badge variant="outline">Vouchers</Badge>
-                            )}
-                            {profile.can_manage_quotes && (
-                              <Badge variant="outline">Quotes</Badge>
-                            )}
-                          </>
+                          <PermissionBadges profile={profile} />
                         )}
                       </div>
                     </TableCell>
@@ -284,23 +269,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
                   {profile.role === "admin" ? (
                     <Badge variant="outline">All</Badge>
                   ) : (
-                    <>
-                      {profile.can_manage_packages && (
-                        <Badge variant="outline">Packages</Badge>
-                      )}
-                      {profile.can_message_customers && (
-                        <Badge variant="outline">Messages</Badge>
-                      )}
-                      {profile.can_edit_crm && (
-                        <Badge variant="outline">CRM</Badge>
-                      )}
-                      {profile.can_manage_vouchers && (
-                        <Badge variant="outline">Vouchers</Badge>
-                      )}
-                      {profile.can_manage_quotes && (
-                        <Badge variant="outline">Quotes</Badge>
-                      )}
-                    </>
+                    <PermissionBadges profile={profile} />
                   )}
                   <Badge
                     variant={profile.is_active ? "secondary" : "destructive"}
@@ -318,7 +287,7 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
         open={editingAccount !== null}
         onOpenChange={(open) => !open && setEditingAccount(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Account</DialogTitle>
           </DialogHeader>
@@ -359,4 +328,18 @@ export function UsersTable({ profiles }: { profiles: Profile[] }) {
       </AlertDialog>
     </div>
   );
+}
+
+function PermissionBadges({ profile }: { profile: Profile }) {
+  const summary = permissionSummary(profile);
+
+  if (summary.length === 0) {
+    return <span className="text-sm text-muted-foreground">No access</span>;
+  }
+
+  return summary.map((label) => (
+    <Badge key={label} variant="outline">
+      {label}
+    </Badge>
+  ));
 }

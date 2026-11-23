@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { requirePermission } from "@/lib/auth/dal";
+import { requireModule } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { ActionResult } from "@/lib/action-result";
 
@@ -29,7 +29,7 @@ function revalidateFaqPaths() {
 export async function createFaq(
   values: FaqValues
 ): Promise<ActionResult & { id?: string }> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "create");
 
   const supabase = await createClient();
 
@@ -60,7 +60,7 @@ export async function updateFaq(
   id: string,
   values: FaqValues
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "update");
 
   const supabase = await createClient();
 
@@ -87,7 +87,7 @@ export async function toggleFaqPublished(
   id: string,
   isPublished: boolean
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "update");
 
   const supabase = await createClient();
 
@@ -107,7 +107,7 @@ export async function toggleFaqPublished(
 }
 
 export async function deleteFaq(id: string): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "delete");
 
   const supabase = await createClient();
 
@@ -131,7 +131,7 @@ export async function deleteFaq(id: string): Promise<ActionResult> {
 export async function reorderFaqs(
   order: { id: string; sortOrder: number }[]
 ): Promise<ActionResult> {
-  await requirePermission("can_manage_packages");
+  await requireModule("content", "update");
 
   const supabase = await createClient();
   const results = await Promise.all(

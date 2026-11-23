@@ -28,6 +28,8 @@ import { isSoaFileKey } from "../lib/soa/files";
 import { soaEmailSchema } from "../lib/soa/email-schema";
 import { renderSoaPdf } from "../lib/pdf/soa-pdf";
 import { SAMPLE } from "./verify-soa-sample";
+import { isBlankSoaLineItem, mapPosterToSoaLineItems } from "../lib/soa/poster-mapping";
+import type { PosterExtraction } from "../lib/packages/poster-prompt";
 
 type CheckResult = { name: string; pass: boolean; detail: string };
 const results: CheckResult[] = [];
@@ -218,6 +220,53 @@ function checkEmailSchema(): void {
 }
 
 // SAMPLE totals 22,264.10 with 10,000 paid.
+const EMPTY_POSTER: PosterExtraction = {
+  name: null,
+  destinationName: null,
+  pricePerPax: null,
+  originalPricePerPax: null,
+  durationLabel: null,
+  remarks: null,
+  travelDates: [],
+  itinerary: [],
+  inclusions: [],
+  exclusions: [],
+  bringItems: [],
+};
+
+function checkPosterMapping(): void {
+  const items = mapPosterToSoaLineItems({
+    ...EMPTY_POSTER,
+    name: "Boracay Escape",
+    durationLabel: "3D2N",
+    pricePerPax: 5999,
+    inclusions: ["Roundtrip airfare", "  ", "2 nights hotel"],
+    exclusions: ["Travel tax"],
+  });
+  const expected = JSON.stringify([
+    { description: "Boracay Escape (3D2N)", quantity: 1, unitPrice: 5999 },
+    { description: "Inclusion: Roundtrip airfare", quantity: 1, unitPrice: 0 },
+    { description: "Inclusion: 2 nights hotel", quantity: 1, unitPrice: 0 },
+    { description: "Exclusion: Travel tax", quantity: 1, unitPrice: null },
+  ]);
+  record("poster -> line items", JSON.stringify(items) === expected, JSON.stringify(items));
+
+  const noPrice = mapPosterToSoaLineItems({ ...EMPTY_POSTER, name: "Siargao 4D3N", durationLabel: "4D3N" });
+  record(
+    "poster without price leaves it blank; duration not repeated",
+    noPrice.length === 1 && noPrice[0].description === "Siargao 4D3N" && noPrice[0].unitPrice === null,
+    JSON.stringify(noPrice)
+  );
+
+  const nothing = mapPosterToSoaLineItems(EMPTY_POSTER);
+  record("unreadable poster yields no items", nothing.length === 0, JSON.stringify(nothing));
+
+  const blank = isBlankSoaLineItem({ description: " ", quantity: 1, unitPrice: undefined as unknown as number });
+  const typed = isBlankSoaLineItem({ description: "Hotel", quantity: 1, unitPrice: undefined as unknown as number });
+  const priced = isBlankSoaLineItem({ description: "", quantity: 1, unitPrice: 0 });
+  record("blank starter row detection", blank && !typed && !priced, `blank=${blank} typed=${typed} priced=${priced}`);
+}
+
 const WITH_SCHEDULE = {
   ...SAMPLE,
   installments: [
@@ -313,6 +362,7 @@ async function main(): Promise<void> {
   checkFileKeys();
   checkEmailSchema();
   checkInstallments();
+  checkPosterMapping();
   const outIndex = process.argv.indexOf("--out");
   await checkPdf(outIndex > -1 ? process.argv[outIndex + 1] : undefined);
 

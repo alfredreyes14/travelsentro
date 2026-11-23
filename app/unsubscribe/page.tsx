@@ -43,8 +43,8 @@ export default async function UnsubscribePage({
               You&apos;ve been unsubscribed
             </h1>
             <p className="text-base leading-[1.5] text-muted-foreground">
-              You won&apos;t receive any more bulk emails or texts from
-              TravelSentro. If you have questions about an existing booking,
+              You won&apos;t receive any more follow-ups, bulk emails or texts
+              from TravelSentro. If you have questions about an existing booking,
               message us on WhatsApp or Facebook anytime.
             </p>
           </>

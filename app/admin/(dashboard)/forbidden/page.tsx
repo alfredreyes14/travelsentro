@@ -5,7 +5,7 @@ export const metadata: Metadata = {
 };
 
 /**
- * Redirect target for requirePermissionOrRedirect()/requireAdminOrRedirect()
+ * Redirect target for requireModuleOrRedirect()/requireAdminOrRedirect()
  * (lib/auth/dal.ts). Renders inside the dashboard shell (sidebar/logout
  * chrome from app/admin/(dashboard)/layout.tsx stays intact) so a
  * zero-permission Staff session that direct-navigates to a gated page gets

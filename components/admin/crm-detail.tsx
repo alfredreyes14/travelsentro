@@ -3,10 +3,11 @@
 import { useOptimistic, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { format, formatDistanceToNow } from "date-fns";
-import { PhoneIcon, SendIcon } from "lucide-react";
+import { MessageCircleReplyIcon, PhoneIcon, SendIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateStage } from "@/actions/crm";
+import { confirmQuoteSuggestion, dismissQuoteSuggestion } from "@/actions/messenger-todo";
 import { updateOptOut } from "@/actions/messages";
 import {
   ContactActivity,
@@ -14,12 +15,16 @@ import {
   type CrmDetailInquiry,
   type CrmDetailMessage,
 } from "./contact-activity";
+import { FollowUpBadge } from "./follow-up-badge";
 import { ContactB2bCard } from "./contact-b2b-card";
 import { ContactConvertDialog } from "./contact-convert-dialog";
 import { ContactEditForm } from "./contact-edit-form";
 import { ContactLogDialog } from "./contact-log-dialog";
 import { ContactStageChip } from "./contact-stage-chip";
-import { MessageComposeDialog } from "./message-compose-dialog";
+import {
+  MessageComposeDialog,
+  type ComposeFollowUp,
+} from "./message-compose-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,7 +53,9 @@ import {
   type ClientType,
   type ContactStage,
 } from "@/lib/crm/stage";
+import type { FollowUpProgress } from "@/lib/follow-ups/progress";
 import { cn } from "@/lib/utils";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const STAGE_ERROR_MESSAGE =
   "Something went wrong updating the stage. Please try again.";
@@ -72,6 +79,8 @@ export type CrmDetailContact = {
   otherPhones: LabeledValue[];
   contractStart: string | null;
   contractEnd: string | null;
+  /** Staff sent a picture in the lead's chat: "Mark as Quotation?". */
+  quoteSuggestedAt: string | null;
   created_at: string;
   created_by: string | null;
   created_by_name: string | null;
@@ -91,6 +100,9 @@ export function CrmDetail({
   existingTags,
   inquiries,
   messages,
+  followUp,
+  followUpProgress,
+  messengerSlot,
   contactLogs,
   lastContact,
   canEdit,
@@ -103,6 +115,12 @@ export function CrmDetail({
   existingTags: string[];
   inquiries: CrmDetailInquiry[];
   messages: CrmDetailMessage[];
+  /** The next follow-up's number and the lead's package, for its draft. */
+  followUp: ComposeFollowUp;
+  /** The current sequence's progress, for the badge next to the stage. */
+  followUpProgress?: FollowUpProgress;
+  /** Linking the contact to their Messenger chat. */
+  messengerSlot?: ReactNode;
   contactLogs: CrmDetailContactLog[];
   /** Latest sent email/SMS or logged contact; null if never contacted. */
   lastContact: { at: string; via: string } | null;
@@ -121,10 +139,19 @@ export function CrmDetail({
   const [isPending, startTransition] = useTransition();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isMessageOpen, setIsMessageOpen] = useState(false);
+  const [isFollowUpOpen, setIsFollowUpOpen] = useState(false);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
   const [isLogOpen, setIsLogOpen] = useState(false);
+  const canMessage = useCan("messages", "create");
 
   const isB2b = contact.clientType === "b2b";
+  const composeContact = {
+    id: contact.id,
+    name: contact.name,
+    email: contact.email,
+    phone: contact.phone,
+    opted_out: optedOut,
+  };
   const otherType: ClientType = isB2b ? "b2c" : "b2b";
   const stageItems = Object.fromEntries(
     STAGES_BY_TYPE[contact.clientType].map((s) => [s, STAGE_LABELS[s]])
@@ -193,10 +220,33 @@ export function CrmDetail({
           ) : (
             <ContactStageChip stage={stage} />
           )}
-          <Button onClick={() => setIsMessageOpen(true)}>
-            <SendIcon className="size-4" />
-            Message
-          </Button>
+          <FollowUpBadge
+            progress={followUpProgress}
+            clientType={contact.clientType}
+            stage={contact.stage}
+            optedOut={optedOut}
+          />
+          {canMessage ? (
+            <>
+              <Button
+                onClick={() => setIsMessageOpen(true)}
+                disabled={optedOut}
+                title={optedOut ? "This lead unsubscribed, so they can't be messaged." : undefined}
+              >
+                <SendIcon className="size-4" />
+                Message
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsFollowUpOpen(true)}
+                disabled={optedOut}
+                title={optedOut ? "This lead unsubscribed, so follow-ups have stopped." : undefined}
+              >
+                <MessageCircleReplyIcon className="size-4" />
+                Follow Up
+              </Button>
+            </>
+          ) : null}
           {canEdit ? (
             <Button variant="outline" onClick={() => setIsLogOpen(true)}>
               <PhoneIcon className="size-4" />
@@ -233,6 +283,45 @@ export function CrmDetail({
         </div>
       </div>
 
+      {contact.quoteSuggestedAt && canEdit ? (
+        <div
+          data-testid="quote-suggestion-banner"
+          className="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900"
+        >
+          <span className="flex-1">
+            Staff sent a picture in this lead&apos;s Messenger chat{" "}
+            {formatDistanceToNow(new Date(contact.quoteSuggestedAt), { addSuffix: true })}. Was
+            it a quote?
+          </span>
+          <Button
+            size="sm"
+            disabled={isPending}
+            onClick={() =>
+              startTransition(async () => {
+                const result = await confirmQuoteSuggestion(contact.id);
+                if (result.ok) toast.success("Moved to Quotation.");
+                else toast.error(result.error);
+              })
+            }
+          >
+            Yes, Quotation
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={isPending}
+            onClick={() =>
+              startTransition(async () => {
+                const result = await dismissQuoteSuggestion(contact.id);
+                if (!result.ok) toast.error(result.error);
+              })
+            }
+          >
+            Not a quote
+          </Button>
+        </div>
+      ) : null}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Contact Info</CardTitle>
@@ -268,6 +357,7 @@ export function CrmDetail({
             <span className="text-muted-foreground">Phone: </span>
             {contact.phone ?? "—"}
           </p>
+          {messengerSlot}
           {contact.tags.length > 0 ? (
             <div className="flex flex-wrap gap-1 pt-1">
               {contact.tags.map((tag) => (
@@ -308,11 +398,11 @@ export function CrmDetail({
               />
               <div className="flex flex-col">
                 <span className="text-sm font-semibold">
-                  Opted out of bulk messages
+                  Unsubscribed
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  This contact won&apos;t receive bulk email or SMS sends.
-                  Individual messages are still allowed.
+                  This contact won&apos;t receive any emails, texts or
+                  follow-ups, including ones sent by hand.
                 </span>
               </div>
             </div>
@@ -355,24 +445,28 @@ export function CrmDetail({
         inquiries={inquiries}
         messages={messages}
         contactLogs={contactLogs}
-        canEdit={canEdit}
       />
 
       <MessageComposeDialog
-        contacts={[
-          {
-            id: contact.id,
-            name: contact.name,
-            email: contact.email,
-            phone: contact.phone,
-            opted_out: optedOut,
-          },
-        ]}
+        contacts={[composeContact]}
         mode="individual"
         open={isMessageOpen}
         onOpenChange={setIsMessageOpen}
         onSuccess={() => {
           setIsMessageOpen(false);
+          router.refresh();
+        }}
+      />
+
+      <MessageComposeDialog
+        key={`follow-up-${followUp.sequence}-${followUp.step}`}
+        contacts={[composeContact]}
+        mode="individual"
+        followUp={followUp}
+        open={isFollowUpOpen}
+        onOpenChange={setIsFollowUpOpen}
+        onSuccess={() => {
+          setIsFollowUpOpen(false);
           router.refresh();
         }}
       />

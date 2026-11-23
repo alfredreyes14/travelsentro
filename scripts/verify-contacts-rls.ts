@@ -238,11 +238,17 @@ async function main() {
 
     const denied = await makeUser("denied");
     const allowed = await makeUser("allowed");
+    // "denied" can only view leads; "allowed" has full Leads permissions.
+    const { error: viewError } = await service
+      .from("profiles")
+      .update({ permissions: { leads: { read: true } } })
+      .eq("id", denied.id);
+    if (viewError) throw new Error(`grant leads view failed: ${viewError.message}`);
     const { error: grantError } = await service
       .from("profiles")
-      .update({ can_edit_crm: true })
+      .update({ permissions: { leads: { read: true, create: true, update: true, delete: true } } })
       .eq("id", allowed.id);
-    if (grantError) throw new Error(`grant can_edit_crm failed: ${grantError.message}`);
+    if (grantError) throw new Error(`grant leads permissions failed: ${grantError.message}`);
 
     const deniedClient = await signedInClient(denied.email, password);
     const allowedClient = await signedInClient(allowed.email, password);
@@ -273,7 +279,7 @@ async function main() {
     {
       const { data, error } = await deniedClient.from("contact_documents").select("id").eq("contact_id", base.id);
       results.push({
-        name: "staff without can_edit_crm can read documents",
+        name: "staff with only Leads View can read documents",
         pass: !error && (data ?? []).length === 1,
         detail: `rows=${data?.length ?? "n/a"} error=${error?.message ?? "none"}`,
       });
@@ -281,7 +287,7 @@ async function main() {
     {
       const { error } = await deniedClient.from("contact_documents").insert(documentRow("denied"));
       results.push({
-        name: "staff without can_edit_crm cannot add a document",
+        name: "staff with only Leads View cannot add a document",
         pass: error !== null,
         detail: error ? `rejected: ${error.message}` : "insert unexpectedly succeeded",
       });
@@ -289,7 +295,7 @@ async function main() {
     {
       const { data } = await deniedClient.from("contact_documents").delete().eq("id", seededDoc.id).select("id");
       results.push({
-        name: "staff without can_edit_crm cannot delete a document",
+        name: "staff with only Leads View cannot delete a document",
         pass: (data ?? []).length === 0,
         detail: `deleted rows=${data?.length ?? 0}`,
       });
@@ -299,7 +305,7 @@ async function main() {
         .from("contacts")
         .insert({ name: `${PREFIX} denied`, email: emailFor("denied-contact") });
       results.push({
-        name: "staff without can_edit_crm cannot add a contact",
+        name: "staff with only Leads View cannot add a contact",
         pass: error !== null,
         detail: error ? `rejected: ${error.message}` : "insert unexpectedly succeeded",
       });
@@ -311,7 +317,7 @@ async function main() {
         .select("id, client_type, stage")
         .single();
       results.push({
-        name: "staff with can_edit_crm can add a phone-only B2B contact",
+        name: "staff with full Leads permissions can add a phone-only B2B contact",
         pass: !error && data?.client_type === "b2b" && data.stage === "new",
         detail: error ? error.message : JSON.stringify(data),
       });
@@ -326,7 +332,7 @@ async function main() {
         ? await allowedClient.from("contact_documents").delete().eq("id", inserted.id).select("id")
         : { data: null };
       results.push({
-        name: "staff with can_edit_crm can add and delete a document, stamped as theirs",
+        name: "staff with full Leads permissions can add and delete a document, stamped as theirs",
         pass: !insertError && inserted?.uploaded_by === allowed.id && (deleted ?? []).length === 1,
         detail: insertError ? insertError.message : `uploaded_by=${inserted?.uploaded_by} deleted=${deleted?.length ?? 0}`,
       });

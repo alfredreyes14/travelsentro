@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch, type Control, type Path } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -33,6 +33,17 @@ import {
   FormSection,
 } from "@/components/ui/form";
 import type { Profile } from "@/lib/auth/dal";
+import {
+  permissionGrid,
+  toggleGridCell,
+  type PermissionGrid,
+} from "@/components/admin/account-permissions";
+import {
+  ACTIONS,
+  ACTION_LABELS,
+  MODULES,
+  type Action,
+} from "@/lib/auth/permissions";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -73,11 +84,7 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
       email: "",
       password: "",
       role: "staff",
-      canManagePackages: false,
-      canMessageCustomers: false,
-      canEditCrm: false,
-      canManageVouchers: false,
-      canManageQuotes: false,
+      permissions: permissionGrid(),
     },
   });
 
@@ -191,95 +198,12 @@ function CreateAccountForm({ onSuccess }: { onSuccess: () => void }) {
           )}
         />
 
-        <FormSection title="Permissions">
-          <FormField
-            control={form.control}
-            name="canManagePackages"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Packages
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canMessageCustomers"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Message Customers
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canEditCrm"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">Edit CRM Data</FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canManageVouchers"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Vouchers
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canManageQuotes"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Quotes
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </FormSection>
+        <PermissionFields
+          control={form.control}
+          setPermissions={(grid) =>
+            form.setValue("permissions", grid, { shouldDirty: true })
+          }
+        />
 
         <Button
           type="submit"
@@ -308,11 +232,7 @@ function EditAccountForm({
     defaultValues: {
       name: account.name ?? "",
       role: account.role === "admin" ? "admin" : "staff",
-      canManagePackages: account.can_manage_packages,
-      canMessageCustomers: account.can_message_customers,
-      canEditCrm: account.can_edit_crm,
-      canManageVouchers: account.can_manage_vouchers,
-      canManageQuotes: account.can_manage_quotes,
+      permissions: permissionGrid(account.permissions),
     },
   });
 
@@ -405,95 +325,12 @@ function EditAccountForm({
           )}
         />
 
-        <FormSection title="Permissions">
-          <FormField
-            control={form.control}
-            name="canManagePackages"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Packages
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canMessageCustomers"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Message Customers
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canEditCrm"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">Edit CRM Data</FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canManageVouchers"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Vouchers
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="canManageQuotes"
-            render={({ field }) => (
-              <FormItem className="flex flex-row items-center justify-between rounded-lg border border-input p-3">
-                <FormLabel className="cursor-pointer">
-                  Manage Quotes
-                </FormLabel>
-                <FormControl>
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                </FormControl>
-              </FormItem>
-            )}
-          />
-        </FormSection>
+        <PermissionFields
+          control={form.control}
+          setPermissions={(grid) =>
+            form.setValue("permissions", grid, { shouldDirty: true })
+          }
+        />
 
         <Button
           type="submit"
@@ -505,5 +342,92 @@ function EditAccountForm({
         </Button>
       </form>
     </Form>
+  );
+}
+
+/**
+ * Module x View/Create/Edit/Delete grid shared by both forms. Admins have
+ * every permission (lib/auth/permissions.ts, has_module_permission()), so
+ * for the Admin role every box shows checked and locked, and nothing is
+ * stored. Ticking Create/Edit/Delete also ticks View; unticking View clears
+ * the row.
+ */
+function PermissionFields<T extends EditAccountFormValues>({
+  control,
+  setPermissions,
+}: {
+  control: Control<T>;
+  setPermissions: (grid: PermissionGrid) => void;
+}) {
+  const isAdmin = useWatch({ control, name: "role" as Path<T> }) === "admin";
+  const grid = useWatch({ control, name: "permissions" as Path<T> }) as PermissionGrid;
+
+  function toggle(module: (typeof MODULES)[number]["key"], action: Action, checked: boolean) {
+    setPermissions({ ...grid, [module]: toggleGridCell(grid[module] ?? {}, action, checked) });
+  }
+
+  return (
+    <FormSection title="Permissions">
+      <p className="text-sm text-muted-foreground">
+        {isAdmin
+          ? "Admins can do everything, including managing users."
+          : "New staff start with nothing. Tick only what this person needs. Create, Edit and Delete also turn on View."}
+      </p>
+      <div className="overflow-x-auto rounded-lg border border-input">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-input bg-muted/50">
+              <th scope="col" className="px-3 py-2 text-left font-medium">
+                Module
+              </th>
+              {ACTIONS.map((action) => (
+                <th key={action} scope="col" className="w-16 px-1 py-2 text-center font-medium">
+                  {ACTION_LABELS[action]}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {MODULES.map((module) => {
+              const supported = module.actions as readonly Action[];
+              const help = ACTIONS.flatMap((a) =>
+                supported.includes(a) && module.help[a as keyof typeof module.help]
+                  ? [`${ACTION_LABELS[a]}: ${module.help[a as keyof typeof module.help]}`]
+                  : []
+              );
+              return (
+                <tr key={module.key} className="border-b border-input last:border-b-0">
+                  <th scope="row" className="px-3 py-2 text-left align-top font-normal">
+                    <span className="font-medium">{module.label}</span>
+                    {help.map((line) => (
+                      <span key={line} className="block text-xs text-muted-foreground">
+                        {line}
+                      </span>
+                    ))}
+                  </th>
+                  {ACTIONS.map((action) => (
+                    <td key={action} className="px-1 py-2 text-center align-top">
+                      {supported.includes(action) ? (
+                        <Checkbox
+                          className="mx-auto"
+                          aria-label={`${module.label}: ${ACTION_LABELS[action]}`}
+                          checked={isAdmin || grid?.[module.key]?.[action] === true}
+                          disabled={isAdmin}
+                          onCheckedChange={(checked) => toggle(module.key, action, checked === true)}
+                        />
+                      ) : (
+                        <span className="text-muted-foreground" aria-hidden>
+                          —
+                        </span>
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </FormSection>
   );
 }

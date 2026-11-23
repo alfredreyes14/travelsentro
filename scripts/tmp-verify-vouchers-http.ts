@@ -5,11 +5,11 @@
  * recipe. Proves against a live `next dev` server pointed at the local
  * Supabase stack:
  *
- * (1) A disposable Staff account without can_manage_vouchers hitting
+ * (1) A disposable Staff account without Vouchers permissions hitting
  *     /admin/vouchers gets redirected to /admin/forbidden with the denial
- *     copy (requirePermissionOrRedirect works for the new permission).
+ *     copy (requireModuleOrRedirect works for the new permission).
  * (2) The sidebar nav does NOT include a Vouchers link for that session.
- * (3) The same account, after can_manage_vouchers is granted, gets a real
+ * (3) The same account, after Vouchers permissions is granted, gets a real
  *     200 page with "Vouchers" heading + "Add Voucher" button, and the
  *     sidebar DOES include a Vouchers link.
  */
@@ -106,9 +106,9 @@ async function main() {
     // (3) Grant the permission, then re-check.
     const { error: grantError } = await serviceRoleClient
       .from("profiles")
-      .update({ can_manage_vouchers: true })
+      .update({ permissions: { vouchers: { read: true, create: true, update: true } } })
       .eq("id", disposableUserId);
-    if (grantError) throw new Error(`Failed to grant can_manage_vouchers: ${grantError.message}`);
+    if (grantError) throw new Error(`Failed to grant Vouchers permissions: ${grantError.message}`);
 
     const permittedRes = await fetch(`${BASE_URL}/admin/vouchers`, {
       redirect: "follow",

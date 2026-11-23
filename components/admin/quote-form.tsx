@@ -47,6 +47,7 @@ import {
   ComboboxItem,
 } from "@/components/ui/combobox";
 import { FormActionBar } from "@/components/admin/form-action-bar";
+import { useCan } from "@/components/admin/permissions-provider";
 
 const GENERIC_ERROR_MESSAGE =
   "Something went wrong saving your changes. Please try again.";
@@ -87,6 +88,7 @@ export function QuoteForm({
   defaultValues?: QuoteFormValues;
   contacts: QuoteContactOption[];
 }) {
+  const canSave = useCan("quotes", quoteId ? "update" : "create");
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState("details");
@@ -177,96 +179,104 @@ export function QuoteForm({
             </TabsList>
 
             <TabsContent value="details" keepMounted className="flex flex-col gap-4 pt-4">
-              <FormField
-                control={form.control}
-                name="title"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Title</FormLabel>
-                    <FormControl>
-                      <Input {...field} type="text" placeholder="Coron Island Escape" />
-                    </FormControl>
-                    <FormDescription>Printed as the heading of the PDF.</FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <fieldset disabled={!canSave} className="contents">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Title</FormLabel>
+                      <FormControl>
+                        <Input {...field} type="text" placeholder="Coron Island Escape" />
+                      </FormControl>
+                      <FormDescription>Printed as the heading of the PDF.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="customerName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Customer name (optional)</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value ?? ""} type="text" />
-                    </FormControl>
-                    <FormDescription>
-                      For your reference only — not printed on the PDF.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="customerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Customer name (optional)</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value ?? ""} type="text" />
+                      </FormControl>
+                      <FormDescription>
+                        For your reference only — not printed on the PDF.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="contactId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CRM contact (optional)</FormLabel>
-                    <FormControl>
-                      <Combobox
-                        items={contacts}
-                        value={selectedContact}
-                        onValueChange={(contact) => {
-                          field.onChange(contact?.id ?? "");
-                          if (contact && !form.getValues("customerName")) {
-                            form.setValue("customerName", contact.name, {
-                              shouldDirty: true,
-                            });
-                          }
-                        }}
-                        itemToStringLabel={(contact: QuoteContactOption) => contactLabel(contact)}
-                      >
-                        <ComboboxInputGroup>
-                          <ComboboxInput placeholder="Not linked..." />
-                          {selectedContact ? <ComboboxClear /> : <ComboboxTrigger />}
-                        </ComboboxInputGroup>
-                        <ComboboxPortal>
-                          <ComboboxPositioner>
-                            <ComboboxPopup>
-                              <ComboboxEmpty>No contacts found.</ComboboxEmpty>
-                              <ComboboxList>
-                                {(contact: QuoteContactOption) => (
-                                  <ComboboxItem key={contact.id} value={contact}>
-                                    {contactLabel(contact)}
-                                  </ComboboxItem>
-                                )}
-                              </ComboboxList>
-                            </ComboboxPopup>
-                          </ComboboxPositioner>
-                        </ComboboxPortal>
-                      </Combobox>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="contactId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CRM contact (optional)</FormLabel>
+                      <FormControl>
+                        <Combobox
+                          items={contacts}
+                          value={selectedContact}
+                          onValueChange={(contact) => {
+                            field.onChange(contact?.id ?? "");
+                            if (contact && !form.getValues("customerName")) {
+                              form.setValue("customerName", contact.name, {
+                                shouldDirty: true,
+                              });
+                            }
+                          }}
+                          itemToStringLabel={(contact: QuoteContactOption) => contactLabel(contact)}
+                        >
+                          <ComboboxInputGroup>
+                            <ComboboxInput placeholder="Not linked..." />
+                            {selectedContact ? <ComboboxClear /> : <ComboboxTrigger />}
+                          </ComboboxInputGroup>
+                          <ComboboxPortal>
+                            <ComboboxPositioner>
+                              <ComboboxPopup>
+                                <ComboboxEmpty>No contacts found.</ComboboxEmpty>
+                                <ComboboxList>
+                                  {(contact: QuoteContactOption) => (
+                                    <ComboboxItem key={contact.id} value={contact}>
+                                      {contactLabel(contact)}
+                                    </ComboboxItem>
+                                  )}
+                                </ComboboxList>
+                              </ComboboxPopup>
+                            </ComboboxPositioner>
+                          </ComboboxPortal>
+                        </Combobox>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <PricingFields />
+                <PricingFields />
+              </fieldset>
             </TabsContent>
 
             <TabsContent value="travel-dates" keepMounted className="flex flex-col gap-4 pt-4">
-              <TravelDatesFields onRequestRemove={requestRemove} />
+              <fieldset disabled={!canSave} className="contents">
+                <TravelDatesFields onRequestRemove={requestRemove} />
+              </fieldset>
             </TabsContent>
 
             <TabsContent value="itinerary" keepMounted className="flex flex-col gap-4 pt-4">
-              <ItineraryDaysFields onRequestRemove={requestRemove} />
+              <fieldset disabled={!canSave} className="contents">
+                <ItineraryDaysFields onRequestRemove={requestRemove} />
+              </fieldset>
             </TabsContent>
 
             <TabsContent value="inclusions" keepMounted className="flex flex-col gap-6 pt-4">
-              <LabelListsFields onRequestRemove={requestRemove} />
+              <fieldset disabled={!canSave} className="contents">
+                <LabelListsFields onRequestRemove={requestRemove} />
+              </fieldset>
             </TabsContent>
           </Tabs>
         </Card>
@@ -289,9 +299,11 @@ export function QuoteForm({
                 Download PDF
               </Button>
             ))}
-          <Button type="submit" size="lg" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : quoteId ? "Save Changes" : "Create Quote"}
-          </Button>
+          {canSave ? (
+            <Button type="submit" size="lg" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : quoteId ? "Save Changes" : "Create Quote"}
+            </Button>
+          ) : null}
         </FormActionBar>
       </form>
     </Form>

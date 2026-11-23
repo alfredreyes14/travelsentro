@@ -53,6 +53,7 @@ import {
   VOUCHER_TYPE_LABELS,
   type VoucherStatus,
 } from "@/lib/vouchers/status";
+import { useCan } from "@/components/admin/permissions-provider";
 
 export type VoucherListItem = VoucherRecord & {
   partnerName: string | null;
@@ -140,6 +141,8 @@ export function VoucherTable({
   partners: VoucherPartnerOption[];
   contacts: VoucherContactOption[];
 }) {
+  const canCreate = useCan("vouchers", "create");
+  const canUpdate = useCan("vouchers", "update");
   const router = useRouter();
   const [globalFilter, setGlobalFilter] = useState("");
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -220,20 +223,22 @@ export function VoucherTable({
             ))}
           </SelectContent>
         </Select>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger render={<Button />}>Add Voucher</DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Add Voucher</DialogTitle>
-            </DialogHeader>
-            <VoucherForm
-              mode="create"
-              partners={partners}
-              contacts={contacts}
-              onSuccess={handleMutationSuccess}
-            />
-          </DialogContent>
-        </Dialog>
+        {canCreate ? (
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger render={<Button />}>Add Voucher</DialogTrigger>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Add Voucher</DialogTitle>
+              </DialogHeader>
+              <VoucherForm
+                mode="create"
+                partners={partners}
+                contacts={contacts}
+                onSuccess={handleMutationSuccess}
+              />
+            </DialogContent>
+          </Dialog>
+        ) : null}
       </DataTableToolbar>
 
       {hasNoMatches ? (
@@ -271,8 +276,8 @@ export function VoucherTable({
               {rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => setEditingVoucher(row.original)}
+                  className={canUpdate ? "cursor-pointer hover:bg-muted/50" : undefined}
+                  onClick={canUpdate ? () => setEditingVoucher(row.original) : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
