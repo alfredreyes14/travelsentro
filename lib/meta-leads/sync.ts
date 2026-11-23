@@ -50,6 +50,60 @@ export class MetaLeadSyncError extends Error {
   }
 }
 
+// Leads saved at once. Each save is a round trip to the database, so doing
+// them one by one made a busy week of leads run past the 60 s time limit.
+const SAVE_CONCURRENCY = 5;
+
+// Leads looked up per "already in the CRM?" query (keeps the URL short).
+const LOOKUP_CHUNK = 100;
+
+/** Runs `fn` over `items`, at most `limit` at a time. */
+async function forEachConcurrent<T>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<void>
+): Promise<void> {
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const item = items[next++];
+      await fn(item);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+}
+
+/**
+ * Source details already stored for each of these Meta lead IDs. A lead
+ * missing from the map isn't in the CRM yet.
+ */
+async function findSavedLeads(
+  supabase: SupabaseClient,
+  leadgenIds: string[]
+): Promise<Map<string, Record<string, unknown>>> {
+  const saved = new Map<string, Record<string, unknown>>();
+  for (let i = 0; i < leadgenIds.length; i += LOOKUP_CHUNK) {
+    const { data, error } = await supabase
+      .from("inquiries")
+      .select("external_id, source_details")
+      .in("external_id", leadgenIds.slice(i, i + LOOKUP_CHUNK));
+    if (error) throw new Error(`Couldn't check which leads are already saved: ${error.message}`);
+    for (const row of (data ?? []) as { external_id: string; source_details: Record<string, unknown> | null }[]) {
+      saved.set(row.external_id, row.source_details ?? {});
+    }
+  }
+  return saved;
+}
+
+/**
+ * True when record_meta_lead() would have nothing to do for a lead already
+ * saved: every source detail Meta sent is already stored (it only fills in
+ * missing keys, never overwrites).
+ */
+function hasAllDetails(stored: Record<string, unknown>, parsed: ParsedMetaLead): boolean {
+  return Object.keys(parsed.details).every((key) => key in stored);
+}
+
 export async function syncMetaLeads(options: {
   /** Service-role client. null = dry run. */
   supabase: SupabaseClient | null;
@@ -83,38 +137,58 @@ export async function syncMetaLeads(options: {
     );
     summary.pulled += leads.length;
 
-    for (const lead of leads) {
-      const parsed = parseMetaLead(lead, formName);
-      let outcome: LeadOutcome;
+    const parsedLeads = leads.map((lead) => parseMetaLead(lead, formName));
+    const toSave: ParsedMetaLead[] = [];
 
+    for (const parsed of parsedLeads) {
       if (!parsed.email && !parsed.phone) {
         summary.noContact++;
-        outcome = { parsed, formName, status: "no-contact" };
+        onLead?.({ parsed, formName, status: "no-contact" });
       } else if (!supabase) {
-        outcome = { parsed, formName, status: "dry-run" };
+        onLead?.({ parsed, formName, status: "dry-run" });
       } else {
-        try {
-          const result = await recordMetaLead(supabase, parsed);
-          if (result.isNew) summary.added++;
-          else summary.existing++;
-          outcome = {
-            parsed,
-            formName,
-            status: result.isNew ? "added" : "existing",
-            contactId: result.contactId,
-          };
-        } catch (err) {
-          summary.failed++;
-          outcome = {
-            parsed,
-            formName,
-            status: "failed",
-            error: err instanceof Error ? err.message : String(err),
-          };
-        }
+        toSave.push(parsed);
+      }
+    }
+    if (!supabase || toSave.length === 0) continue;
+
+    // Most leads in the lookback window were saved by an earlier run. One
+    // query finds them, so only new leads (or ones still missing ad
+    // details) cost a save.
+    const saved = await step(`checking which leads from "${formName ?? form.id}" are already in the CRM`, () =>
+      findSavedLeads(supabase, toSave.map((parsed) => parsed.leadgenId))
+    );
+
+    await forEachConcurrent(toSave, SAVE_CONCURRENCY, async (parsed) => {
+      const stored = saved.get(parsed.leadgenId);
+      if (stored && hasAllDetails(stored, parsed)) {
+        summary.existing++;
+        onLead?.({ parsed, formName, status: "existing" });
+        return;
+      }
+
+      let outcome: LeadOutcome;
+      try {
+        const result = await recordMetaLead(supabase, parsed);
+        if (result.isNew) summary.added++;
+        else summary.existing++;
+        outcome = {
+          parsed,
+          formName,
+          status: result.isNew ? "added" : "existing",
+          contactId: result.contactId,
+        };
+      } catch (err) {
+        summary.failed++;
+        outcome = {
+          parsed,
+          formName,
+          status: "failed",
+          error: err instanceof Error ? err.message : String(err),
+        };
       }
       onLead?.(outcome);
-    }
+    });
   }
 
   return summary;
